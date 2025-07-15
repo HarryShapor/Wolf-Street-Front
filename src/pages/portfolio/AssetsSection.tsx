@@ -20,7 +20,15 @@ interface Instrument {
   type?: string;
   price?: number;
   iconUrl?: string;
+  totalPrice?: number; // добавляем поле для стоимости из API
 }
+
+// Тип для стоимости инструмента
+type InstrumentValue = {
+  instrumentId: number;
+  lotPrice: number;
+  totalPrice: number;
+};
 
 const instrumentMeta: Record<number, { symbol: string; name: string; type: string; price: number; iconUrl: string }> = {
   // Пример: заполнить по известным instrumentId
@@ -127,6 +135,11 @@ export default function AssetsSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Загружаем стоимости инструментов
+  const [values, setValues] = useState<InstrumentValue[]>([]);
+  const [loadingValues, setLoadingValues] = useState(true);
+  const [errorValues, setErrorValues] = useState('');
+
   useEffect(() => {
     setLoading(true);
     setError('');
@@ -153,14 +166,44 @@ export default function AssetsSection() {
       .finally(() => setLoading(false));
   }, []);
 
-  const total = useMemo(() => instruments.reduce((sum, a) => sum + (a.totalAmount * (a.price || 1)), 0), [instruments]);
+  // Загружаем стоимости инструментов только после загрузки инструментов и если они есть
+  useEffect(() => {
+    if (!instruments.length) {
+      setValues([]);
+      return;
+    }
+    setLoadingValues(true);
+    setErrorValues('');
+    fetch('/api/v1/portfolio/value', { credentials: 'include' })
+      .then(async res => {
+        if (res.status === 401) throw new Error('Пользователь не авторизован!');
+        if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+        return res.json();
+      })
+      .then((data: InstrumentValue[]) => {
+        setValues(Array.isArray(data) ? data : []);
+      })
+      .catch(err => setErrorValues(err.message || 'Ошибка загрузки стоимости инструментов'))
+      .finally(() => setLoadingValues(false));
+  }, [instruments.map(i => i.instrumentId).join(',')]);
+
+  // Объединяем инструменты с их стоимостью
+  const instrumentsWithValue = useMemo(() => {
+    if (!values.length) return instruments;
+    return instruments.map(inst => {
+      const val = values.find(v => v.instrumentId === inst.instrumentId);
+      return val ? { ...inst, totalPrice: val.totalPrice } : inst;
+    });
+  }, [instruments, values]);
+
+  const total = useMemo(() => instrumentsWithValue.reduce((sum, a) => sum + (a.totalPrice ?? (a.totalAmount * (a.price || 1))), 0), [instrumentsWithValue]);
   const totalUSDT = useMemo(() => total / 92, [total]);
-  const pie = useMemo(() => instruments.map(a => (a.totalAmount * (a.price || 1)) / (total || 1)), [instruments, total]);
+  const pie = useMemo(() => instrumentsWithValue.map(a => (a.totalPrice ?? (a.totalAmount * (a.price || 1))) / (total || 1)), [instrumentsWithValue, total]);
   const filtered = useMemo(() =>
-    instruments.filter(a =>
+    instrumentsWithValue.filter(a =>
       (a.symbol || '').toLowerCase().includes(search.toLowerCase()) ||
       (a.name || '').toLowerCase().includes(search.toLowerCase())
-    ), [search, instruments]
+    ), [search, instrumentsWithValue]
   );
 
   // Добавление/удаление инструментов (UI)
@@ -317,7 +360,7 @@ export default function AssetsSection() {
         {/* Диаграмма справа */}
         <div className="flex-1 flex justify-center md:justify-end mb-6 md:mb-0">
           <div className="p-4 rounded-2xl flex items-center justify-center w-full max-w-[360px] transition-all">
-            <Portfolio3DPie assets={instruments.map((a, i) => ({
+            <Portfolio3DPie assets={instrumentsWithValue.map((a, i) => ({
               symbol: a.symbol || String(a.instrumentId),
               name: a.name || '',
               percent: pie[i] * 100,
@@ -349,13 +392,13 @@ export default function AssetsSection() {
                 </div>
                 <span className="text-light-fg/80 dark:text-dark-brown text-[15px] truncate">{a.name}</span>
               </div>
-              <span className="text-[20px] font-bold text-green-600 dark:text-green-400 ml-auto whitespace-nowrap">₽ {formatNumber((a.price || 1) * (a.totalAmount || 0), 2)}</span>
+              <span className="text-[20px] font-bold text-green-600 dark:text-green-400 ml-auto whitespace-nowrap">₽ {formatNumber(a.totalPrice ?? (a.price || 1) * (a.totalAmount || 0), 2)}</span>
             </div>
             <div className="flex flex-row flex-wrap gap-6 items-center text-[15px] font-medium">
               <div className="flex flex-col"><span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Доступно</span><span className="font-mono text-[16px] font-bold text-light-fg dark:text-dark-fg">{formatNumber(a.availableAmount)}</span></div>
               <div className="flex flex-col"><span className="text-xs text-light-fg/60 dark:text-dark-brown/70">В ордерах</span><span className="font-mono text-[16px] text-light-fg/70 dark:text-gray-500">{a.blockedAmount ? formatNumber(a.blockedAmount) : '—'}</span></div>
               <div className="flex flex-col"><span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Всего</span><span className="font-mono text-[16px] text-light-fg dark:text-dark-fg">{formatNumber(a.totalAmount)}</span></div>
-              <div className="flex flex-col ml-auto"><span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Стоимость</span><span className="font-mono text-[16px] font-bold text-light-accent dark:text-dark-accent">₽ {formatNumber((a.price || 1) * (a.totalAmount || 0), 2)}</span></div>
+              <div className="flex flex-col ml-auto"><span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Стоимость</span><span className="font-mono text-[16px] font-bold text-light-accent dark:text-dark-accent">₽ {formatNumber(a.totalPrice ?? (a.price || 1) * (a.totalAmount || 0), 2)}</span></div>
             </div>
             <div className="flex gap-3 mt-2">
               <Button title="Пополнить" variant="gradient" size="sm" iconLeft={<FaPlus />} className="rounded-xl px-4 py-2" />

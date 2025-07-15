@@ -54,8 +54,15 @@ export default function HistorySection() {
   useEffect(() => {
     setLoading(true);
     setError('');
+    // Диапазон по умолчанию — за последний год
+    const now = Date.now();
+    const yearAgo = now - 365 * 24 * 60 * 60 * 1000;
     axios.get(API_URL, {
       headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+      params: {
+        from: yearAgo,
+        to: now,
+      },
     })
       .then(res => {
         if (Array.isArray(res.data)) {
