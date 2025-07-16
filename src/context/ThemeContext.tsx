@@ -31,11 +31,9 @@ export default function ThemeProvider({
 
   // Синхронизируем тему с DOM до первого рендера
   useLayoutEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    // Добавляем/убираем класс немедленно
+    document.documentElement.classList.toggle("dark", theme === "dark");
+
     Cookies.set("theme", theme, { expires: 365 });
     localStorage.setItem("wolf-street-theme", theme);
   }, [theme]);

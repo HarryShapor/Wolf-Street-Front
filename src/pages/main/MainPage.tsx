@@ -8,6 +8,7 @@ import ChartSection from "./section/ChartSection";
 import FAQSection from "./section/FAQSection";
 import { useScrollTracking } from "../../hooks/useScrollTracking";
 import { usePageAnimations } from "../../hooks/usePageAnimations";
+import { useSnapScroll } from "../../hooks/useSnapScroll";
 
 const NAV = [
   { id: "main", label: "Главная" },
@@ -29,8 +30,11 @@ export default function MainPage() {
   const { scrolled, activeSection } = useScrollTracking(NAV);
   const { headerVisible, heroVisible } = usePageAnimations();
 
+  // Добавляем snap scrolling
+  useSnapScroll();
+
   return (
-    <div className="min-h-screen w-full font-sans bg-light-bg text-light-fg dark:bg-dark-bg dark:text-dark-fg">
+    <div className="min-h-screen w-full font-sans bg-light-bg text-light-fg dark:bg-dark-bg dark:text-dark-fg scroll-smooth snap-y snap-mandatory overflow-y-scroll scrollbar-hide">
       {/* Header */}
       <Header
         NAV={NAV}

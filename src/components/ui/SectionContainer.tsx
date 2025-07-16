@@ -14,7 +14,7 @@ export default function SectionContainer({
   return (
     <section
       id={id}
-      className={`max-w-full min-h-screen h-screen flex flex-col justify-center p-0 m-0 
+      className={`snap-start max-w-full min-h-screen h-screen flex flex-col justify-center p-0 m-0 
         bg-light-bg dark:bg-dark-bg 
         border-b border-gray-800 dark:border-dark-border 
         ${className}`}

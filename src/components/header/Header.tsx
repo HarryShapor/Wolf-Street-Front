@@ -24,8 +24,17 @@ export default function Header({
   const searchBtnRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme(); // Получаем текущую тему
 
   const isMain = location.pathname === "/";
+
+  // Предзагружаем логотипы
+  useEffect(() => {
+    const lightLogo = new Image();
+    const darkLogo = new Image();
+    lightLogo.src = "/src/image/wolf_logo.svg";
+    darkLogo.src = "/src/image/wolf_logo_for_black.png";
+  }, []);
 
   const handleNavClick = (id: string) => {
     if (isMain) {
@@ -90,14 +99,24 @@ export default function Header({
           }}
         >
           <span className="text-[32px] relative inline-block w-12 h-12">
-            <span className="absolute inset-0 w-12 h-12 rounded-full bg-white/85 blur-lg z-0" />
+            {/* Светлый логотип */}
             <img
               src="/src/image/wolf_logo.svg"
               alt="logo"
-              className="w-12 h-12 relative z-10"
+              className={`w-12 h-12 absolute top-0 left-0 z-10 object-contain object-center transition-opacity duration-300 ease-in-out ${
+                theme === "light" ? "opacity-100" : "opacity-0"
+              }`}
+            />
+            {/* Темный логотип */}
+            <img
+              src="/src/image/wolf_logo_for_black.png"
+              alt="logo"
+              className={`w-12 h-12 absolute top-0 left-0 z-10 object-contain object-center transition-opacity duration-300 ease-in-out ${
+                theme === "dark" ? "opacity-100" : "opacity-0"
+              }`}
             />
           </span>
-          <span className="text-[22px] font-extrabold text-light-accent dark:text-dark-accent tracking-tight">
+          <span className="text-[22px] font-extrabold text-light-accent dark:text-dark-accent tracking-tight transition-colors duration-300">
             Wolf Street
           </span>
         </div>
@@ -177,18 +196,25 @@ export default function Header({
                 className="w-9 h-9 rounded-full bg-light-card dark:bg-dark-card flex items-center justify-center border border-light-border dark:border-dark-border shadow transition-all duration-200 hover:scale-110 hover:shadow-xl"
                 aria-label="Профиль"
               >
-                <svg className="w-6 h-6 text-light-fg dark:text-dark-fg" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <svg
+                  className="w-6 h-6 text-light-fg dark:text-dark-fg"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
                   <circle cx="12" cy="8" r="4" />
                   <path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4" />
                 </svg>
               </button>
               {menuOpen && (
-                <div
-                  className="absolute right-0 mt-2 w-40 bg-white dark:bg-dark-card shadow-lg rounded-lg z-50 border border-light-border dark:border-dark-border transition-all duration-200 origin-top-right animate-profile-menu"
-                >
+                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-dark-card shadow-lg rounded-lg z-50 border border-light-border dark:border-dark-border transition-all duration-200 origin-top-right animate-profile-menu">
                   <button
                     className="w-full text-left px-4 py-2 rounded-md transition-all duration-200 hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent active:bg-light-accent/20 dark:active:bg-dark-accent/20 hover:pl-6"
-                    onClick={() => { setMenuOpen(false); navigate("/portfolio"); }}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate("/portfolio");
+                    }}
                   >
                     Профиль
                   </button>
