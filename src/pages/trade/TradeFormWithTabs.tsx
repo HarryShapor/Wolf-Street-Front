@@ -29,7 +29,8 @@ const TradeFormWithTabs: React.FC = () => {
   const [instrument, setInstrument] = useState<string>('');
   const [amount, setAmount] = useState('');
   const [price, setPrice] = useState(65000);
-  const [toastOpen, setToastOpen] = useState(false);
+  // --- toast state ---
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' }>({ open: false, message: '', type: 'success' });
 
   React.useEffect(() => {
     if (instruments.length && !instrument) {
@@ -52,7 +53,15 @@ const TradeFormWithTabs: React.FC = () => {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: интеграция с API
+    if (!amount || Number(amount) <= 0) {
+      setToast({ open: true, message: 'Укажите количество', type: 'error' });
+      return;
+    }
+    const selectedInstrument = instruments.find(inst => inst.ticker === instrument);
+    if (!selectedInstrument) {
+      setToast({ open: true, message: 'Инструмент не выбран!', type: 'error' });
+      return;
+    }
     try {
       const res = await fetch(`${API_HOST}/order-service/api/v1/orders`, {
         method: 'POST',
@@ -63,17 +72,21 @@ const TradeFormWithTabs: React.FC = () => {
         body: JSON.stringify({
           portfolioId: 1, // TODO: заменить на реальный id портфеля пользователя
           lotPrice: price,
-          instrumentId: 1, // TODO: заменить на реальный id инструмента
+          instrumentId: selectedInstrument.instrumentId,
           count: Number(amount),
           type: tab === 'buy' ? 'BUY' : 'SELL',
         })
       });
       if (res.status === 401) throw new Error('Пользователь не авторизован!');
-      if (!res.ok) throw new Error('Ошибка создания заявки');
+      if (!res.ok) {
+        let errorText = '';
+        try { errorText = (await res.json()).message; } catch { errorText = await res.text(); }
+        throw new Error(errorText || 'Ошибка создания заявки');
+      }
       setAmount('');
-      setToastOpen(true);
+      setToast({ open: true, message: 'Заявка успешно создана!', type: 'success' });
     } catch (err: any) {
-      alert(err.message || 'Ошибка создания заявки');
+      setToast({ open: true, message: err.message || 'Ошибка создания заявки', type: 'error' });
     }
   }
 
@@ -167,11 +180,12 @@ const TradeFormWithTabs: React.FC = () => {
           {/* Кнопка */}
           <button
             type="submit"
+            disabled={!amount || Number(amount) <= 0}
             className={`w-full mt-2 py-2 rounded-xl font-bold text-base transition-all duration-150
             ${tab === 'buy'
               ? 'bg-light-success/90 text-white dark:bg-dark-accent/90 dark:text-dark-bg hover:bg-light-success dark:hover:bg-dark-accent'
               : 'bg-[#e0a6a6] text-[#7a3a3a] dark:bg-[#6d2323] dark:text-[#e0a6a6] hover:bg-[#e7c3c3] dark:hover:bg-[#8b3232]'}
-          `}
+            ${!amount || Number(amount) <= 0 ? ' opacity-50 cursor-not-allowed' : ''}`}
           >
             {tab === 'buy' ? 'Купить' : 'Продать'} {instrument}
           </button>
@@ -190,11 +204,11 @@ const TradeFormWithTabs: React.FC = () => {
         </style>
       </div>
       <ToastModal
-        open={toastOpen}
-        onClose={() => setToastOpen(false)}
-        message="Заявка успешно создана!"
-        type="success"
-        duration={2000}
+        open={toast.open}
+        onClose={() => setToast(t => ({ ...t, open: false }))}
+        message={toast.message}
+        type={toast.type}
+        duration={2500}
       />
     </>
   );
