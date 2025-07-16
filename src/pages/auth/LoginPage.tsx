@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import LoginForm from "./components/LoginForm";
 import AuthPromoBanner from "./components/AuthPromoBanner";
 import AuthSuccessMessage from "../../components/ui/AuthSuccessMessage";
-import ToastModal from '../../components/ui/ToastModal';
+import ToastModal from '../trade/ToastModal';
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import { loginUser, saveTokens } from "../../services/auth/Login";

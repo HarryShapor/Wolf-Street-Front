@@ -5,7 +5,7 @@ import TradeSection from './TradeSection';
 import BalanceSection from './BalanceSection';
 // import AssetsSection from './AssetsSection';
 import HistorySection from './HistorySection';
-import { getCurrencyRates } from '../../services/Api';
+import { getCurrencyRates, API_HOST } from '../../services/Api';
 import clsx from 'clsx';
 import ProfileHeader from './components/ProfileHeader';
 import Card from '../../components/ui/Card';
@@ -254,7 +254,7 @@ function CurrencyRatesCard({ rates, loading, error, onRefresh, compact = false }
   );
 }
 
-const API_BASE = "http://89.169.183.192:8080/user-service/api/v1";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () => void }) {
   // Все хуки должны быть до любых return/if!
@@ -381,7 +381,7 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   useEffect(() => {
     setInstrumentsLoading(true);
     setInstrumentsError('');
-    fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/instruments', {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
     })
       .then(async res => {
@@ -448,7 +448,7 @@ function StepperPanel({
   useEffect(() => {
     setWalletLoading(true);
     setWalletError('');
-    fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/cash', {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
     })
       .then(async res => {

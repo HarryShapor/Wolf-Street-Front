@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { FaLock, FaCreditCard, FaApple, FaGoogle, FaWallet, FaArrowRight } from 'react-icons/fa';
 import Button from '../../components/ui/Button';
+import { API_HOST } from '../../services/Api';
 
 const quickAmounts = [1000, 5000, 10000, 50000];
 const methods = [
@@ -27,7 +28,7 @@ export default function DepositSection() {
   useEffect(() => {
     setBalanceLoading(true);
     setBalanceError('');
-    fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/cash', {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
     })
       .then(async res => {
@@ -53,7 +54,7 @@ export default function DepositSection() {
     setDepositError('');
     setDepositSuccess(false);
     try {
-      const res = await fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/cash', {
+      const res = await fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +71,7 @@ export default function DepositSection() {
       // Повторно получить баланс
       setBalanceLoading(true);
       setBalanceError('');
-      fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/cash', {
+      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       })
         .then(async res => {

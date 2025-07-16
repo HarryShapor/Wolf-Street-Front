@@ -3,6 +3,7 @@ import axios from 'axios';
 import Modal from '../../../components/ui/Modal';
 import DEFAULT_AVATAR_SVG from '../../../components/ui/defaultAvatar';
 import { uploadUserAvatar } from '../../../services/AvatarService';
+import { API_HOST } from '../../../services/Api';
 
 interface ModalEditProfileProps {
   open: boolean;
@@ -13,7 +14,7 @@ interface ModalEditProfileProps {
   onSave: (data: { nickname: string; avatar: string; avatarFile: File | null }) => void;
 }
 
-const API_BASE = "http://89.169.183.192:8080/user-service/api/v1";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
   open,

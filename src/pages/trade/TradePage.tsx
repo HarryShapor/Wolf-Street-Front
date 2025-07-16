@@ -4,18 +4,21 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Header from '../../components/header/Header';
 import CustomSelect from '../../components/ui/CustomSelect';
-import OrderBook from '../../components/ui/OrderBook';
-import TradeChart from '../../components/ui/TradeChart';
-import TradeForm from '../../components/ui/TradeForm';
-import TradesList from '../../components/ui/TradesList';
-import InstrumentSelector from '../../components/ui/InstrumentSelector';
+import OrderBook from './OrderBook';
+import TradeChart from './TradeChart';
+import TradesList from './TradesList';
+import InstrumentSelector from './InstrumentSelector';
+import TradeFormWithTabs from './TradeFormWithTabs';
+import UserOrdersSection from '../portfolio/components/UserOrdersSection';
+import { API_HOST } from '../../services/Api';
 
-const mockInstruments = [
-  { symbol: 'BTC', name: 'Bitcoin', price: 65000, change: 2.1 },
-  { symbol: 'ETH', name: 'Ethereum', price: 3500, change: -1.2 },
-  { symbol: 'TON', name: 'Toncoin', price: 7, change: 0.5 },
-  { symbol: 'USDT', name: 'Tether', price: 1, change: 0.0 },
-];
+// Тип для инструмента
+export interface Instrument {
+  instrumentId: number;
+  ticker: string;
+  title: string;
+  // можно добавить price, change, если появятся в API
+}
 
 const initialPositions = [
   { symbol: 'BTC', amount: 0.02, entry: 60000, pnl: 1000 },
@@ -51,7 +54,8 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
     if (!instrumentId) return;
     setLoading(true);
     setError(null);
-    fetch(`http://89.169.183.192:8080/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`)
+    // fetch(`${API_HOST}/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`)
+    fetch(`${API_HOST}/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`)
       .then(res => {
         if (!res.ok) throw new Error('Ошибка получения ордербука');
         return res.json();
@@ -81,7 +85,8 @@ function useOhlcData(instrumentId: number, interval: string, hours: number = 12)
     const toISO = to.toISOString();
     setLoading(true);
     setError(null);
-    fetch(`http://89.169.183.192:8080/market-data-service/api/v1/ohlc/${instrumentId}?interval=${interval}&from=${fromISO}&to=${toISO}`)
+    // fetch(`${API_HOST}/market-data-service/api/v1/ohlc/${instrumentId}?interval=${interval}&from=${fromISO}&to=${toISO}`)
+    fetch(`${API_HOST}/market-data-service/api/v1/ohlc/${instrumentId}?interval=${interval}&from=${fromISO}&to=${toISO}`)
       .then(res => {
         if (!res.ok) throw new Error('Ошибка получения данных для графика');
         return res.json();
@@ -94,8 +99,35 @@ function useOhlcData(instrumentId: number, interval: string, hours: number = 12)
   return { data, loading, error };
 }
 
+// Новый хук для загрузки инструментов
+function useInstruments() {
+  const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    fetch(`${API_HOST}/instrument-service/api/v1/instruments`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Ошибка загрузки инструментов');
+        return res.json();
+      })
+      .then(setInstruments)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { instruments, loading, error };
+}
+
 export default function TradePage() {
-  const [selected, setSelected] = useState(mockInstruments[0]);
+  const { instruments, loading: loadingInstruments, error: errorInstruments } = useInstruments();
+  const [selected, setSelected] = useState<Instrument | null>(null);
   const [amount, setAmount] = useState('');
   const [side, setSide] = useState<'buy'|'sell'>('buy');
   const [search, setSearch] = useState('');
@@ -104,21 +136,24 @@ export default function TradePage() {
   const [balance] = useState(mockBalance);
   const [orderType, setOrderType] = useState<'limit'|'market'>('limit');
 
-  const filtered = mockInstruments.filter(inst =>
-    inst.symbol.toLowerCase().includes(search.toLowerCase()) ||
-    inst.name.toLowerCase().includes(search.toLowerCase())
+  // Выбор первого инструмента после загрузки
+  useEffect(() => {
+    if (instruments.length && !selected) {
+      setSelected(instruments[0]);
+    }
+  }, [instruments, selected]);
+
+  const filtered = instruments.filter(inst =>
+    inst.ticker.toLowerCase().includes(search.toLowerCase()) ||
+    inst.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const price = selected.price;
-  const change = selected.change;
-  const total = amount ? (parseFloat(amount) * price).toFixed(2) : '';
-
-  // Для примера: сопоставим symbol -> instrumentId (BTC=1, ETH=4, TON=5, USDT=6)
-  const symbolToId: Record<string, number> = { BTC: 1, ETH: 4, TON: 5, USDT: 6 };
-  const instrumentId = symbolToId[selected.symbol] || 1;
+  // Для примера: сопоставим ticker -> instrumentId
+  const symbolToId = Object.fromEntries(instruments.map(inst => [inst.ticker, inst.instrumentId]));
+  const instrumentId = selected ? symbolToId[selected.ticker] : undefined;
   // Используем instrumentId для стакана и графика
-  const { sell: orderBookSell, buy: orderBookBuy, loading: loadingOrderBook, error: errorOrderBook } = useOrderBook(instrumentId, 8);
-  const { data: ohlcData, loading: loadingOhlc, error: errorOhlc } = useOhlcData(instrumentId, timeframe, 12);
+  const { sell: orderBookSell, buy: orderBookBuy, loading: loadingOrderBook, error: errorOrderBook } = useOrderBook(instrumentId ?? 0, 8);
+  const { data: ohlcData, loading: loadingOhlc, error: errorOhlc } = useOhlcData(instrumentId ?? 0, timeframe, 12);
 
   // Моки для Header (минимально необходимые пропсы)
   const headerProps = {
@@ -132,18 +167,18 @@ export default function TradePage() {
   };
 
   function handleAllClick() {
-    setAmount((balance / price).toFixed(6));
+    setAmount((balance / 1).toFixed(6)); // price неизвестен, ставим 1
   }
 
   function handleTrade(e: React.FormEvent) {
     e.preventDefault();
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) return;
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0 || !selected) return;
     setPositions(prev => [
       ...prev,
       {
-        symbol: selected.symbol,
+        symbol: selected.ticker,
         amount: Number(amount),
-        entry: price,
+        entry: 0, // price неизвестен
         pnl: 0,
       },
     ]);
@@ -151,21 +186,27 @@ export default function TradePage() {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-16">
       <Header {...headerProps} />
       <div className="pt-28 flex flex-row w-full max-w-[1300px] mx-auto gap-8 items-start px-4 md:px-8 lg:px-0">
         {/* Левая колонка: селектор инструмента + ордербук */}
         <div className="w-[18%] min-w-[210px] flex flex-col">
-          <InstrumentSelector
-            value={selected.symbol}
-            onChange={symbol => {
-              const found = mockInstruments.find(inst => inst.symbol === symbol);
-              if (found) setSelected(found);
-            }}
-            options={mockInstruments}
-          />
+          {loadingInstruments ? (
+            <div className="text-center py-8">Загрузка инструментов...</div>
+          ) : errorInstruments ? (
+            <div className="text-center text-red-500 py-8">{errorInstruments}</div>
+          ) : (
+            <InstrumentSelector
+              value={selected?.ticker || ''}
+              onChange={ticker => {
+                const found = instruments.find(inst => inst.ticker === ticker);
+                if (found) setSelected(found);
+              }}
+              options={filtered.map(inst => ({ symbol: inst.ticker, name: inst.title }))}
+            />
+          )}
           <OrderBook
-            price={price}
+            price={0}
             orderBookSell={orderBookSell}
             orderBookBuy={orderBookBuy}
             loadingOrderBook={loadingOrderBook}
@@ -179,30 +220,23 @@ export default function TradePage() {
             loading={loadingOhlc}
             error={errorOhlc}
             selected={selected}
-            price={price}
-            change={change}
+            price={0}
+            change={0}
             timeframe={timeframe}
             setTimeframe={setTimeframe}
           />
-          <TradeForm
-            selected={selected}
-            amount={amount}
-            setAmount={setAmount}
-            side={side}
-            setSide={setSide}
-            orderType={orderType}
-            setOrderType={setOrderType}
-            price={price}
-            total={total}
-            balance={balance}
-            handleAllClick={handleAllClick}
-            handleTrade={handleTrade}
-          />
         </div>
-        {/* Правая колонка: сделки */}
+        {/* Правая колонка: сделки + форма */}
         <div className="w-[22%] min-w-[250px] flex flex-col">
           <TradesList trades={mockTrades.map(t => ({ ...t, side: t.side as 'buy' | 'sell' }))} />
+          <div className="mt-2">
+            <TradeFormWithTabs />
+          </div>
         </div>
+      </div>
+      {/* Секция заявок пользователя вынесена и изолирована */}
+      <div className="max-w-[1500px] mx-auto px-4 md:px-8 lg:px-0 mt-16 mb-4">
+        <UserOrdersSection />
       </div>
     </div>
   );

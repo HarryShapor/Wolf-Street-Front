@@ -38,15 +38,15 @@ const ToastModal: React.FC<ToastModalProps> = ({ open, onClose, title, message, 
 
   if (!open) return null;
 
-  let iconBg = "bg-light-accent/20 text-light-accent dark:bg-dark-accent/20 dark:text-dark-accent";
-  let border = "border-light-accent dark:border-dark-accent";
+  let iconBg = "bg-light-accent/10 text-light-accent dark:bg-dark-accent/10 dark:text-dark-accent";
+  let border = "border-light-accent/60 dark:border-dark-accent/60";
   if (type === "error") {
-    iconBg = "bg-red-500/20 text-red-500";
-    border = "border-red-500 dark:border-red-400";
+    iconBg = "bg-light-error/10 text-light-error dark:bg-error/10 dark:text-error";
+    border = "border-light-error/60 dark:border-error/60";
   }
   if (type === "info") {
-    iconBg = "bg-blue-500/20 text-blue-500";
-    border = "border-blue-500 dark:border-blue-400";
+    iconBg = "bg-light-fg/10 text-light-fg dark:bg-dark-fg/10 dark:text-dark-fg";
+    border = "border-light-fg/40 dark:border-dark-fg/40";
   }
 
   return (

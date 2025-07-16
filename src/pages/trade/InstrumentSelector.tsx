@@ -1,5 +1,5 @@
 import React from 'react';
-import CustomSelect from './CustomSelect';
+import CustomSelect from '../../components/ui/CustomSelect';
 
 interface InstrumentSelectorProps {
   value: string;

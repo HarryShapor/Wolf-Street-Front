@@ -15,8 +15,10 @@ import { LoaderBlock, ErrorBlock } from '../../components/ui/LoadingButton';
 import Modal from '../../components/ui/Modal';
 import DEFAULT_AVATAR_SVG from '../../components/ui/defaultAvatar';
 import { getUserAvatarUrl } from '../../services/AvatarService';
+import { API_HOST } from '../../services/Api';
 
-const API_BASE = "http://89.169.183.192:8080/user-service/api/v1";
+// const API_BASE = "http://158.160.190.168:8080/user-service/api/v1";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 const PASSWORD_COOKIE_KEY = "password";
 const PASSWORD_ENCRYPT_KEY = "demo-key";
 

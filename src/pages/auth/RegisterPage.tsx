@@ -4,7 +4,7 @@ import AuthFormHeader from "./components/AuthFormHeader";
 import AuthFormFooter from "./components/AuthFormFooter";
 import RegisterForm from "./components/RegisterForm";
 import AuthSuccessMessage from "../../components/ui/AuthSuccessMessage";
-import ToastModal from '../../components/ui/ToastModal';
+import ToastModal from '../trade/ToastModal';
 
 const RegisterPage: React.FC = () => {
   const [success, setSuccess] = useState(false);

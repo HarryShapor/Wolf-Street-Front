@@ -4,12 +4,13 @@ import AuthFormHeader from "./components/AuthFormHeader";
 import AuthFormFooter from "./components/AuthFormFooter";
 import ErrorAlert from "../../components/ui/ErrorAlert";
 import axios from "axios";
+import { API_HOST } from '../../services/Api';
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-const API_BASE = "http://89.169.183.192:8080/user-service/api/v1";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 const ForgotPasswordPage: React.FC = () => {
   const query = useQuery();

@@ -12,18 +12,20 @@ import TradePage from "./pages/trade/TradePage";
 export default function App() {
   useAutoRefreshToken();
   return (
-    <Router>
-      <Routes>
-        {/* <AppRoutes /> */}
-        {/* <Route path="/" element={<Navigate to="/register" replace />} /> */}
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/" element={<MainPage />} />
-        <Route path="/portfolio" element={<PortfolioPage />} />
-        <Route path="/instruments" element={<InstrumentsPage />} />
-        <Route path="/trade" element={<TradePage />} />
-      </Routes>
-    </Router>
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
+      <Router>
+        <Routes>
+          {/* <AppRoutes /> */}
+          {/* <Route path="/" element={<Navigate to="/register" replace />} /> */}
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/" element={<MainPage />} />
+          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/instruments" element={<InstrumentsPage />} />
+          <Route path="/trade" element={<TradePage />} />
+        </Routes>
+      </Router>
+    </div>
   );
 }

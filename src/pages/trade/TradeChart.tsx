@@ -1,13 +1,15 @@
 import React from 'react';
-import Card from './Card';
-import Button from './Button';
-import CandlestickChart from './CandlestickChart';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import CandlestickChart from '../../components/ui/CandlestickChart';
+
+import type { Instrument } from './TradePage';
 
 interface TradeChartProps {
   data: any[];
   loading: boolean;
   error: string | null;
-  selected: { symbol: string; name: string };
+  selected: Instrument | null;
   price: number;
   change: number;
   timeframe: string;
@@ -20,7 +22,7 @@ const TradeChart: React.FC<TradeChartProps> = ({ data, loading, error, selected,
   <Card className="flex-1 p-6 flex flex-col bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border gap-4 rounded-2xl shadow-sm">
     <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-2">
       <div>
-        <h2 className="font-semibold text-2xl text-light-fg dark:text-dark-fg">{selected.symbol} / USD</h2>
+        <h2 className="font-semibold text-2xl text-light-fg dark:text-dark-fg">{selected ? selected.ticker : ''} / USD</h2>
         <div className="flex items-center gap-3 mt-2">
           <span className="text-xl font-bold text-light-fg dark:text-dark-fg">${price}</span>
           <span className={`text-base font-semibold ${change > 0 ? 'text-light-success dark:text-dark-accent' : change < 0 ? 'text-light-error dark:text-error' : 'text-light-fg-secondary dark:text-dark-brown'}`}>{change > 0 ? '+' : ''}{change}%</span>

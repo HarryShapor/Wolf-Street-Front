@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_HOST } from '../../services/Api';
 
-const API_URL = 'http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/value';
+const API_URL = `${API_HOST}/portfolio-service/api/v1/portfolio/value`;
 
 export default function BalanceSection() {
   const [loading, setLoading] = useState(true);

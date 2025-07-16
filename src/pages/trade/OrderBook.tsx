@@ -1,5 +1,5 @@
 import React from 'react';
-import Card from './Card';
+import Card from '../../components/ui/Card';
 
 interface OrderBookProps {
   price: number;
@@ -11,13 +11,13 @@ interface OrderBookProps {
 
 const OrderBook: React.FC<OrderBookProps> = ({ price, orderBookSell, orderBookBuy, loadingOrderBook, errorOrderBook }) => {
   return (
-    <div className="flex-1 mb-6 overflow-hidden rounded-2xl group transition-colors duration-200 border border-light-border/40 dark:border-dark-border/40 group-hover:border-light-accent/40 dark:group-hover:border-dark-accent/40" style={{boxShadow: 'inset 0 6px 32px 0 rgba(0,0,0,0.22), inset 0 -2px 8px 0 rgba(0,0,0,0.18)'}}>
+    <div className="flex-1 overflow-hidden rounded-2xl group transition-colors duration-200 border border-light-border/40 dark:border-dark-border/40 group-hover:border-light-accent/40 dark:group-hover:border-dark-accent/40" style={{boxShadow: 'inset 0 6px 32px 0 rgba(0,0,0,0.22), inset 0 -2px 8px 0 rgba(0,0,0,0.18)'}}>
       <Card className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl shadow-inner h-full">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="font-extrabold text-light-fg dark:text-dark-fg text-base tracking-wide text-center flex-1">Биржевой стакан</h3>
           </div>
-          <div className="flex-1 flex flex-col gap-1 max-h-80 min-h-80">
+          <div className="flex-1 flex flex-col gap-1 h-80">
             <div className="flex-1 flex flex-col-reverse overflow-y-auto gap-1">
               {/* Sell Orders (Ask) — сверху */}
               {(() => {

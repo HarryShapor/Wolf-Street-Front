@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import axios from 'axios';
+import { API_HOST } from '../services/Api';
 
-const API_BASE = 'http://89.169.183.192:8080/user-service/api/v1';
+// const API_BASE = `${API_HOST}/user-service/api/v1`;
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 export default function useAutoRefreshToken() {
   useEffect(() => {
     const refreshTokenFn = async () => {
+      // Не делать refresh на странице /login
+      if (window.location.pathname === '/login') return;
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) return;
       try {
@@ -23,7 +27,10 @@ export default function useAutoRefreshToken() {
       } catch (err) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        // Не делать redirect, если уже на /login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     };
     // Первый вызов сразу при монтировании

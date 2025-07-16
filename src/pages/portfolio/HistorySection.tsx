@@ -3,27 +3,34 @@ import { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { FaArrowDown, FaArrowUp, FaShoppingCart, FaExchangeAlt } from 'react-icons/fa';
 import { Listbox } from '@headlessui/react';
+import { API_HOST } from '../../services/Api';
 
-const API_URL = 'http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/history';
+const API_URL = `${API_HOST}/order-service/api/v1/orders`;
 
 // Преобразование данных API к формату таблицы
 function mapApiToTable(item: any) {
-  // dealType: string, instrumentId: number, count: number, lotPrice: number, totalAmount: number, completedAt: string
+  // orderId, instrumentId, count, lotPrice, type, status, createdAt
   let type = '';
-  switch (item.dealType) {
-    case 'DEPOSIT': type = 'Пополнение'; break;
-    case 'WITHDRAW': type = 'Вывод'; break;
+  switch (item.type) {
     case 'BUY': type = 'Покупка'; break;
-    case 'SELL': type = 'Продажа'; break;
-    default: type = item.dealType;
+    case 'SALE': type = 'Продажа'; break;
+    default: type = item.type;
   }
-  // Можно добавить статус по логике, если появится
+  let status = '';
+  switch (item.status) {
+    case 'NEW': status = 'В обработке'; break;
+    case 'PARTIALLY_EXECUTED': status = 'В обработке'; break;
+    case 'EXECUTED': status = 'Успешно'; break;
+    case 'PARTIALLY_CANCELLED': status = 'Ошибка'; break;
+    case 'CANCELLED': status = 'Ошибка'; break;
+    default: status = item.status;
+  }
   return {
-    id: item.instrumentId + '_' + item.completedAt,
-    date: item.completedAt ? new Date(item.completedAt).toLocaleDateString('ru-RU') : '',
+    id: item.orderId,
+    date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ru-RU') + ', ' + new Date(item.createdAt).toLocaleTimeString('ru-RU') : '',
     type,
-    amount: item.totalAmount,
-    status: 'Успешно', // TODO: если появится статус в API, заменить
+    amount: item.lotPrice && item.count ? item.lotPrice * item.count : 0,
+    status,
   };
 }
 
@@ -54,31 +61,22 @@ export default function HistorySection() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    // Диапазон по умолчанию — за последний год
-    const now = Date.now();
-    const yearAgo = now - 365 * 24 * 60 * 60 * 1000;
-    axios.get(API_URL, {
+    fetch(API_URL, {
       headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      params: {
-        from: yearAgo,
-        to: now,
-      },
     })
       .then(res => {
-        if (Array.isArray(res.data)) {
-          setData(res.data.map(mapApiToTable));
+        if (!res.ok) throw new Error('Ошибка загрузки истории заявок');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setData(data.map(mapApiToTable));
         } else {
           setData([]);
         }
       })
       .catch(err => {
-        if (err.response && err.response.status === 401) {
-          setError('Пользователь не авторизован!');
-        } else if (err.response && err.response.status === 404) {
-          setError('Портфель пользователя не найден!');
-        } else {
-          setError('Ошибка загрузки истории операций');
-        }
+        setError(err.message || 'Ошибка загрузки истории заявок');
         setData([]);
       })
       .finally(() => setLoading(false));

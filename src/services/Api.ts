@@ -1,7 +1,10 @@
 import axios from "axios";
 
+export const API_HOST = "http://158.160.190.168:8080";
+
 const api = axios.create({
-  baseURL: "http://89.169.183.192:8080/user-service/api/v1",
+  // baseURL: `${API_HOST}/user-service/api/v1`,
+  baseURL: `${API_HOST}/user-service/api/v1`,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -66,7 +69,8 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
       try {
-        const res = await axios.post("http://89.169.183.192:8080/user-service/api/v1/auth/refresh_token", { refreshToken });
+        // const res = await axios.post(`${API_HOST}/user-service/api/v1/auth/refresh_token`, { refreshToken });
+        const res = await axios.post(`${API_HOST}/user-service/api/v1/auth/refresh_token`, { refreshToken });
         const newAccessToken = res.data.accessToken;
         const newRefreshToken = res.data.refreshToken;
         localStorage.setItem("accessToken", newAccessToken);

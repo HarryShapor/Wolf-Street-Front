@@ -107,7 +107,12 @@ export default function CustomSelect({ value, onChange, options, label, placehol
         </span>
       </button>
       {open && createPortal(
-        <ul ref={listRef} style={dropdownStyle} className="bg-white dark:bg-dark-card bg-opacity-100 dark:bg-opacity-100 border border-white dark:border-dark-card rounded-xl shadow-2xl max-h-60 overflow-auto text-sm z-[9999] py-1 font-sans" role="listbox">
+        <ul
+          ref={listRef}
+          style={dropdownStyle}
+          className="bg-white dark:bg-dark-card bg-opacity-100 dark:bg-opacity-100 border border-white dark:border-dark-card rounded-xl shadow-2xl max-h-60 overflow-auto text-sm py-1 font-sans"
+          role="listbox"
+        >
           {options.map((opt, i) => (
             <li
               key={opt.value}
@@ -118,7 +123,7 @@ export default function CustomSelect({ value, onChange, options, label, placehol
                 ${value === opt.value ? "bg-light-accent/20 dark:bg-dark-accent/20 font-bold text-light-accent dark:text-dark-accent" : "text-light-fg dark:text-dark-fg font-normal"}
                 ${highlighted === i ? "bg-light-accent/10 dark:bg-dark-accent/10" : ""}
               `}
-              onClick={() => { if (!opt.disabled) { onChange(opt.value); setOpen(false); } }}
+              onMouseDown={() => { if (!opt.disabled) { console.log('clicked', opt.value); onChange(opt.value); setOpen(false); } }}
               onMouseEnter={() => setHighlighted(i)}
             >
               <span className="truncate">{opt.label}</span>

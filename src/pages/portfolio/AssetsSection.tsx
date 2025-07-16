@@ -7,6 +7,7 @@ import tonIcon from '../../image/crypto/ton.svg';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { Portfolio3DPie } from './ProfileSection';
+import { API_HOST } from '../../services/Api';
 
 // Тип для инструмента
 interface Instrument {
@@ -97,7 +98,7 @@ function PieChart({ pie, colors, size = 220 }: { pie: number[]; colors: string[]
 // --- Добавление и удаление инструмента (тестовые кнопки) ---
 async function addInstrument(instrumentId: number, onResult: (err?: string) => void) {
   try {
-    const res = await fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/instruments', {
+    const res = await fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ async function addInstrument(instrumentId: number, onResult: (err?: string) => v
 
 async function deleteInstrument(instrumentId: number, onResult: (err?: string) => void) {
   try {
-    const res = await fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/instruments', {
+    const res = await fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -143,7 +144,7 @@ export default function AssetsSection() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/instruments', {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
     })
       .then(async res => {
@@ -174,7 +175,7 @@ export default function AssetsSection() {
     }
     setLoadingValues(true);
     setErrorValues('');
-    fetch('/api/v1/portfolio/value', { credentials: 'include' })
+    fetch(`${API_HOST}/api/v1/portfolio/value`, { credentials: 'include' })
       .then(async res => {
         if (res.status === 401) throw new Error('Пользователь не авторизован!');
         if (res.status === 404) throw new Error('Портфель пользователя не найден!');
@@ -220,7 +221,7 @@ export default function AssetsSection() {
       setActionLoading(false);
       // Обновить список инструментов
       setLoading(true);
-      fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/instruments', {
+      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       })
         .then(async res => res.json())
@@ -245,7 +246,7 @@ export default function AssetsSection() {
       setActionLoading(false);
       // Обновить список инструментов
       setLoading(true);
-      fetch('http://89.169.183.192:8080/portfolio-service/api/v1/portfolio/instruments', {
+      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       })
         .then(async res => res.json())
