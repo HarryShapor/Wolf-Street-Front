@@ -9,6 +9,8 @@ import btcIcon from "../../image/crypto/bitcoin.svg";
 import ethIcon from "../../image/crypto/ethereum.svg";
 import usdtIcon from "../../image/crypto/usdt.svg";
 import tonIcon from "../../image/crypto/ton.svg";
+import { useInstrumentImages } from '../../hooks/useInstrumentImages';
+import { useInstrumentMarketData } from '../../hooks/useInstrumentMarketData';
 
 const TYPE_FILTERS = [
   { label: "Все", value: "all" },
@@ -77,6 +79,9 @@ function FloatingCurrenciesBackground() {
 
 export default function InstrumentsPage() {
   const { instruments, loading, error } = useInstruments();
+  const ids = instruments.map(inst => inst.instrumentId);
+  const { images, loading: loadingImages } = useInstrumentImages(ids);
+  const { prices, loading: loadingPrices } = useInstrumentMarketData(ids);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("alpha-asc");
@@ -147,7 +152,7 @@ export default function InstrumentsPage() {
         ) : error ? (
           <div className="text-center text-red-500 py-8">{error}</div>
         ) : (
-          <InstrumentsList instruments={filtered} cardsVisible={cardsVisible} />
+          <InstrumentsList instruments={filtered} cardsVisible={cardsVisible} images={images} loadingImages={loadingImages || loadingPrices} prices={prices} />
         )}
       </main>
       <Footer />

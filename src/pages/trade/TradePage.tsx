@@ -170,7 +170,7 @@ export default function TradePage() {
                 const found = instruments.find(inst => inst.ticker === ticker);
                 if (found) setSelected(found);
               }}
-              options={filtered.map(inst => ({ symbol: inst.ticker, name: inst.title }))}
+              options={filtered.map(inst => ({ name: inst.ticker }))}
             />
           )}
           <OrderBook

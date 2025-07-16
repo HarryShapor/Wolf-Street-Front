@@ -1,40 +1,47 @@
 import { useState, useEffect } from 'react';
 import { API_HOST } from '../services/Api';
 
+// Кэш цен на уровне модуля
+const priceCache: Record<number, number | null> = {};
+
 export function useInstrumentMarketData(instrumentIds: number[]) {
-  const [prices, setPrices] = useState<Record<number, number>>({});
+  const [prices, setPrices] = useState<Record<number, number | null>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!instrumentIds.length) {
-      setPrices({});
+    const validIds = instrumentIds.filter(id => typeof id === 'number' && !isNaN(id));
+    const idsToFetch = validIds.filter(id => !(id in priceCache));
+    if (!idsToFetch.length) {
+      setPrices(Object.fromEntries(validIds.map(id => [id, priceCache[id]])));
       return;
     }
     setLoading(true);
     setError(null);
 
     Promise.all(
-      instrumentIds.map(id =>
+      idsToFetch.map(id =>
         fetch(`${API_HOST}/market-data-service/api/v1/orderbook/${id}?limitOrders=1`)
-          .then(res => res.ok ? res.json() : null)
-          .then(data => ({
-            id,
-            price: data && data.asks && data.asks.length > 0 ? data.asks[0].price : null
-          }))
+          .then(res => {
+            if (res.status === 404) return { id, price: null }; // кэшируем отсутствие стакана
+            if (!res.ok) return null;
+            return res.json().then(data => ({
+              id,
+              price: data && data.asks && data.asks.length > 0 ? data.asks[0].price : null
+            }));
+          })
           .catch(() => ({ id, price: null }))
       )
     )
       .then(results => {
-        const priceMap: Record<number, number> = {};
-        results.forEach(({ id, price }) => {
-          if (price !== null) priceMap[id] = price;
+        results.forEach(result => {
+          if (result && 'id' in result) priceCache[result.id] = result.price;
         });
-        setPrices(priceMap);
+        setPrices(Object.fromEntries(validIds.map(id => [id, priceCache[id]])));
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [instrumentIds]);
+  }, [instrumentIds.join(',')]);
 
   return { prices, loading, error };
 } 

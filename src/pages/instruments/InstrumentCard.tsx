@@ -5,7 +5,7 @@ interface InstrumentCardProps {
   title: string;
   ticker: string;
   icon?: string;
-  price?: number;
+  price?: number | null;
   visible: boolean;
   index: number;
   fullHeight?: boolean;
@@ -33,7 +33,7 @@ export default function InstrumentCard({ title, ticker, icon, price, visible, in
         <div className="text-lg font-semibold mb-2">{title}</div>
         <div className="flex items-center gap-2 mt-2">
           <span className="text-xs font-medium opacity-60">Текущая цена:</span>
-          <span className="text-base font-bold">{price !== undefined ? price : '—'}</span>
+          <span className="text-base font-bold">{price !== undefined && price !== null ? price : '—'}</span>
         </div>
       </Card>
     </div>

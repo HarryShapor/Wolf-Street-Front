@@ -4,7 +4,7 @@ import CustomSelect from '../../components/ui/CustomSelect';
 interface InstrumentSelectorProps {
   value: string;
   onChange: (v: string) => void;
-  options: { symbol: string; name: string }[];
+  options: { name: string }[];
 }
 
 const InstrumentSelector: React.FC<InstrumentSelectorProps> = ({ value, onChange, options }) => {
@@ -17,7 +17,7 @@ const InstrumentSelector: React.FC<InstrumentSelectorProps> = ({ value, onChange
       <CustomSelect
         value={value}
         onChange={onChange}
-        options={options.map(inst => ({ value: inst.symbol, label: `${inst.symbol} — ${inst.name}` }))}
+        options={options.map(inst => ({ label: ` ${inst.name}` }))}
         className="w-full bg-transparent border-none shadow-none px-0 py-0 focus:ring-0 min-w-0"
       />
     </div>

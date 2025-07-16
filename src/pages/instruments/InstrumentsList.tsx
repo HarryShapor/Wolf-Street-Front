@@ -7,13 +7,12 @@ import type { Instrument } from '../../hooks/useInstruments';
 interface InstrumentsListProps {
   instruments: Instrument[];
   cardsVisible: number;
+  images: Record<number, string>;
+  loadingImages: boolean;
+  prices: Record<number, number | null>;
 }
 
-export default function InstrumentsList({ instruments, cardsVisible }: InstrumentsListProps) {
-  const ids = instruments.map(inst => inst.instrumentId);
-  const { images, loading: loadingImages } = useInstrumentImages(ids);
-  const { prices, loading: loadingPrices } = useInstrumentMarketData(ids);
-
+export default function InstrumentsList({ instruments, cardsVisible, images, loadingImages, prices }: InstrumentsListProps) {
   if (instruments.length === 0) {
     return <div className="col-span-2 text-center text-lg opacity-60 py-12">Ничего не найдено</div>;
   }
@@ -29,7 +28,7 @@ export default function InstrumentsList({ instruments, cardsVisible }: Instrumen
             visible={i < cardsVisible}
             index={i}
             fullHeight
-            loadingIcon={loadingImages || loadingPrices}
+            loadingIcon={loadingImages}
           />
         </div>
       ))}

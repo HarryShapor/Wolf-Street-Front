@@ -8,6 +8,8 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { Portfolio3DPie } from './ProfileSection';
 import { API_HOST } from '../../services/Api';
+import { useInstruments } from '../../hooks/useInstruments';
+import CustomSelect from '../../components/ui/CustomSelect';
 
 // Тип для инструмента
 interface Instrument {
@@ -141,6 +143,15 @@ export default function AssetsSection() {
   const [loadingValues, setLoadingValues] = useState(true);
   const [errorValues, setErrorValues] = useState('');
 
+  const { instruments: allInstruments, loading: loadingAllInstruments } = useInstruments();
+  // Инструменты, которых нет у пользователя
+  const availableToAdd = useMemo(() => allInstruments.filter(
+    inst => !instruments.some(userInst => userInst.instrumentId === inst.instrumentId)
+  ), [allInstruments, instruments]);
+  const [selectedToAdd, setSelectedToAdd] = useState<number | null>(null);
+  // Для отладки:
+  useEffect(() => { console.log('availableToAdd', availableToAdd); }, [availableToAdd]);
+
   useEffect(() => {
     setLoading(true);
     setError('');
@@ -210,7 +221,7 @@ export default function AssetsSection() {
   // Добавление/удаление инструментов (UI)
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [selectedToDelete, setSelectedToDelete] = useState<number | null>(null);
 
   const handleAdd = () => {
     const testInstrumentId = Object.keys(instrumentMeta)[0] ? Number(Object.keys(instrumentMeta)[0]) : 9007199254740991;
@@ -238,10 +249,10 @@ export default function AssetsSection() {
   };
 
   const handleDelete = () => {
-    if (!deleteId) return;
+    if (!selectedToDelete) return;
     setActionLoading(true);
     setActionError('');
-    deleteInstrument(deleteId, (err) => {
+    deleteInstrument(selectedToDelete, (err) => {
       if (err) setActionError(err);
       setActionLoading(false);
       // Обновить список инструментов
@@ -297,64 +308,102 @@ export default function AssetsSection() {
           </div>
           {/* Кастомный современный выбор инструмента для удаления */}
           <div className="flex flex-col gap-3 mt-4 items-stretch max-w-xs">
-            <Button
-              onClick={handleAdd}
-              disabled={actionLoading}
-              variant="gradient"
-              size="md"
-              iconLeft={<FaPlus />}
-              className="shadow-md dark:shadow-lg w-full justify-center"
-            >
-              Добавить инструмент
-            </Button>
-            <div className="relative w-full">
+            {/* Новый выпадающий список для добавления инструмента */}
+            <div className="flex flex-col gap-2 mt-2 items-stretch max-w-xs">
+              <CustomSelect
+                value={selectedToAdd !== null ? String(selectedToAdd) : ''}
+                onChange={val => setSelectedToAdd(val ? Number(val) : null)}
+                options={
+                  availableToAdd.length
+                    ? availableToAdd.map(inst => ({
+                        value: String(inst.instrumentId),
+                        label: inst.ticker
+                      }))
+                    : [{ value: '', label: 'Нет доступных инструментов', disabled: true }]
+                }
+                placeholder="Выберите инструмент для добавления"
+                className="min-h-[32px] text-sm"
+              />
               <button
-                type="button"
-                className="w-full flex justify-between items-center px-4 py-2 rounded-xl border border-light-border dark:border-dark-border bg-white dark:bg-dark-card text-light-fg dark:text-dark-fg focus:outline-none focus:ring-2 focus:ring-light-accent/60 dark:focus:ring-dark-accent/60 shadow-sm"
-                onClick={() => setShowDropdown(v => !v)}
+                onClick={() => selectedToAdd && addInstrument(selectedToAdd, (err) => {
+                  if (err) setActionError(err);
+                  setActionLoading(false);
+                  setSelectedToAdd(null);
+                  // обновить список инструментов ...
+                  setLoading(true);
+                  fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                  })
+                    .then(async res => res.json())
+                    .then(data => {
+                      if (Array.isArray(data)) {
+                        setInstruments(data.map((item: Instrument) => ({
+                          ...item,
+                          ...(instrumentMeta[item.instrumentId] || {}),
+                        })));
+                      }
+                    })
+                    .finally(() => setLoading(false));
+                })}
+                disabled={actionLoading || !selectedToAdd || !availableToAdd.length}
+                className={`w-full py-2 rounded-xl font-semibold transition-all duration-150
+                  ${!selectedToAdd || actionLoading || !availableToAdd.length
+                    ? 'bg-light-accent/30 text-light-fg/60 dark:bg-dark-accent/30 dark:text-dark-fg/60 cursor-not-allowed'
+                    : 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg hover:brightness-110 hover:shadow-lg'}
+                `}
+                style={{ fontSize: 15, marginTop: 2 }}
               >
-                {deleteId !== null
-                  ? (() => {
-                      const inst = instruments.find(inst => inst.instrumentId === deleteId);
-                      return inst ? `${inst.symbol || inst.instrumentId}${inst.name ? ' — ' + inst.name : ''}` : deleteId;
-                    })()
-                  : 'Выберите инструмент для удаления'}
-                <svg className="ml-2 w-4 h-4 text-light-accent dark:text-dark-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                + Добавить инструмент
               </button>
-              {showDropdown && (
-                <div className="custom-dropdown-delete absolute z-20 mt-1 w-full rounded-xl bg-white dark:bg-dark-card border border-light-border dark:border-dark-border shadow-lg max-h-60 overflow-y-auto">
-                  {instruments.length === 0 ? (
-                    <div className="px-4 py-2 text-light-fg/60 dark:text-dark-fg/60">Нет инструментов</div>
-                  ) : (
-                    instruments.map(inst => (
-                      <div
-                        key={inst.instrumentId}
-                        onClick={() => { setDeleteId(inst.instrumentId); setShowDropdown(false); }}
-                        className={`px-4 py-2 cursor-pointer transition-colors duration-150
-                          ${deleteId === inst.instrumentId
-                            ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 font-bold ring-2 ring-red-400/40 dark:ring-red-600/40'
-                            : 'hover:bg-light-accent/10 dark:hover:bg-dark-accent/10'}
-                        `}
-                      >
-                        {(inst.symbol || inst.instrumentId) + (inst.name ? ' — ' + inst.name : '')}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
             </div>
-            <button
-              onClick={handleDelete}
-              disabled={actionLoading || deleteId === null}
-              className={`w-full px-4 py-2 rounded-xl font-semibold shadow transition-all duration-200
-                ${deleteId === null || actionLoading
-                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-400 cursor-not-allowed opacity-70'
-                  : 'bg-gradient-to-r from-red-500 to-red-400 dark:from-red-600 dark:to-red-500 text-white cursor-pointer hover:brightness-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400/60 dark:focus:ring-red-600/60 scale-100 hover:scale-105 active:scale-95'}
-              `}
-              style={{ boxShadow: deleteId !== null && !actionLoading ? '0 0 12px 2px #ef4444aa' : undefined, transition: 'box-shadow 0.2s, transform 0.15s' }}
-            >
-              Удалить инструмент
-            </button>
+            {/* Новый выпадающий список для удаления инструмента */}
+            <div className="flex flex-col gap-2 mt-2 items-stretch max-w-xs">
+              <CustomSelect
+                value={selectedToDelete !== null ? String(selectedToDelete) : ''}
+                onChange={val => setSelectedToDelete(val ? Number(val) : null)}
+                options={
+                  instruments.length
+                    ? instruments.map(inst => ({
+                        value: String(inst.instrumentId),
+                        label: inst.ticker || inst.symbol || String(inst.instrumentId)
+                      }))
+                    : [{ value: '', label: 'Нет инструментов для удаления', disabled: true }]
+                }
+                placeholder="Выберите инструмент для удаления"
+                className="min-h-[32px] text-sm"
+              />
+              <button
+                onClick={() => selectedToDelete && deleteInstrument(selectedToDelete, (err) => {
+                  if (err) setActionError(err);
+                  setActionLoading(false);
+                  setSelectedToDelete(null);
+                  // обновить список инструментов ...
+                  setLoading(true);
+                  fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                  })
+                    .then(async res => res.json())
+                    .then(data => {
+                      if (Array.isArray(data)) {
+                        setInstruments(data.map((item: Instrument) => ({
+                          ...item,
+                          ...(instrumentMeta[item.instrumentId] || {}),
+                        })));
+                      }
+                    })
+                    .finally(() => setLoading(false));
+                })}
+                disabled={actionLoading || !selectedToDelete || !instruments.length}
+                className={`w-full py-2 rounded-xl font-semibold transition-all duration-150
+                  ${!selectedToDelete || actionLoading || !instruments.length
+                    ? 'bg-red-200/30 text-red-300 dark:bg-red-900/20 dark:text-red-400 border border-red-200/40 dark:border-red-900/40 cursor-not-allowed'
+                    : 'bg-red-500/20 text-red-600 dark:bg-red-600/20 dark:text-red-400 border border-red-400/40 dark:border-red-600/40 hover:bg-red-500/40 hover:text-white dark:hover:bg-red-600/40 dark:hover:text-white'}
+                `}
+                style={{ fontSize: 15, marginTop: 2 }}
+              >
+                Удалить инструмент
+              </button>
+            </div>
             {actionError && <span className="text-red-500 mt-1 text-center">{actionError}</span>}
           </div>
         </div>

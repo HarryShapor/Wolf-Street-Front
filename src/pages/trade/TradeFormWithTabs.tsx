@@ -102,7 +102,7 @@ const TradeFormWithTabs: React.FC = () => {
             <CustomSelect
               value={instrument}
               onChange={handleInstrumentChange}
-              options={instruments.map(inst => ({ value: inst.ticker, label: `${inst.ticker} — ${inst.title}` }))}
+              options={instruments.map(inst => ({ value: inst.ticker, label: inst.ticker }))}
               className="w-full min-h-[32px] px-2 py-1.5 rounded-xl"
             />
           )}
