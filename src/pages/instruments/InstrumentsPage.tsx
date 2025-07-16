@@ -2,18 +2,13 @@ import React, { useState, useEffect } from "react";
 import Header from "../../components/header/Header";
 import Footer from "../../components/footer/Footer";
 import InstrumentFilters from "./InstrumentFilters";
+import InstrumentsList from "./InstrumentsList";
+import { useInstruments } from '../../hooks/useInstruments';
+import type { Instrument } from '../../hooks/useInstruments';
 import btcIcon from "../../image/crypto/bitcoin.svg";
 import ethIcon from "../../image/crypto/ethereum.svg";
 import usdtIcon from "../../image/crypto/usdt.svg";
 import tonIcon from "../../image/crypto/ton.svg";
-import InstrumentsList from "./InstrumentsList";
-
-const instruments = [
-  { name: "Bitcoin", symbol: "BTC", type: "crypto", description: "Криптовалюта №1 по капитализации.", price: 40000, icon: btcIcon },
-  { name: "Ethereum", symbol: "ETH", type: "crypto", description: "Ведущая платформа для смарт-контрактов.", price: 2500, icon: ethIcon },
-  { name: "Tether", symbol: "USDT", type: "stablecoin", description: "Популярный стейблкоин, привязанный к доллару.", price: 1, icon: usdtIcon },
-  { name: "Toncoin", symbol: "TON", type: "crypto", description: "Блокчейн-платформа от Telegram.", price: 5, icon: tonIcon },
-];
 
 const TYPE_FILTERS = [
   { label: "Все", value: "all" },
@@ -81,11 +76,27 @@ function FloatingCurrenciesBackground() {
 }
 
 export default function InstrumentsPage() {
+  const { instruments, loading, error } = useInstruments();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("alpha-asc");
   const [show, setShow] = useState(false);
   const [cardsVisible, setCardsVisible] = useState<number>(0);
+
+  // Фильтрация
+  let filtered = instruments.filter((item) => {
+    const matchesSearch =
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.ticker.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Сортировка
+  filtered = filtered.slice().sort((a, b) => {
+    if (sort === "alpha-asc") return a.title.localeCompare(b.title);
+    if (sort === "alpha-desc") return b.title.localeCompare(a.title);
+    return 0;
+  });
 
   useEffect(() => {
     setShow(true);
@@ -102,25 +113,7 @@ export default function InstrumentsPage() {
       }
     }
     // eslint-disable-next-line
-  }, [filter, sort, search]);
-
-  // Фильтрация
-  let filtered = instruments.filter((item) => {
-    const matchesType = filter === "all" || item.type === filter;
-    const matchesSearch =
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.symbol.toLowerCase().includes(search.toLowerCase());
-    return matchesType && matchesSearch;
-  });
-
-  // Сортировка
-  filtered = filtered.slice().sort((a, b) => {
-    if (sort === "alpha-asc") return a.name.localeCompare(b.name);
-    if (sort === "alpha-desc") return b.name.localeCompare(a.name);
-    if (sort === "price-asc") return a.price - b.price;
-    if (sort === "price-desc") return b.price - a.price;
-    return 0;
-  });
+  }, [filter, sort, search, instruments]);
 
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg font-sans">
@@ -149,7 +142,13 @@ export default function InstrumentsPage() {
           sortOptions={SORT_OPTIONS}
         />
         {/* Список инструментов */}
-        <InstrumentsList instruments={filtered} cardsVisible={cardsVisible} />
+        {loading ? (
+          <div className="text-center py-8">Загрузка инструментов...</div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">{error}</div>
+        ) : (
+          <InstrumentsList instruments={filtered} cardsVisible={cardsVisible} />
+        )}
       </main>
       <Footer />
     </div>

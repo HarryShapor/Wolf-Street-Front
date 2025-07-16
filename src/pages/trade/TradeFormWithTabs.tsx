@@ -2,33 +2,8 @@ import React, { useState } from 'react';
 import CustomSelect from '../../components/ui/CustomSelect';
 import ToastModal from './ToastModal';
 import { API_HOST } from '../../services/Api';
-import type { Instrument } from './TradePage';
-
-// Хук для загрузки инструментов
-function useInstruments() {
-  const [instruments, setInstruments] = useState<Instrument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch(`${API_HOST}/instrument-service/api/v1/instruments`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Ошибка загрузки инструментов');
-        return res.json();
-      })
-      .then(setInstruments)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { instruments, loading, error };
-}
+import { useInstruments } from '../../hooks/useInstruments';
+import type { Instrument } from '../../hooks/useInstruments';
 
 const tabStyles = (active: boolean, buy: boolean, first: boolean, last: boolean) =>
   `flex-1 text-center py-2 text-sm font-bold transition-colors duration-150 cursor-pointer

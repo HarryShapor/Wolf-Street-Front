@@ -11,14 +11,8 @@ import InstrumentSelector from './InstrumentSelector';
 import TradeFormWithTabs from './TradeFormWithTabs';
 import UserOrdersSection from '../portfolio/components/UserOrdersSection';
 import { API_HOST } from '../../services/Api';
-
-// Тип для инструмента
-export interface Instrument {
-  instrumentId: number;
-  ticker: string;
-  title: string;
-  // можно добавить price, change, если появятся в API
-}
+import { useInstruments } from '../../hooks/useInstruments';
+import type { Instrument } from '../../hooks/useInstruments';
 
 const initialPositions = [
   { symbol: 'BTC', amount: 0.02, entry: 60000, pnl: 1000 },
@@ -97,32 +91,6 @@ function useOhlcData(instrumentId: number, interval: string, hours: number = 12)
   }, [instrumentId, interval, hours]);
 
   return { data, loading, error };
-}
-
-// Новый хук для загрузки инструментов
-function useInstruments() {
-  const [instruments, setInstruments] = useState<Instrument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch(`${API_HOST}/instrument-service/api/v1/instruments`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Ошибка загрузки инструментов');
-        return res.json();
-      })
-      .then(setInstruments)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { instruments, loading, error };
 }
 
 export default function TradePage() {

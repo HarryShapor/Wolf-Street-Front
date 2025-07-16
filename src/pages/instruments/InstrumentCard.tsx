@@ -2,17 +2,17 @@ import React from "react";
 import Card from "../../components/ui/Card";
 
 interface InstrumentCardProps {
-  name: string;
-  symbol: string;
-  description: string;
-  price: number;
-  icon: string;
+  title: string;
+  ticker: string;
+  icon?: string;
+  price?: number;
   visible: boolean;
   index: number;
   fullHeight?: boolean;
+  loadingIcon?: boolean;
 }
 
-export default function InstrumentCard({ name, symbol, description, price, icon, visible, index, fullHeight }: InstrumentCardProps) {
+export default function InstrumentCard({ title, ticker, icon, price, visible, index, fullHeight, loadingIcon }: InstrumentCardProps) {
   const isLeft = index % 2 === 0;
   return (
     <div
@@ -20,16 +20,20 @@ export default function InstrumentCard({ name, symbol, description, price, icon,
       style={{ transitionDelay: `${index * 120}ms` }}
     >
       <Card
-        icon={<img src={icon} alt={symbol} className="w-8 h-8 rounded-full bg-white border border-light-border dark:border-dark-border shadow-sm" />}
-        title={<span className="text-2xl font-bold text-light-accent dark:text-dark-accent">{symbol}</span>}
+        icon={loadingIcon ? (
+          <div className="w-8 h-8 rounded-full bg-white border border-light-border dark:border-dark-border flex items-center justify-center animate-pulse">...</div>
+        ) : icon ? (
+          <img src={icon} alt={ticker} className="w-8 h-8 rounded-full bg-white border border-light-border dark:border-dark-border shadow-sm" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-white border border-light-border dark:border-dark-border flex items-center justify-center text-xs opacity-50">?</div>
+        )}
+        title={<span className="text-2xl font-bold text-light-accent dark:text-dark-accent">{ticker}</span>}
         className={`gap-2 ${fullHeight ? 'h-full flex-1 flex flex-col' : ''}`}
       >
-        <div className="text-lg font-semibold mb-2">{name}</div>
-        <p className="text-sm opacity-80 mb-2">{description}</p>
+        <div className="text-lg font-semibold mb-2">{title}</div>
         <div className="flex items-center gap-2 mt-2">
           <span className="text-xs font-medium opacity-60">Текущая цена:</span>
-          <span className="text-base font-bold">{price ?? "—"}</span>
-          <span className="text-xs opacity-40">(заглушка)</span>
+          <span className="text-base font-bold">{price !== undefined ? price : '—'}</span>
         </div>
       </Card>
     </div>
