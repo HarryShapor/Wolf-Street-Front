@@ -37,8 +37,8 @@ interface TradesListProps {
   trades?: Trade[];
 }
 
-const ROW_HEIGHT = 22; // px
-const VISIBLE_ROWS = 10; // Было 20, теперь 10 для компактности
+const ROW_HEIGHT = 18; // Было 22, теперь компактнее
+const VISIBLE_ROWS = 10; // Оставим как есть
 const GRAPH_POINTS = 32;
 
 function genGraphData(prev: number[]): number[] {
@@ -75,7 +75,7 @@ const TradesList: React.FC<TradesListProps> = ({ trades }) => {
   const area = `${path} L${width},${height} L0,${height} Z`;
 
   return (
-    <Card className="relative w-full min-w-[340px] max-w-xl mx-auto p-0 bg-light-card dark:bg-dark-card border border-light-border/60 dark:border-dark-border/60 rounded-2xl shadow-sm flex flex-col gap-2">
+    <Card className="relative w-full min-w-[320px] max-w-xl mx-auto p-0 bg-light-card dark:bg-dark-card border border-light-border/60 dark:border-dark-border/60 rounded-xl shadow-sm flex flex-col gap-1">
       {/* Сделки */}
       <div className="relative z-10">
         {/* SVG фон */}
@@ -95,12 +95,12 @@ const TradesList: React.FC<TradesListProps> = ({ trades }) => {
         </svg>
         {/* Контент поверх */}
         <div className="relative z-10 flex flex-col">
-          <div className="flex items-center px-1 pt-1 pb-0 border-b border-light-border/40 dark:border-dark-border/40">
-            <span className="text-xs font-bold text-light-fg dark:text-dark-fg flex-1">Сделки на рынке</span>
+          <div className="flex items-center px-0.5 pt-1 pb-0 border-b border-light-border/40 dark:border-dark-border/40">
+            <span className="text-xs font-bold text-green-500 dark:text-green-400 flex-1 tracking-tight">Сделки на рынке</span>
           </div>
-          <div className="grid grid-cols-3 gap-0 px-1 py-0 text-xs font-semibold text-light-fg-secondary dark:text-dark-brown border-b border-light-border/30 dark:border-dark-border/30 select-none">
+          <div className="grid grid-cols-3 gap-0 px-0.5 py-0 text-xs font-semibold text-light-fg-secondary dark:text-dark-brown border-b border-light-border/30 dark:border-dark-border/30 select-none tracking-tight">
             <span className="text-left">Цена (USDT)</span>
-            <span className="text-center">Количество (BTC)</span>
+            <span className="text-center">Кол-во (BTC)</span>
             <span className="text-right">Время</span>
           </div>
           <div
@@ -112,11 +112,11 @@ const TradesList: React.FC<TradesListProps> = ({ trades }) => {
                 key={i}
                 style={{ height: `${ROW_HEIGHT}px` }}
                 className={
-                  `grid grid-cols-3 gap-0 px-1 py-0 text-xs leading-[1.1] items-center transition-colors duration-100
-                  hover:bg-light-accent/5 dark:hover:bg-dark-accent/10 cursor-pointer`
+                  `grid grid-cols-3 gap-0 px-0.5 py-0 text-xs leading-[1.05] items-center transition-colors duration-100
+                  hover:bg-light-accent/5 dark:hover:bg-dark-accent/10 cursor-pointer tracking-tight`
                 }
               >
-                <span className={`text-left font-bold ${t.side === 'buy' ? 'text-light-success dark:text-dark-accent' : 'text-light-error dark:text-error'}`}>{t.price.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</span>
+                <span className={`text-left font-bold ${t.side === 'buy' ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>{t.price.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</span>
                 <span className="text-center text-light-fg dark:text-dark-fg font-mono">{t.amount}</span>
                 <span className="text-right text-light-fg-secondary dark:text-dark-brown font-mono">{t.time}</span>
               </div>

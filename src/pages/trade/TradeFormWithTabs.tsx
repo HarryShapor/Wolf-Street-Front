@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import CustomSelect from '../../components/ui/CustomSelect';
 import ToastModal from './ToastModal';
 import { API_HOST } from '../../services/Api';
@@ -28,9 +28,15 @@ const TradeFormWithTabs: React.FC = () => {
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [instrument, setInstrument] = useState<string>('');
   const [amount, setAmount] = useState('');
-  const [price, setPrice] = useState(65000);
   // --- toast state ---
   const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' }>({ open: false, message: '', type: 'success' });
+
+  // --- portfolio state ---
+  const [portfolioInstruments, setPortfolioInstruments] = useState<{ instrumentId: number, availableAmount: number, ticker: string }[]>([]);
+  const [balance, setBalance] = useState<number>(0);
+
+  // --- курс USDT→RUB ---
+  const usdToRub = 92; // TODO: заменить на актуальный курс, если появится API
 
   React.useEffect(() => {
     if (instruments.length && !instrument) {
@@ -38,23 +44,60 @@ const TradeFormWithTabs: React.FC = () => {
     }
   }, [instruments, instrument]);
 
-  // Итоговая сумма
-  const total = amount ? (parseFloat(amount) * price).toFixed(2) : '';
-  // Комиссия
-  const fee = total ? ((parseFloat(total) * 0.1) / 100).toFixed(2) : '0.00';
+  // Загрузка инструментов портфеля
+  useEffect(() => {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(res => res.json())
+      .then(data => setPortfolioInstruments(data))
+      .catch(() => setPortfolioInstruments([]));
+  }, []);
+
+  // Загрузка баланса
+  useEffect(() => {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(res => res.json())
+      .then(data => setBalance(data[0]?.availableAmount ?? 0))
+      .catch(() => setBalance(0));
+  }, []);
+
+  // Цена теперь в RUB
+  const [priceRub, setPriceRub] = useState(65000 * usdToRub); // по умолчанию 65000 USDT * курс
+  // Итоговая сумма в RUB
+  const totalRub = amount ? Number(amount) * priceRub : 0;
+  const maxBuy = priceRub > 0 ? balance / priceRub : 0;
+  const feeRub = totalRub ? (totalRub * 0.001).toFixed(2) : '0.00';
 
   function handleAllClick() {
-    setAmount((10000 / price).toFixed(6));
+    setAmount((10000 / priceRub).toFixed(6));
   }
 
   function handleInstrumentChange(val: string) {
     setInstrument(val);
   }
 
+  const selectedInstrument = useMemo(() => instruments.find(inst => inst.ticker === instrument), [instruments, instrument]);
+  const portfolioInstrument = useMemo(() => portfolioInstruments.find(inst => inst.instrumentId === selectedInstrument?.instrumentId), [portfolioInstruments, selectedInstrument]);
+  const availableToSell = portfolioInstrument?.availableAmount ?? 0;
+  const canBuy = tab === 'buy' ? (Number(amount) * priceRub <= balance) : true;
+  const canSell = tab === 'sell' ? (Number(amount) <= availableToSell) : true;
+  const isAmountValid = !!amount && Number(amount) > 0 && (tab === 'buy' ? canBuy : canSell);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!amount || Number(amount) <= 0) {
       setToast({ open: true, message: 'Укажите количество', type: 'error' });
+      return;
+    }
+    if (tab === 'buy' && Number(amount) * priceRub > balance) {
+      setToast({ open: true, message: 'Недостаточно средств для покупки', type: 'error' });
+      return;
+    }
+    if (tab === 'sell' && Number(amount) > availableToSell) {
+      setToast({ open: true, message: 'Недостаточно инструмента для продажи', type: 'error' });
       return;
     }
     const selectedInstrument = instruments.find(inst => inst.ticker === instrument);
@@ -71,10 +114,10 @@ const TradeFormWithTabs: React.FC = () => {
         },
         body: JSON.stringify({
           portfolioId: 1, // TODO: заменить на реальный id портфеля пользователя
-          lotPrice: price,
+          lotPrice: priceRub,
           instrumentId: selectedInstrument.instrumentId,
           count: Number(amount),
-          type: tab === 'buy' ? 'BUY' : 'SELL',
+          type: tab === 'buy' ? 'BUY' : 'SALE',
         })
       });
       if (res.status === 401) throw new Error('Пользователь не авторизован!');
@@ -119,19 +162,19 @@ const TradeFormWithTabs: React.FC = () => {
               className="w-full min-h-[32px] px-2 py-1.5 rounded-xl"
             />
           )}
-          {/* Цена (editable только для лимит) */}
+          {/* Цена (теперь только RUB) */}
           <label className="text-xs font-semibold text-light-fg-secondary dark:text-dark-brown mb-0.5 mt-1">Цена</label>
           <div className="flex items-center gap-1">
             <input
               type="number"
               min="0"
+              max="100000000"
               step="any"
-              value={orderType === 'limit' ? price : 65000}
-              onChange={e => setPrice(Number(e.target.value))}
-              disabled={orderType === 'market'}
-              className="w-full min-h-[32px] px-2 py-1.5 border-b-2 border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-b-dark-accent outline-none text-sm transition-all duration-300 disabled:bg-light-bg/60 dark:disabled:bg-dark-bg/60 focus:shadow-[0_2px_0_0_rgba(108,99,255,0.25)] dark:focus:shadow-[0_2px_0_0_rgba(129,199,132,0.25)] rounded-xl"
+              value={priceRub}
+              onChange={e => setPriceRub(Math.min(Number(e.target.value), 100000000))}
+              className="w-full min-h-[32px] px-2 py-1.5 border-b-2 border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-lg text-right font-semibold transition-all duration-300 focus:shadow-[0_2px_0_0_rgba(108,99,255,0.25)] dark:focus:shadow-[0_2px_0_0_rgba(129,199,132,0.25)] rounded-xl"
             />
-            <span className="text-xs text-light-fg-secondary dark:text-dark-brown">USDT</span>
+            <span className="text-xs text-light-fg-secondary dark:text-dark-brown">RUB</span>
           </div>
           {/* Количество */}
           <label className="text-xs font-semibold text-light-fg-secondary dark:text-dark-brown mb-0.5 mt-1">Количество</label>
@@ -139,14 +182,22 @@ const TradeFormWithTabs: React.FC = () => {
             <input
               type="number"
               min="0"
+              max="1000000"
               step="any"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => setAmount(Math.min(Number(e.target.value), 1000000).toString())}
               placeholder="Введите количество"
-              className="w-full min-h-[32px] px-2 py-1.5 border-b-2 border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-b-dark-accent outline-none text-sm transition-all duration-300 focus:shadow-[0_2px_0_0_rgba(108,99,255,0.25)] dark:focus:shadow-[0_2px_0_0_rgba(129,199,132,0.25)] rounded-xl"
+              className="w-full min-h-[32px] px-2 py-1.5 border-b-2 border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-lg text-right font-semibold transition-all duration-300 focus:shadow-[0_2px_0_0_rgba(108,99,255,0.25)] dark:focus:shadow-[0_2px_0_0_rgba(129,199,132,0.25)] rounded-xl"
             />
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">{instrument}</span>
           </div>
+          {/* Подсказка по лимиту */}
+          {tab === 'sell' && (
+            <div className="text-xs text-light-fg-secondary dark:text-dark-brown mb-1">Максимум для продажи: {availableToSell}</div>
+          )}
+          {tab === 'buy' && (
+            <div className="text-xs text-light-fg-secondary dark:text-dark-brown mb-1">Максимум для покупки: {maxBuy.toFixed(6)} ({balance} RUB)</div>
+          )}
           {/* Быстрые кнопки для выбора количества */}
           <div className="flex gap-1 mt-0 mb-0">
             {[0.25, 0.5, 0.75, 1].map((percent, idx) => (
@@ -155,7 +206,7 @@ const TradeFormWithTabs: React.FC = () => {
                 type="button"
                 className="flex-1 rounded-lg py-1 text-xs font-semibold border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors text-light-fg dark:text-dark-fg"
                 onClick={() => {
-                  const priceVal = orderType === 'limit' ? price : 65000;
+                  const priceVal = priceRub;
                   setAmount(((10000 * percent) / priceVal).toFixed(6));
                 }}
               >
@@ -163,29 +214,29 @@ const TradeFormWithTabs: React.FC = () => {
               </button>
             ))}
           </div>
-          {/* Итог */}
+          {/* Итоговая сумма в RUB */}
           <div className="flex justify-between items-center mt-0.5">
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">Итого</span>
-            <span className="font-bold text-sm text-light-fg dark:text-dark-fg">{total ? `$${total}` : '-'}</span>
+            <span className="font-bold text-sm text-light-fg dark:text-dark-fg">{totalRub ? `${totalRub.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} RUB` : '-'}</span>
           </div>
           {/* Баланс и комиссия */}
           <div className="flex justify-between items-center mt-0.5">
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">Баланс</span>
-            <span className="font-semibold text-light-fg dark:text-dark-fg text-xs">${10000}</span>
+            <span className="font-semibold text-light-fg dark:text-dark-fg text-xs">{balance} RUB</span>
           </div>
           <div className="flex justify-between items-center mt-0.5">
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">Комиссия</span>
-            <span className="text-xs text-light-fg-secondary dark:text-dark-brown">{fee} USDT</span>
+            <span className="text-xs text-light-fg-secondary dark:text-dark-brown">{feeRub} RUB</span>
           </div>
           {/* Кнопка */}
           <button
             type="submit"
-            disabled={!amount || Number(amount) <= 0}
+            disabled={!isAmountValid}
             className={`w-full mt-2 py-2 rounded-xl font-bold text-base transition-all duration-150
             ${tab === 'buy'
               ? 'bg-light-success/90 text-white dark:bg-dark-accent/90 dark:text-dark-bg hover:bg-light-success dark:hover:bg-dark-accent'
               : 'bg-[#e0a6a6] text-[#7a3a3a] dark:bg-[#6d2323] dark:text-[#e0a6a6] hover:bg-[#e7c3c3] dark:hover:bg-[#8b3232]'}
-            ${!amount || Number(amount) <= 0 ? ' opacity-50 cursor-not-allowed' : ''}`}
+            ${!isAmountValid ? ' opacity-50 cursor-not-allowed' : ''}`}
           >
             {tab === 'buy' ? 'Купить' : 'Продать'} {instrument}
           </button>
