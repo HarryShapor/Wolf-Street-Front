@@ -22,9 +22,12 @@ const orderTabStyles = (active: boolean) =>
    ${active ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent' :
     'bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-light-accent/10 dark:hover:bg-dark-accent/10'}`;
 
-const TradeFormWithTabs: React.FC = () => {
+interface TradeFormWithTabsProps {
+  sideDefault?: 'buy' | 'sell';
+}
+const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'buy' }) => {
   const { instruments, loading, error } = useInstruments();
-  const [tab, setTab] = useState<'buy' | 'sell'>('buy');
+  const [tab, setTab] = useState<'buy' | 'sell'>(sideDefault);
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [instrument, setInstrument] = useState<string>('');
   const [amount, setAmount] = useState('');

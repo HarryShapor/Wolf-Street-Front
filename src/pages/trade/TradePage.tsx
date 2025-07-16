@@ -13,6 +13,7 @@ import UserOrdersSection from '../portfolio/components/UserOrdersSection';
 import { API_HOST } from '../../services/Api';
 import { useInstruments } from '../../hooks/useInstruments';
 import type { Instrument } from '../../hooks/useInstruments';
+import InstrumentsList from '../instruments/InstrumentsList';
 
 const initialPositions = [
   { symbol: 'BTC', amount: 0.02, entry: 60000, pnl: 1000 },
@@ -93,6 +94,8 @@ function useOhlcData(instrumentId: number, interval: string, hours: number = 12)
   return { data, loading, error };
 }
 
+// Удаляю генератор mockCandles и все, что с ним связано
+
 export default function TradePage() {
   const { instruments, loading: loadingInstruments, error: errorInstruments } = useInstruments();
   const [selected, setSelected] = useState<Instrument | null>(null);
@@ -103,6 +106,8 @@ export default function TradePage() {
   const [positions, setPositions] = useState(initialPositions);
   const [balance] = useState(mockBalance);
   const [orderType, setOrderType] = useState<'limit'|'market'>('limit');
+
+  // Удаляю все useState/useEffect для mockChartData
 
   // Выбор первого инструмента после загрузки
   useEffect(() => {
@@ -153,26 +158,26 @@ export default function TradePage() {
     setAmount('');
   }
 
+  // Фильтры для правой колонки
+  const [marketFilter, setMarketFilter] = useState('USDT');
+  const marketTabs = ['USDT', 'FDUSD', 'BNB'];
+  const filteredInstruments = instruments.filter(inst => inst.ticker.endsWith(marketFilter));
+
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-16">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-4">
+      {/* Header с парой, ценой, изменением, поиском */}
       <Header {...headerProps} />
-      <div className="pt-28 flex flex-row w-full max-w-[1300px] mx-auto gap-8 items-start px-4 md:px-8 lg:px-0">
-        {/* Левая колонка: селектор инструмента + ордербук */}
-        <div className="w-[18%] min-w-[210px] flex flex-col">
-          {loadingInstruments ? (
-            <div className="text-center py-8">Загрузка инструментов...</div>
-          ) : errorInstruments ? (
-            <div className="text-center text-red-500 py-8">{errorInstruments}</div>
-          ) : (
-            <InstrumentSelector
-              value={selected?.ticker || ''}
-              onChange={ticker => {
-                const found = instruments.find(inst => inst.ticker === ticker);
-                if (found) setSelected(found);
-              }}
-              options={filtered.map(inst => ({ symbol: inst.ticker, name: inst.title }))}
-            />
-          )}
+      <div className="pt-20 flex flex-row w-full max-w-[1800px] mx-auto gap-2 items-start px-2 md:px-4 lg:px-0">
+        {/* Левая колонка: стакан */}
+        <div className="orderbook-col w-[260px] min-w-[180px] flex flex-col gap-2 mr-2">
+          <InstrumentSelector
+            value={selected?.ticker || ''}
+            onChange={ticker => {
+              const found = instruments.find(inst => inst.ticker === ticker);
+              if (found) setSelected(found);
+            }}
+            options={filtered.map(inst => ({ symbol: inst.ticker, name: inst.title }))}
+          />
           <OrderBook
             price={0}
             orderBookSell={orderBookSell}
@@ -182,28 +187,36 @@ export default function TradePage() {
           />
         </div>
         {/* Центр: график + форма */}
-        <div className="flex-1 flex flex-col h-[560px] min-w-[0] gap-4">
-          <TradeChart
-            data={ohlcData}
-            loading={loadingOhlc}
-            error={errorOhlc}
-            selected={selected}
-            price={0}
-            change={0}
-            timeframe={timeframe}
-            setTimeframe={setTimeframe}
-          />
-        </div>
-        {/* Правая колонка: сделки + форма */}
-        <div className="w-[22%] min-w-[250px] flex flex-col">
-          <TradesList trades={mockTrades.map(t => ({ ...t, side: t.side as 'buy' | 'sell' }))} />
-          <div className="mt-2">
+        <div className="flex-1 flex flex-col min-w-0 gap-2">
+          {/* Вкладка и таймфреймы */}
+          
+          <div className="chart-row flex-1 min-h-[50vh]">
+            <TradeChart
+              data={ohlcData}
+              loading={loadingOhlc}
+              error={errorOhlc}
+              selected={selected}
+              price={0}
+              change={0}
+              timeframe={timeframe}
+              setTimeframe={setTimeframe}
+            />
+          </div>
+          {/* Форма ордера — одна, по центру, широкая */}
+          <div className="trade-form-row w-full max-w-2xl mx-auto mt-2">
             <TradeFormWithTabs />
+          </div>
+        </div>
+        {/* Правая колонка: только сделки на рынке */}
+        <div className="right-col w-[340px] min-w-[260px] flex flex-col gap-2 ml-2">
+          {/* Только сделки на рынке */}
+          <div className="trades-list-col">
+            <TradesList />
           </div>
         </div>
       </div>
       {/* Секция заявок пользователя вынесена и изолирована */}
-      <div className="max-w-[1500px] mx-auto px-4 md:px-8 lg:px-0 mt-16 mb-4">
+      <div className="max-w-[1500px] mx-auto px-4 md:px-8 lg:px-0 mt-10 mb-4">
         <UserOrdersSection />
       </div>
     </div>
