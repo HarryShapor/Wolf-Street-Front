@@ -10,6 +10,7 @@ interface ProfileFieldBlockProps {
   onCancel?: () => void;
   onChange?: (v: string) => void;
   type?: 'text' | 'password';
+  placeholder?: string;
 }
 
 const ProfileFieldBlock: React.FC<ProfileFieldBlockProps> = ({
@@ -21,13 +22,9 @@ const ProfileFieldBlock: React.FC<ProfileFieldBlockProps> = ({
   onCancel,
   onChange,
   type = 'text',
+  placeholder,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [editValue, setEditValue] = useState(value);
-
-  React.useEffect(() => {
-    setEditValue(value);
-  }, [value, editing]);
 
   return (
     <div className="flex items-center gap-4 bg-light-bg/80 dark:bg-dark-bg/80 border border-light-border dark:border-dark-border rounded-lg px-4 py-3 transition hover:bg-light-bg/90 dark:hover:bg-dark-bg/90">
@@ -37,11 +34,10 @@ const ProfileFieldBlock: React.FC<ProfileFieldBlockProps> = ({
           <div className="flex items-center gap-2">
             <input
               type={type === 'password' && !showPassword ? 'password' : 'text'}
-              value={editValue}
-              onChange={e => {
-                setEditValue(e.target.value);
-                onChange && onChange(e.target.value);
-              }}
+              value={value}
+              onChange={e => onChange && onChange(e.target.value)}
+              name={type === 'password' ? 'profilePassCustom' : undefined}
+              autoComplete={type === 'password' ? 'current-password-fake' : undefined}
               className="w-full text-[16px] font-semibold bg-light-bg dark:bg-dark-bg border rounded-lg px-3 py-2 outline-none transition-colors duration-200 border-light-accent dark:border-dark-accent text-light-fg dark:text-dark-fg"
             />
             {type === 'password' && (
@@ -65,14 +61,18 @@ const ProfileFieldBlock: React.FC<ProfileFieldBlockProps> = ({
             )}
           </div>
         ) : (
-          <div className="text-[16px] text-light-fg dark:text-dark-fg truncate">{type === 'password' ? '********' : value}</div>
+          value ? (
+            <div className="text-[16px] text-light-fg dark:text-dark-fg truncate">{type === 'password' ? '********' : value}</div>
+          ) : (
+            <div className="text-[16px] text-light-fg/40 dark:text-dark-nav-inactive italic truncate">{placeholder || ''}</div>
+          )
         )}
       </div>
       {editing ? (
         <div className="flex gap-2">
           <button
             className="bg-gradient-to-r from-light-accent/90 to-light-accent/70 dark:from-dark-accent/90 dark:to-dark-accent/70 text-white font-semibold rounded-xl px-7 py-2.5 shadow-xl border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[120px] hover:scale-[1.04] hover:shadow-2xl hover:ring-2 hover:ring-light-accent/30 dark:hover:ring-dark-accent/30 focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40"
-            onClick={() => onSave && onSave(editValue)}
+            onClick={() => onSave && onSave(value)}
           >Сохранить</button>
           <button
             className="bg-gradient-to-r from-white/80 to-light-card/80 dark:from-dark-card/70 dark:to-[#181926]/80 text-light-accent dark:text-dark-accent font-semibold rounded-xl px-7 py-2.5 shadow border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[120px] hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-white hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-light-accent/30 dark:focus:ring-dark-accent/30"

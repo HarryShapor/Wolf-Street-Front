@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/auth/Register";
+import { loginUser, saveTokens } from "../services/auth/Login";
 import type { RegisterRequest } from "../services/auth/TypesAuth";
 import { useFormValidation } from "./useFormValidation";
 
@@ -129,17 +130,20 @@ export function useMultiStepRegister({ onSuccess }: UseMultiStepRegisterProps) {
         };
 
         await registerUser(registrationData);
-        onSuccess();
-
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
+        // Автоматический логин после успешной регистрации
+        try {
+          const tokens = await loginUser({ username: registrationData.username, password: registrationData.password });
+          saveTokens(tokens);
+          onSuccess();
+        } catch (loginErr) {
+          setError("Регистрация прошла, но не удалось войти автоматически. Попробуйте войти вручную.");
+        }
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Произошла ошибка при регистрации"
-        );
+        let msg = err instanceof Error ? err.message : "Произошла ошибка при регистрации";
+        if (/invalid token|jwt|token|Unauthorized|401|403/i.test(msg)) {
+          msg = "Ошибка регистрации. Проверьте данные и попробуйте снова.";
+        }
+        setError(msg);
       } finally {
         setIsLoading(false);
       }

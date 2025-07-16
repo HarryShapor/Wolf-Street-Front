@@ -46,11 +46,11 @@ export default function PortfolioPage({ theme, setTheme, NAV }: { theme: string,
         setSearchOpen={() => {}}
         searchOpen={false}
       />
-      <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 min-h-[calc(100vh-80px)] grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-8">
+      <div className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 min-h-[calc(100vh-80px)] grid grid-cols-1 md:grid-cols-[minmax(260px,320px)_1fr] gap-4 justify-items-start">
         {/* Левое меню */}
-        <div className="md:sticky md:top-24 z-10 w-full md:w-auto md:min-w-[220px]">
+        <aside className="w-full md:w-auto min-w-[260px] max-w-[340px] mt-8 md:mt-16 md:-ml-4">
           <LeftMenu activeMenu={activeMenu} setActiveMenu={setActiveMenu} menuLabels={MENU_LABELS} />
-        </div>
+        </aside>
         {/* Контент */}
         <main className="w-full flex flex-col gap-5">
           <div key={activeMenu} className="animate-portfolio-fade">

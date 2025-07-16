@@ -11,7 +11,7 @@ export const loginUser = async (
   credentials: LoginRequest
 ): Promise<LoginResponse> => {
   try {
-    const response = await api.post("/user-service/auth/login", credentials);
+    const response = await api.post("/auth/login", credentials);
     return response.data as LoginResponse;
   } catch (error: unknown) {
     handleApiError(error);
@@ -26,6 +26,7 @@ export const loginUser = async (
 export const saveTokens = (tokens: LoginResponse): void => {
   localStorage.setItem("accessToken", tokens.accessToken);
   localStorage.setItem("refreshToken", tokens.refreshToken);
+  localStorage.removeItem("logout"); // Удаляем флаг logout при успешном логине
 };
 
 /**
@@ -65,6 +66,7 @@ export const clearTokens = (): void => {
  */
 export const logout = (): void => {
   clearTokens();
+  localStorage.setItem('logout', 'true'); // Ставим флаг logout
   // Перенаправление на страницу логина
   window.location.href = "/login";
 };

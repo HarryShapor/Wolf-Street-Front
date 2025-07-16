@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaLock, FaCreditCard, FaApple, FaGoogle, FaWallet, FaArrowRight } from 'react-icons/fa';
 import Button from '../../components/ui/Button';
+import { API_HOST } from '../../services/Api';
 
 const quickAmounts = [1000, 5000, 10000, 50000];
 const methods = [
@@ -12,20 +13,88 @@ const methods = [
 ];
 
 export default function DepositSection() {
-  const [balance, setBalance] = useState(12500);
+  const [balance, setBalance] = useState(0);
+  const [currency, setCurrency] = useState('₽');
+  const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceError, setBalanceError] = useState('');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState(methods[0].label);
   const [loading, setLoading] = useState(false);
+  const [depositError, setDepositError] = useState('');
+  const [depositSuccess, setDepositSuccess] = useState(false);
 
   const handleQuickAmount = (val: number) => setAmount(val.toString());
 
-  const handleDeposit = () => {
+  useEffect(() => {
+    setBalanceLoading(true);
+    setBalanceError('');
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(async res => {
+        if (res.status === 401) throw new Error('Пользователь не авторизован!');
+        if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBalance(typeof data[0].availableAmount === 'number' ? data[0].availableAmount : 0);
+          setCurrency(data[0].currency || '₽');
+        } else {
+          setBalance(0);
+          setCurrency('₽');
+        }
+      })
+      .catch(err => setBalanceError(err.message || 'Не удалось загрузить баланс'))
+      .finally(() => setBalanceLoading(false));
+  }, []);
+
+  const handleDeposit = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setBalance(b => b + Number(amount));
+    setDepositError('');
+    setDepositSuccess(false);
+    try {
+      const res = await fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({ currency: currency || 'RUB', amount: Number(amount) })
+      });
+      if (res.status === 401) throw new Error('Пользователь не авторизован!');
+      if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+      if (!res.ok) throw new Error('Ошибка пополнения');
+      // Обновить баланс после успешного пополнения
+      setDepositSuccess(true);
       setAmount('');
+      // Повторно получить баланс
+      setBalanceLoading(true);
+      setBalanceError('');
+      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+      })
+        .then(async res => {
+          if (res.status === 401) throw new Error('Пользователь не авторизован!');
+          if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+          return res.json();
+        })
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setBalance(typeof data[0].availableAmount === 'number' ? data[0].availableAmount : 0);
+            setCurrency(data[0].currency || '₽');
+          } else {
+            setBalance(0);
+            setCurrency('₽');
+          }
+        })
+        .catch(err => setBalanceError(err.message || 'Не удалось загрузить баланс'))
+        .finally(() => setBalanceLoading(false));
+    } catch (err: any) {
+      setDepositError(err.message || 'Ошибка пополнения');
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -37,7 +106,15 @@ export default function DepositSection() {
             <FaWallet className="text-[38px] text-light-accent dark:text-dark-accent" />
             <div className="flex flex-col items-start">
               <span className="text-[15px] text-light-fg/80 dark:text-dark-fg">Текущий баланс</span>
-              <span className="text-[32px] font-bold text-light-accent dark:text-dark-accent">{balance.toLocaleString('ru-RU')} ₽</span>
+              {balanceLoading ? (
+                <span className="text-[32px] font-bold text-light-accent dark:text-dark-accent">Загрузка...</span>
+              ) : balanceError && balanceError.includes('не найден') ? (
+                <span className="text-[32px] font-bold text-light-accent dark:text-dark-accent">0 ₽</span>
+              ) : balanceError ? (
+                <span className="text-[16px] text-red-500 dark:text-red-400">{balanceError}</span>
+              ) : (
+                <span className="text-[32px] font-bold text-light-accent dark:text-dark-accent">{balance.toLocaleString('ru-RU')} {currency}</span>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-2 justify-center mt-2">
@@ -102,6 +179,12 @@ export default function DepositSection() {
             >
               Пополнить
             </Button>
+            {depositError && (
+              <div className="text-red-500 dark:text-red-400 text-[15px] mt-2 text-center">{depositError}</div>
+            )}
+            {depositSuccess && !depositError && (
+              <div className="text-green-600 dark:text-green-400 text-[15px] mt-2 text-center">Средства успешно зачислены!</div>
+            )}
           </div>
           <div className="flex items-center gap-2 justify-center text-[14px] text-light-fg/80 dark:text-dark-fg mt-4">
             <FaLock className="text-[16px]" /> Все операции защищены

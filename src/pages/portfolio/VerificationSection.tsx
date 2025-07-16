@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { FaShieldAlt, FaExclamationTriangle, FaUserCheck, FaKey, FaListUl, FaLock, FaUserSecret, FaUserFriends, FaLink, FaCode, FaMobileAlt, FaPowerOff, FaTrashAlt, FaChevronRight } from 'react-icons/fa';
 import { LoaderBlock } from '../../components/ui/LoadingButton';
+import { API_HOST } from '../../services/Api';
 
 const steps = [
   { label: 'Двухфакторная аутентификация (2FA)', icon: <FaKey />, enabled: false },
@@ -8,6 +9,54 @@ const steps = [
   { label: 'Антифишинговый код', icon: <FaUserSecret />, enabled: false },
   { label: 'Белый список для вывода средств', icon: <FaListUl />, enabled: false },
 ];
+
+// Получение инструментов пользователя
+function UserInstrumentsBlock() {
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState('');
+  const [instruments, setInstruments] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    setLoading(true);
+    setError('');
+    // fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(async res => {
+        if (res.status === 401) throw new Error('Пользователь не авторизован!');
+        if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) setInstruments(data);
+        else setInstruments([]);
+      })
+      .catch(err => setError(err.message || 'Ошибка загрузки инструментов'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="mt-10 p-6 rounded-2xl bg-light-card/80 dark:bg-dark-card/80 border border-light-border/30 dark:border-dark-border/30 shadow">
+      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-2">Ваши инструменты</div>
+      {loading ? (
+        <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>
+      ) : error ? (
+        <div className="text-red-500 dark:text-red-400">{error}</div>
+      ) : instruments.length === 0 ? (
+        <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>
+      ) : (
+        <ul className="flex flex-wrap gap-3">
+          {instruments.map(inst => (
+            <li key={inst.instrumentId} className="px-3 py-1 rounded-lg bg-light-accent/10 dark:bg-dark-accent/10 text-light-accent dark:text-dark-accent text-[15px] font-mono border border-light-accent/20 dark:border-dark-accent/20">
+              {inst.instrumentId}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function VerificationSection() {
   // Заглушка для будущей загрузки
@@ -134,18 +183,3 @@ function SecurityRow({ icon, label, desc, status, btn, danger }: { icon: React.R
     </div>
   );
 }
-
-// Градиентная компактная кнопка с glow-эффектом
-// btn-accent-glow и btn-danger — добавить в глобальные стили:
-// .btn-accent-glow {
-//   @apply px-4 py-1.5 rounded-xl text-[15px] font-semibold bg-gradient-to-r from-light-accent/90 to-light-accent/70 dark:from-dark-accent/90 dark:to-dark-accent/70 text-white shadow-md border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 hover:scale-[1.04] hover:shadow-xl hover:ring-2 hover:ring-light-accent/30 dark:hover:ring-dark-accent/30 focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40;
-// }
-// .btn-danger {
-//   @apply bg-gradient-to-r from-red-500/90 to-red-400/80 dark:from-red-600/90 dark:to-red-500/80 border-red-400 dark:border-red-600 hover:bg-red-500 hover:to-red-600;
-// }
-
-// Новый класс для кнопки:
-// .btn-accent-glow-strong {
-//   @apply px-5 py-2 rounded-xl text-[16px] font-semibold bg-gradient-to-r from-light-accent to-light-accent/80 dark:from-dark-accent dark:to-dark-accent/80 text-white shadow-lg border-2 border-light-accent/40 dark:border-dark-accent/40 backdrop-blur-sm transition-all duration-200 hover:scale-[1.04] hover:shadow-2xl hover:bg-light-accent/90 dark:hover:bg-dark-accent/90 hover:border-light-accent dark:hover:border-dark-accent focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40;
-// }
-// .btn-danger { /* оставить как раньше */ } 

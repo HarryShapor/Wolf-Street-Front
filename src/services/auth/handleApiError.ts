@@ -5,9 +5,9 @@ export function handleApiError(error: any) {
       case 409:
         throw new Error("Пользователь с таким email или username уже существует!");
       case 401:
-        throw new Error("Невалидный токен или пользователь не авторизован!");
+        throw new Error("Неверные данные для входа или сессия устарела. Пожалуйста, войдите заново.");
       case 403:
-        throw new Error("Неверное имя пользователя или пароль!");
+        throw new Error("Неверные имя пользователя или пароль.");
       case 404:
         throw new Error("Пользователь не найден!");
       case 500:

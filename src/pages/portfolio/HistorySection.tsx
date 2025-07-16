@@ -1,23 +1,38 @@
 import * as React from "react";
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import { FaArrowDown, FaArrowUp, FaShoppingCart, FaExchangeAlt } from 'react-icons/fa';
 import { Listbox } from '@headlessui/react';
+import { API_HOST } from '../../services/Api';
 
-// Моковые данные
-const mockData = [
-  { id: 1, date: '2024-06-01', type: 'Пополнение', amount: 10000, status: 'Успешно' },
-  { id: 2, date: '2024-06-02', type: 'Вывод', amount: 5000, status: 'В обработке' },
-  { id: 3, date: '2024-06-03', type: 'Покупка', amount: 3000, status: 'Успешно' },
-  { id: 4, date: '2024-06-04', type: 'Продажа', amount: 2000, status: 'Ошибка' },
-  { id: 5, date: '2024-06-05', type: 'Пополнение', amount: 15000, status: 'Успешно' },
-  { id: 6, date: '2024-06-06', type: 'Покупка', amount: 7000, status: 'Успешно' },
-  { id: 7, date: '2024-06-07', type: 'Вывод', amount: 4000, status: 'Успешно' },
-  { id: 8, date: '2024-06-08', type: 'Продажа', amount: 2500, status: 'В обработке' },
-  { id: 9, date: '2024-06-09', type: 'Пополнение', amount: 8000, status: 'Ошибка' },
-  { id: 10, date: '2024-06-10', type: 'Покупка', amount: 6000, status: 'Успешно' },
-  { id: 11, date: '2024-06-11', type: 'Вывод', amount: 3500, status: 'Успешно' },
-  { id: 12, date: '2024-06-12', type: 'Продажа', amount: 2200, status: 'Успешно' },
-];
+const API_URL = `${API_HOST}/order-service/api/v1/orders`;
+
+// Преобразование данных API к формату таблицы
+function mapApiToTable(item: any) {
+  // orderId, instrumentId, count, lotPrice, type, status, createdAt
+  let type = '';
+  switch (item.type) {
+    case 'BUY': type = 'Покупка'; break;
+    case 'SALE': type = 'Продажа'; break;
+    default: type = item.type;
+  }
+  let status = '';
+  switch (item.status) {
+    case 'NEW': status = 'В обработке'; break;
+    case 'PARTIALLY_EXECUTED': status = 'В обработке'; break;
+    case 'EXECUTED': status = 'Успешно'; break;
+    case 'PARTIALLY_CANCELLED': status = 'Ошибка'; break;
+    case 'CANCELLED': status = 'Ошибка'; break;
+    default: status = item.status;
+  }
+  return {
+    id: item.orderId,
+    date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ru-RU') + ', ' + new Date(item.createdAt).toLocaleTimeString('ru-RU') : '',
+    type,
+    amount: item.lotPrice && item.count ? item.lotPrice * item.count : 0,
+    status,
+  };
+}
 
 const typeOptions = ['Все', 'Пополнение', 'Вывод', 'Покупка', 'Продажа'] as const;
 const statusOptions = ['Все', 'Успешно', 'В обработке', 'Ошибка'] as const;
@@ -38,10 +53,38 @@ export default function HistorySection() {
   const [type, setType] = useState<OperationType>('Все');
   const [status, setStatus] = useState<string>('Все');
   const [page, setPage] = useState(1);
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Загрузка истории из API
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    fetch(API_URL, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Ошибка загрузки истории заявок');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setData(data.map(mapApiToTable));
+        } else {
+          setData([]);
+        }
+      })
+      .catch(err => {
+        setError(err.message || 'Ошибка загрузки истории заявок');
+        setData([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   // Фильтрация и поиск
   const filteredData = useMemo(() => {
-    return mockData.filter(item => {
+    return data.filter(item => {
       const matchesType = type === 'Все' || item.type === type;
       const matchesStatus = status === 'Все' || item.status === status;
       const matchesSearch =
@@ -51,7 +94,7 @@ export default function HistorySection() {
         item.date.includes(search);
       return matchesType && matchesStatus && matchesSearch;
     });
-  }, [search, type, status]);
+  }, [search, type, status, data]);
 
   // Пагинация
   const pageCount = Math.ceil(filteredData.length / PAGE_SIZE);
@@ -169,7 +212,26 @@ export default function HistorySection() {
               </tr>
             </thead>
             <tbody>
-              {paginatedData.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="py-6 text-center text-light-fg/70 dark:text-dark-fg/70">Загрузка...</td>
+                </tr>
+              ) : error ? (
+                error === 'Портфель пользователя не найден!' ? (
+                  <tr>
+                    <td colSpan={4} className="py-12 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="text-[20px] font-bold text-light-fg dark:text-dark-fg mb-1">Сделок пока не было</div>
+                        <div className="text-[15px] text-light-fg/70 dark:text-dark-fg/70">Ваша история появится здесь после первой операции</div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-red-500 dark:text-red-400">{error}</td>
+                  </tr>
+                )
+              ) : paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-6 text-center text-light-fg/70 dark:text-dark-fg/70">Нет данных</td>
                 </tr>
@@ -181,7 +243,7 @@ export default function HistorySection() {
                       {typeIcons[item.type]}
                       <span>{item.type}</span>
                     </td>
-                    <td className="py-2 px-4 font-semibold group-hover:text-light-accent dark:group-hover:text-dark-accent transition">{item.amount.toLocaleString('ru-RU')} ₽</td>
+                    <td className="py-2 px-4 font-semibold group-hover:text-light-accent dark:group-hover:text-dark-accent transition">{item.amount?.toLocaleString('ru-RU') ?? 0} ₽</td>
                     <td className="py-2 px-4">
                       <span
                         className={

@@ -22,7 +22,7 @@ describe('registerUser', () => {
   it('должен отправлять правильные данные на сервер', async () => {
     (api.post as any).mockResolvedValueOnce({});
     await expect(registerUser(mockUser)).resolves.toBeUndefined();
-    expect(api.post).toHaveBeenCalledWith('/user-service/auth/register', mockUser);
+    expect(api.post).toHaveBeenCalledWith('/user-service/v1/auth/register', mockUser);
   });
 
   it('должен выбрасывать ошибку при ошибке api', async () => {

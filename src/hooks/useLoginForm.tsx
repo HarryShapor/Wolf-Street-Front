@@ -24,6 +24,14 @@ export function useLoginForm({ onSuccess }: UseLoginFormProps) {
     setRememberMe(remembered);
     // Расшифровываем пароль из cookie, если есть
     const encrypted = Cookies.get(PASSWORD_COOKIE_KEY);
+    let username = "";
+    if (remembered) {
+      username = Cookies.get('rememberedUsername') || "";
+    }
+    setFormData(prev => ({
+      ...prev,
+      username,
+    }));
     if (encrypted) {
       try {
         const bytes = CryptoJS.AES.decrypt(encrypted, PASSWORD_ENCRYPT_KEY);
@@ -102,27 +110,56 @@ export function useLoginForm({ onSuccess }: UseLoginFormProps) {
       setIsLoading(true);
       setError("");
 
+      let finished = false;
+      const timeout = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          setIsLoading(false);
+          setError('Сервер не отвечает. Попробуйте позже.');
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            const event = new CustomEvent('loginErrorToast', { detail: 'Сервер не отвечает. Попробуйте позже.' });
+            window.dispatchEvent(event);
+          }
+        }
+      }, 2000);
       try {
         const tokens = await loginUser(formData);
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
         saveTokens(tokens);
         // Сохраняем пароль в cookie, если rememberMe (шифруем)
         if (rememberMe) {
           const encrypted = CryptoJS.AES.encrypt(formData.password, PASSWORD_ENCRYPT_KEY).toString();
           Cookies.set(PASSWORD_COOKIE_KEY, encrypted, { expires: 30 });
+          Cookies.set('rememberedUsername', formData.username, { expires: 30 }); // Сохраняем username
         } else {
           Cookies.remove(PASSWORD_COOKIE_KEY);
+          Cookies.remove('rememberedUsername');
         }
         onSuccess();
-
-        // Перенаправление через 1 секунду на главную страницу
         setTimeout(() => {
           navigate("/");
-        }, 1000);
+        }, 2000);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Произошла ошибка при входе"
-        );
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
+        let msg = err instanceof Error ? err.message : "Произошла ошибка при входе";
+        if (/invalid token|jwt|token|Unauthorized|401|403/i.test(msg)) {
+          msg = "Неверные имя пользователя или пароль.";
+        }
+        setError(msg);
+        if (msg) {
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              const event = new CustomEvent('loginErrorToast', { detail: msg });
+              window.dispatchEvent(event);
+            }
+          }, 10);
+        }
       } finally {
+        clearTimeout(timeout);
         setIsLoading(false);
       }
     },

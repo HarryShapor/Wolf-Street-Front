@@ -3,9 +3,9 @@ import VerificationSection from './VerificationSection';
 import DepositSection from './DepositSection';
 import TradeSection from './TradeSection';
 import BalanceSection from './BalanceSection';
-import AssetsSection from './AssetsSection';
+// import AssetsSection from './AssetsSection';
 import HistorySection from './HistorySection';
-import { getCurrencyRates } from '../../services/Api';
+import { getCurrencyRates, API_HOST } from '../../services/Api';
 import clsx from 'clsx';
 import ProfileHeader from './components/ProfileHeader';
 import Card from '../../components/ui/Card';
@@ -20,6 +20,20 @@ import { createPortal } from "react-dom";
 import ReactDOM from 'react-dom';
 import ReactECharts from 'echarts-for-react';
 import { useTheme } from '../../context/ThemeContext';
+import DEFAULT_AVATAR_SVG from '../../components/ui/defaultAvatar';
+import { getUserAvatarUrl } from '../../services/AvatarService';
+// Локальное определение типа Instrument для аналитики
+type Instrument = {
+  instrumentId: number;
+  availableAmount: number;
+  blockedAmount: number;
+  totalAmount: number;
+  symbol?: string;
+  name?: string;
+  type?: string;
+  price?: number;
+  iconUrl?: string;
+};
 
 // Мок-история операций
 const mockHistory = [
@@ -32,7 +46,6 @@ const mockHistory = [
 const STEPS: Step[] = [
   { key: 'wallet', label: 'Актуальный кошелёк' },
   { key: 'empty', label: 'Анализ' },
-  { key: 'rates', label: 'Курс валют' },
 ];
 
 function OperationHistoryBlock({ compact = false, maxRows }: { compact?: boolean, maxRows?: number }) {
@@ -241,13 +254,21 @@ function CurrencyRatesCard({ rates, loading, error, onRefresh, compact = false }
   );
 }
 
-const API_BASE = "http://89.169.183.192:8080";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () => void }) {
   // Все хуки должны быть до любых return/if!
   const [user, setUser] = useState<{ email: string; phone: string; username: string } | null>(null);
+  const [status, setStatus] = useState<'Обычный' | 'VIP'>('Обычный');
+  const [avatarUrl, setAvatarUrl] = useState<string>(DEFAULT_AVATAR_SVG);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    phone: '',
+  });
 
   // --- КУРСЫ ВАЛЮТ ---
   const [rates, setRates] = useState<{ [code: string]: number }>({});
@@ -273,19 +294,12 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/user-service/user/me`, {
+        const res = await axios.get(`${API_BASE}/user/me`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         });
         setUser(res.data);
-        // ---
-        // Фейковые данные:
-        // setUser({
-        //   username: 'demo_user',
-        //   email: 'demo@example.com',
-        //   phone: '+7 999 123-45-67',
-        // });
       } catch (err) {
         setError("Не удалось загрузить данные пользователя");
       } finally {
@@ -295,12 +309,31 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      setForm({
+        username: user.username || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
+  // Получение аватара пользователя
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      const url = await getUserAvatarUrl();
+      setAvatarUrl(url);
+    };
+    fetchAvatar();
+  }, []);
+
   const handleRetry = () => {
     setLoading(true);
     setError("");
     (async () => {
       try {
-        const res = await axios.get(`${API_BASE}/user-service/user/me`, {
+        const res = await axios.get(`${API_BASE}/user/me`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
@@ -321,6 +354,49 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
     })();
   };
 
+  // Функции для массового редактирования
+  const handleFieldChange = (field: keyof typeof form, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+  const handleSave = async () => {
+    // TODO: добавить валидацию и отправку запроса
+    setEditing(false);
+  };
+  const handleCancel = () => {
+    if (user) {
+      setForm({
+        username: user.username || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      });
+    }
+    setEditing(false);
+  };
+
+  // --- Состояние инструментов для всего портфеля ---
+  const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [instrumentsLoading, setInstrumentsLoading] = useState(true);
+  const [instrumentsError, setInstrumentsError] = useState('');
+
+  useEffect(() => {
+    setInstrumentsLoading(true);
+    setInstrumentsError('');
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(async res => {
+        if (res.status === 401) throw new Error('Пользователь не авторизован!');
+        if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) setInstruments(data);
+        else setInstruments([]);
+      })
+      .catch(err => setInstrumentsError(err.message || 'Ошибка загрузки инструментов'))
+      .finally(() => setInstrumentsLoading(false));
+  }, []);
+
   if (loading) return <LoaderBlock text="Загружаем профиль..." />;
   if (error) return <ErrorBlock text={error} onRetry={handleRetry} />;
   if (!user) return null;
@@ -329,49 +405,104 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
     <div className="bg-gradient-to-br from-light-card to-light-bg dark:from-dark-card dark:to-[#181926] rounded-2xl p-8 shadow-2xl card-glow backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 text-light-fg dark:text-dark-fg mt-6 transition-all duration-300">
       {/* Шапка пользователя */}
       <ProfileHeader
-        avatar="https://i.imgur.com/0y0y0y0.png"
+        avatar={avatarUrl}
         nickname={user.username}
-        uid="1125773083"
-        vipLabel="VIP Обычный пользователь"
-        vip={true}
+        status={status}
       />
-      <StepperPanel onDepositClick={onGoToDeposit} rates={rates} ratesLoading={ratesLoading} ratesError={ratesError} onRatesRefresh={fetchRates} />
+      {/* Остальной контент профиля */}
+      <StepperPanel onDepositClick={onGoToDeposit} rates={rates} ratesLoading={ratesLoading} ratesError={ratesError} onRatesRefresh={fetchRates}
+        instruments={instruments}
+        instrumentsLoading={instrumentsLoading}
+        instrumentsError={instrumentsError}
+      />
       <div className="flex flex-col gap-4.5">
         <TradeSection />
-        <AssetsSection />
+        <PortfolioInstrumentsList instruments={instruments} loading={instrumentsLoading} error={instrumentsError} />
         {/* ...и всё, что было раньше */}
       </div>
     </div>
   );
 }
 
-function StepperPanel({ onDepositClick, rates, ratesLoading, ratesError, onRatesRefresh }: { onDepositClick: () => void, rates: { [code: string]: number }, ratesLoading: boolean, ratesError: boolean, onRatesRefresh: () => void }) {
+function StepperPanel({
+  onDepositClick, rates, ratesLoading, ratesError, onRatesRefresh,
+  instruments, instrumentsLoading, instrumentsError
+}: {
+  onDepositClick: () => void,
+  rates: { [code: string]: number },
+  ratesLoading: boolean,
+  ratesError: boolean,
+  onRatesRefresh: () => void,
+  instruments: Instrument[],
+  instrumentsLoading: boolean,
+  instrumentsError: string
+}) {
   const [active, setActive] = useState<string>('wallet');
+
+  // Баланс кошелька
+  const [walletLoading, setWalletLoading] = useState(true);
+  const [walletError, setWalletError] = useState('');
+  const [walletAmount, setWalletAmount] = useState<number>(0);
+  const [walletCurrency, setWalletCurrency] = useState<string>('₽');
+
+  useEffect(() => {
+    setWalletLoading(true);
+    setWalletError('');
+    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    })
+      .then(async res => {
+        if (res.status === 401) throw new Error('Пользователь не авторизован!');
+        if (res.status === 404) throw new Error('Портфель пользователя не найден!');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setWalletAmount(typeof data[0].availableAmount === 'number' ? data[0].availableAmount : 0);
+          setWalletCurrency(data[0].currency || '₽');
+        } else {
+          setWalletAmount(0);
+          setWalletCurrency('₽');
+        }
+      })
+      .catch(err => setWalletError(err.message || 'Не удалось загрузить баланс'))
+      .finally(() => setWalletLoading(false));
+  }, []);
+
   const cards = [
     {
       key: 'wallet',
       title: 'Актуальный кошелёк',
-      icon: '💸',
+      // icon убран
       content: (
         <div className="flex flex-col items-start gap-1 w-full">
-          <span className="text-[32px] animate-pulse mb-1">💸</span>
-          <span className="text-[28px] font-extrabold text-light-accent dark:text-dark-accent mb-0.5">₽ 0.00</span>
+          {walletLoading ? (
+            <span className="text-[28px] font-extrabold text-light-accent dark:text-dark-accent mb-0.5">Загрузка...</span>
+          ) : walletError ? (
+            <span className="text-red-500 text-[16px] mb-0.5">{walletError}</span>
+          ) : (
+            <span className="text-[28px] font-extrabold text-light-accent dark:text-dark-accent mb-0.5">
+              {walletCurrency} {walletAmount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          )}
           <span className="text-light-fg/80 dark:text-dark-brown text-[15px]">Ваш баланс</span>
+          <div className="w-full flex justify-start pl-2">
+            <button
+              onClick={onDepositClick}
+              className="mt-4 w-auto px-5 py-2 rounded-lg bg-light-accent dark:bg-dark-accent text-white font-semibold shadow-md transition-all duration-200 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-light-accent/60 dark:focus:ring-dark-accent/60"
+              type="button"
+            >
+              Пополнить
+            </button>
+          </div>
         </div>
       ),
-      actions: <Button variant="gradient" size="md" onClick={onDepositClick}>Пополнить</Button>,
     },
     {
       key: 'empty',
       title: 'Анализ портфеля',
       icon: '💹',
-      content: <div className="w-full flex flex-col items-start"><PortfolioMiniAnalytics /></div>,
-    },
-    {
-      key: 'rates',
-      title: 'Курс валют',
-      icon: '💱',
-      content: <CurrencyRatesCard rates={rates} loading={ratesLoading} error={ratesError} onRefresh={onRatesRefresh} />,
+      content: <div className="w-full flex flex-col items-start"><PortfolioMiniAnalytics instruments={instruments} loading={instrumentsLoading} error={instrumentsError} /></div>,
     },
   ];
   if (active === 'deposit') {
@@ -405,16 +536,16 @@ function StepperPanel({ onDepositClick, rates, ratesLoading, ratesError, onRates
                 <div className="flex flex-col justify-between w-full h-full">
                   <div className="flex items-start justify-between w-full mb-4">
                     <div className="text-[22px] font-bold text-light-fg dark:text-dark-fg leading-tight">{card.title}</div>
-                    <span className="text-[38px] ml-4 flex-shrink-0">{card.icon}</span>
+                    {card.icon && <span className="text-[38px] ml-4 flex-shrink-0">{card.icon}</span>}
                   </div>
                   <div className="flex-1 flex flex-col justify-start w-full gap-4 overflow-y-auto">
                     {card.content}
-                    {card.actions && <div className="mt-4">{card.actions}</div>}
+                    {/* actions убраны */}
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center w-full h-full px-2">
-                  <span className="text-[28px] mb-2">{card.icon}</span>
+                  {card.icon && <span className="text-[28px] mb-2">{card.icon}</span>}
                   <div className="text-[15px] font-semibold text-light-fg dark:text-dark-fg leading-tight">{card.title}</div>
                 </div>
               )}
@@ -477,9 +608,9 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
   }
   const cardColors = getCardColors();
   return (
-    <div style={{ width: 320, height: 320, background: 'transparent', borderRadius: 24, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ width: 420, height: 420, background: 'transparent', borderRadius: 24, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <ReactECharts
-        style={{ width: '100%', height: 320 }}
+        style={{ width: '100%', height: 420 }}
         option={{
           backgroundColor: 'transparent',
           tooltip: {
@@ -519,7 +650,7 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
                 fill: theme === 'dark' ? '#fff' : '#23243a',
                 textAlign: 'center',
                 textVerticalAlign: 'middle',
-                shadowColor: theme === 'dark' ? '#181926' : '#000',
+                shadowColor: theme === 'dark' ? '#181926' : 'transparent',
                 shadowBlur: 8,
               },
             },
@@ -539,23 +670,11 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
                 shadowColor: 'transparent',
               },
               label: {
-                show: true,
-                position: 'inside',
-                formatter: '{d}%',
-                color: '#fff',
-                fontSize: 19,
-                fontWeight: 800,
-                shadowColor: '#181926',
-                shadowBlur: 8,
-                rich: {
-                  percent: {
-                    textShadow: '0 2px 8px rgba(24,25,38,0.25)',
-                    stroke: '#23243a',
-                    lineWidth: 2,
-                  }
-                },
+                show: false,
               },
-              labelLine: { show: false },
+              labelLine: {
+                show: false,
+              },
               minAngle: 10,
               startAngle: 90,
               clockwise: true,
@@ -573,19 +692,9 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
                   },
                   borderRadius: 8,
                 },
-              })),
-              emphasis: {
-                scale: true,
-                itemStyle: {
-                  shadowBlur: 14,
-                  shadowColor: theme === 'dark' ? 'rgba(52,211,153,0.18)' : 'rgba(16,185,129,0.12)',
-                  borderColor: accent,
-                  borderWidth: 3,
-                },
-              },
+              }))
             },
           ],
-          // color убран, теперь цвета только через itemStyle
         }}
         opts={{ renderer: 'canvas' }}
       />
@@ -593,15 +702,32 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
   );
 }
 
-function PortfolioMiniAnalytics() {
-  const assets = [
-    { symbol: 'BTC', name: 'Bitcoin', percent: 73.1, value: 2730000, color: 'bg-gradient-to-r from-yellow-400 to-yellow-500' },
-    { symbol: 'ETH', name: 'Ethereum', percent: 23.1, value: 864000, color: 'bg-gradient-to-r from-blue-400 to-blue-600' },
-    { symbol: 'USDT', name: 'Tether', percent: 3.0, value: 110400, color: 'bg-gradient-to-r from-emerald-400 to-emerald-600' },
-    { symbol: 'TON', name: 'Toncoin', percent: 0.8, value: 31500, color: 'bg-gradient-to-r from-cyan-400 to-cyan-600' },
-  ];
+// Аналитика портфеля на основе реальных инструментов
+function PortfolioMiniAnalytics({ instruments, loading, error }: { instruments: Instrument[], loading: boolean, error: string }) {
+  if (loading) return <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>;
+  if (error) return <div className="text-red-500 dark:text-red-400">{error}</div>;
+  if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
+
+  // Считаем стоимость каждого актива
+  const assets = instruments.map(a => ({
+    symbol: a.symbol || String(a.instrumentId),
+    name: a.name || '',
+    value: (a.totalAmount || 0) * (a.price || 1),
+  }));
   const total = assets.reduce((sum, a) => sum + a.value, 0);
-  const topAssets = assets.slice(0, 3);
+  // Сортируем по стоимости
+  const sorted = [...assets].sort((a, b) => b.value - a.value);
+  // Топ-3 актива с вычисленной долей
+  const topAssets = sorted.slice(0, 3).map((a, i) => ({
+    ...a,
+    percent: total ? +(a.value / total * 100).toFixed(1) : 0,
+    color: [
+      'bg-gradient-to-r from-yellow-400 to-yellow-500',
+      'bg-gradient-to-r from-blue-400 to-blue-600',
+      'bg-gradient-to-r from-emerald-400 to-emerald-600',
+      'bg-gradient-to-r from-cyan-400 to-cyan-600',
+    ][i % 4],
+  }));
   return (
     <div className="flex flex-col gap-2 items-center justify-center w-full">
       <span className="text-[22px] font-extrabold text-light-accent dark:text-dark-accent mb-0.5">💹</span>
@@ -621,9 +747,43 @@ function PortfolioMiniAnalytics() {
         ))}
       </div>
       <div className="mt-1 text-[12px] text-light-fg/80 dark:text-dark-brown flex flex-row gap-2 items-center">
-        <span>Доля BTC: <span className="font-bold text-light-accent dark:text-dark-accent">{assets[0].percent}%</span></span>
+        {topAssets[0] && <span>Доля {topAssets[0].symbol}: <span className="font-bold text-light-accent dark:text-dark-accent">{topAssets[0].percent}%</span></span>}
         <span className="mx-1">/</span>
-        <span>Диверсификация: <span className="font-bold text-light-accent dark:text-dark-accent">низкая</span></span>
+        <span>Диверсификация: <span className="font-bold text-light-accent dark:text-dark-accent">{topAssets.length > 1 ? 'средняя' : 'низкая'}</span></span>
+      </div>
+    </div>
+  );
+}
+
+// Простой компонент для отображения списка инструментов
+function PortfolioInstrumentsList({ instruments, loading, error }: { instruments: Instrument[], loading: boolean, error: string }) {
+  if (loading) return <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>;
+  if (error) return <div className="text-red-500 dark:text-red-400">{error}</div>;
+  if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
+  return (
+    <div className="bg-white/90 dark:bg-[#18191c] border border-light-border/30 dark:border-[#23243a] shadow-inner dark:shadow-[inset_0_2px_16px_0_rgba(0,0,0,0.25)] rounded-2xl p-6 mt-2">
+      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-4">Ваши инструменты</div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-[15px]">
+          <thead>
+            <tr className="text-light-fg/80 dark:text-dark-brown font-semibold">
+              <th className="py-2 px-3">Символ</th>
+              <th className="py-2 px-3">Название</th>
+              <th className="py-2 px-3">Количество</th>
+              <th className="py-2 px-3">Стоимость</th>
+            </tr>
+          </thead>
+          <tbody>
+            {instruments.map(inst => (
+              <tr key={inst.instrumentId} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all">
+                <td className="py-2 px-3 font-mono font-bold text-light-accent dark:text-dark-accent">{inst.symbol || inst.instrumentId}</td>
+                <td className="py-2 px-3">{inst.name || '-'}</td>
+                <td className="py-2 px-3 font-mono">{inst.totalAmount}</td>
+                <td className="py-2 px-3 font-mono">₽ {(inst.price && inst.totalAmount) ? (inst.price * inst.totalAmount).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

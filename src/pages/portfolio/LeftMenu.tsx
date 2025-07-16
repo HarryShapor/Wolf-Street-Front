@@ -27,7 +27,7 @@ export default function LeftMenu({ activeMenu, setActiveMenu, menuLabels }: { ac
 
   return (
     <aside
-      className="min-w-[240px] max-h-[calc(100vh-140px)] bg-gradient-to-br from-white/80 to-light-card/90 dark:from-dark-card/80 dark:to-[#181926]/90 rounded-3xl p-6 flex flex-col gap-3 shadow-2xl card-glow backdrop-blur-md bg-opacity-95 border border-light-border dark:border-dark-border fixed top-[120px] left-32 z-30 text-light-fg dark:text-dark-fg transition-all duration-300 animate-leftmenu-fade-in overflow-y-auto"
+      className="min-w-[260px] md:min-w-[300px] max-w-[340px] md:w-[300px] max-h-[calc(100vh-140px)] bg-gradient-to-br from-white/80 to-light-card/90 dark:from-dark-card/80 dark:to-[#181926]/90 rounded-3xl p-4 sm:p-6 flex flex-col gap-3 shadow-2xl card-glow backdrop-blur-md bg-opacity-95 border border-light-border dark:border-dark-border text-light-fg dark:text-dark-fg transition-all duration-300 animate-leftmenu-fade-in overflow-y-auto"
       style={{boxShadow: '0 8px 32px 0 #a18fff22'}}
     >
       {menuLabels.map((label) => {

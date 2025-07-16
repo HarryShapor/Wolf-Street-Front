@@ -3,7 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import LoginForm from "./components/LoginForm";
 import AuthPromoBanner from "./components/AuthPromoBanner";
 import AuthSuccessMessage from "../../components/ui/AuthSuccessMessage";
-import ToastModal from '../../components/ui/ToastModal';
+import ToastModal from '../trade/ToastModal';
+import Cookies from "js-cookie";
+import CryptoJS from "crypto-js";
+import { loginUser, saveTokens } from "../../services/auth/Login";
+
+const PASSWORD_COOKIE_KEY = "password";
+const PASSWORD_ENCRYPT_KEY = "demo-key";
 
 const LoginPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
@@ -28,6 +34,31 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (profileUpdated) setToast({open: true, message: "Профиль успешно обновлён. Войдите с новыми данными. Если не удаётся войти — попробуйте позже или обратитесь в поддержку.", type: "success"});
   }, [profileUpdated]);
+
+  // --- АВТОЛОГИН ---
+  useEffect(() => {
+    const tryAutoLogin = async () => {
+      const rememberMe = Cookies.get("rememberMe") === "true";
+      const encrypted = Cookies.get(PASSWORD_COOKIE_KEY);
+      const username = Cookies.get("rememberedUsername") || "";
+      const logoutFlag = localStorage.getItem("logout");
+      const accessToken = localStorage.getItem("accessToken");
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (rememberMe && encrypted && username && !accessToken && !refreshToken && !logoutFlag) {
+        try {
+          const bytes = CryptoJS.AES.decrypt(encrypted, PASSWORD_ENCRYPT_KEY);
+          const password = bytes.toString(CryptoJS.enc.Utf8);
+          if (!password) return;
+          const tokens = await loginUser({ username, password });
+          saveTokens(tokens);
+          setSuccess(true);
+        } catch (e) {
+          // Не автологиним, если ошибка
+        }
+      }
+    };
+    tryAutoLogin();
+  }, []);
 
   if (success) {
     return (

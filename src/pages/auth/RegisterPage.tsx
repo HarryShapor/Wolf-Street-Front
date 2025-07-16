@@ -1,27 +1,25 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import AuthFormHeader from "./components/AuthFormHeader";
 import AuthFormFooter from "./components/AuthFormFooter";
 import RegisterForm from "./components/RegisterForm";
 import AuthSuccessMessage from "../../components/ui/AuthSuccessMessage";
-import ToastModal from '../../components/ui/ToastModal';
+import ToastModal from '../trade/ToastModal';
 
 const RegisterPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
   const [toast, setToast] = useState<{open: boolean, message: string, type?: 'success'|'error'|'info', title?: string}>({open: false, message: ''});
 
   const showToast = (opts: {message: string, type?: 'success'|'error'|'info', title?: string}) => {
     setToast({open: true, ...opts});
   };
 
-  if (success) {
-    return (
-      <AuthSuccessMessage
-        title="Регистрация успешна!"
-        message="Ваш аккаунт создан. Перенаправляем на страницу входа..."
-      />
-    );
-  }
+  useEffect(() => {
+    if (success) {
+      navigate("/", { replace: true });
+    }
+  }, [success, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-light-bg dark:bg-dark-bg">

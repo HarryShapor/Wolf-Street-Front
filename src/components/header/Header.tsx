@@ -69,6 +69,7 @@ export default function Header({
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.setItem("logout", "true"); // Ставим флаг logout
     setIsAuth(false);
     setMenuOpen(false);
     navigate("/login");
@@ -77,8 +78,7 @@ export default function Header({
   return (
     <>
       <header
-        className={`fixed top-0 left-0 w-full z-30 flex items-center justify-between px-6 py-2 min-h-12 
-          transition-all duration-700 ease-[cubic-bezier(.4,0,.2,1)]
+        className={`fixed top-0 left-0 w-full z-30 flex items-center px-6 py-2 min-h-12 transition-all duration-700 ease-[cubic-bezier(.4,0,.2,1)]
           ${
             headerVisible
               ? "translate-y-0 opacity-100"
@@ -90,6 +90,7 @@ export default function Header({
               : "bg-transparent"
           }`}
       >
+        {/* Логотип и название слева */}
         <div
           className={`flex items-center gap-3 ${
             !isMain ? "cursor-pointer" : "cursor-default"
@@ -121,35 +122,44 @@ export default function Header({
           </span>
         </div>
 
-        <nav className="flex gap-1">
-          <button
-            onClick={() => handleNavClick("main")}
-            className={`text-sm font-bold py-1.5 px-4 rounded-full border-none outline-none cursor-pointer transition-all duration-200
-              ${
-                isMain && activeSection === "main"
-                  ? "bg-light-nav-active dark:bg-dark-nav-active text-light-nav-text dark:text-dark-nav-text scale-105 shadow-[0_2px_8px_rgba(197,107,98,0.33)] dark:shadow-[0_2px_8px_rgba(129,199,132,0.33)]"
-                  : "bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:scale-105"
-              }`}
-          >
-            Главная
-          </button>
-          {NAV.filter((section) => section.id !== "main").map((section) => (
-            <button
-              key={section.id}
-              onClick={() => handleNavClick(section.id)}
-              className={`text-sm font-bold py-1.5 px-4 rounded-full border-none outline-none cursor-pointer transition-all duration-200
-                ${
-                  isMain && activeSection === section.id
-                    ? "bg-light-nav-active dark:bg-dark-nav-active text-light-nav-text dark:text-dark-nav-text scale-105 shadow-[0_2px_8px_rgba(197,107,98,0.33)] dark:shadow-[0_2px_8px_rgba(129,199,132,0.33)]"
-                    : "bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:scale-105"
-                }`}
-            >
-              {section.label}
-            </button>
-          ))}
+        {/* Навигация по центру */}
+        <nav className="flex-1 flex justify-center gap-2">
+          {(() => {
+            const navWithMain = NAV.some((s) => s.id === "main")
+              ? NAV
+              : [{ id: "main", label: "Главная" }, ...NAV];
+            return navWithMain.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => handleNavClick(section.id)}
+                className={`text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200
+                  ${
+                    isMain && activeSection === section.id
+                      ? "bg-light-accent/90 dark:bg-dark-accent/90 text-white shadow-md"
+                      : "bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
+                  }
+                `}
+              >
+                {section.label}
+              </button>
+            ));
+          })()}
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Actions справа */}
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => navigate("/trade")}
+            className="px-4 py-1.5 rounded-full bg-gradient-to-r from-light-accent to-light-accent/80 dark:from-dark-accent dark:to-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
+          >
+            Торговля
+          </button>
+          <button
+            onClick={() => navigate("/instruments")}
+            className="px-4 py-1.5 rounded-full bg-light-accent/80 dark:bg-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
+          >
+            Инструменты
+          </button>
           <button
             ref={searchBtnRef}
             onClick={() => {
@@ -164,7 +174,7 @@ export default function Header({
               }
             }}
             aria-label="Поиск"
-            className="bg-transparent border-none cursor-pointer p-1 ml-0 flex items-center hover:scale-110 transition-transform"
+            className="bg-transparent border-none cursor-pointer p-1 flex items-center hover:scale-110 transition-transform"
           >
             <svg
               width="20"
@@ -180,12 +190,11 @@ export default function Header({
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </button>
-
           {/* --- AUTH BUTTONS --- */}
           {!isAuth ? (
             <button
               onClick={() => navigate("/login")}
-              className="py-1.5 px-4 bg-light-accent dark:bg-dark-accent text-light-nav-text dark:text-dark-nav-text rounded-full font-bold text-sm border-none cursor-pointer shadow-[0_2px_8px_rgba(197,107,98,0.33)] dark:shadow-[0_2px_8px_rgba(129,199,132,0.33)] hover:scale-105 transition-transform"
+              className="px-4 py-1.5 rounded-full bg-light-accent/80 dark:bg-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
             >
               Войти
             </button>
@@ -210,7 +219,7 @@ export default function Header({
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-dark-card shadow-lg rounded-lg z-50 border border-light-border dark:border-dark-border transition-all duration-200 origin-top-right animate-profile-menu">
                   <button
-                    className="w-full text-left px-4 py-2 rounded-md transition-all duration-200 hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent active:bg-light-accent/20 dark:active:bg-dark-accent/20 hover:pl-6"
+                    className="w-full text-left px-4 py-2 rounded-md transition-all duration-200 text-light-fg dark:text-dark-fg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent active:bg-light-accent/20 dark:active:bg-dark-accent/20 hover:pl-6"
                     onClick={() => {
                       setMenuOpen(false);
                       navigate("/portfolio");
@@ -219,7 +228,7 @@ export default function Header({
                     Профиль
                   </button>
                   <button
-                    className="w-full text-left px-4 py-2 rounded-md transition-all duration-200 hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent active:bg-light-accent/20 dark:active:bg-dark-accent/20 hover:pl-6"
+                    className="w-full text-left px-4 py-2 rounded-md transition-all duration-200 text-light-fg dark:text-dark-fg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent active:bg-light-accent/20 dark:active:bg-dark-accent/20 hover:pl-6"
                     onClick={handleLogout}
                   >
                     Выйти
@@ -228,7 +237,6 @@ export default function Header({
               )}
             </div>
           )}
-
           <ThemeToggle />
         </div>
       </header>

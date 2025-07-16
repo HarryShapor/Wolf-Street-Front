@@ -3,7 +3,7 @@ import LoadingButton from "../../../components/ui/LoadingButton";
 import ErrorAlert from "../../../components/ui/ErrorAlert";
 import RememberMeSection from "./RememberMeSection";
 import { useLoginForm } from "../../../hooks/useLoginForm";
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -26,6 +26,12 @@ export default function LoginForm({ onSuccess, showToast }: LoginFormProps) {
     if (error) {
       showToast({message: error, type: 'error', title: 'Ошибка входа'});
     }
+    // Подписка на кастомное событие для повторного показа ошибки
+    const handler = (e: any) => {
+      showToast({message: e.detail, type: 'error', title: 'Ошибка входа'});
+    };
+    window.addEventListener('loginErrorToast', handler);
+    return () => window.removeEventListener('loginErrorToast', handler);
   }, [error, showToast]);
 
   return (

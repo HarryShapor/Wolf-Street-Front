@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '../../../components/ui/Modal';
+import DEFAULT_AVATAR_SVG from '../../../components/ui/defaultAvatar';
+import { uploadUserAvatar } from '../../../services/AvatarService';
+import { API_HOST } from '../../../services/Api';
 
 interface ModalEditProfileProps {
   open: boolean;
@@ -11,7 +14,7 @@ interface ModalEditProfileProps {
   onSave: (data: { nickname: string; avatar: string; avatarFile: File | null }) => void;
 }
 
-const API_BASE = "http://89.169.183.192:8080";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
   open,
@@ -78,47 +81,29 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
       setError('Слишком длинный никнейм');
       return;
     }
-    // Если никнейм не изменился, просто закрыть модалку
-    if (nickname.trim() === currentName.trim()) {
-      onClose();
-      return;
-    }
     setError('');
+    let avatarChanged = false;
     try {
-      // Формируем данные для отправки
-      const payload: any = { username: nickname };
-      // Если реализована поддержка аватара на backend, добавить avatar
-      // payload.avatar = avatar || currentAvatar;
-      await axios.put(`${API_BASE}/user-service/user/me`, payload, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-      setModalTitle('Профиль обновлён');
-      setModalMessage('Никнейм успешно изменён. Для продолжения требуется повторная авторизация.');
-      setModalOpen(true);
-      setPendingLogout(true);
-    } catch (err: any) {
-      if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 401) {
-          setModalTitle('Требуется повторная авторизация');
-          setModalMessage('Никнейм изменён. Для продолжения требуется повторная авторизация.');
-          setModalOpen(true);
-          setPendingLogout(true);
-        } else if (err.response.status === 404) {
-          setModalTitle('Пользователь не найден');
-          setModalMessage('Пользователь не найден.');
-          setModalOpen(true);
-        } else {
-          setModalTitle('Ошибка');
-          setModalMessage('Ошибка при обновлении профиля');
-          setModalOpen(true);
-        }
-      } else {
-        setModalTitle('Ошибка');
-        setModalMessage('Ошибка при обновлении профиля');
-        setModalOpen(true);
+      // 1. Если выбран новый аватар, отправить через сервис
+      if (avatarFile) {
+        await uploadUserAvatar(avatarFile);
+        avatarChanged = true;
       }
+      // 2. Если никнейм изменился — отправить PUT
+      if (nickname.trim() !== currentName.trim()) {
+        const payload: any = { username: nickname };
+        await axios.put(`${API_BASE}/user/me`, payload, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+      }
+      onSave({ nickname, avatar: avatarChanged ? 'updated' : '', avatarFile: avatarChanged ? avatarFile : null });
+      onClose();
+    } catch (e) {
+      setModalOpen(true);
+      setModalTitle('Ошибка');
+      setModalMessage('Не удалось сохранить изменения.');
     }
   };
 
@@ -174,7 +159,7 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, marginBottom: 8 }}>
               {/* Текущий аватар */}
               <div className="w-24 h-24 rounded-full border-2 border-light-accent dark:border-dark-accent bg-gradient-to-br from-light-bg to-light-card dark:from-dark-bg dark:to-dark-card flex items-center justify-center overflow-hidden">
-                <img src={currentAvatar} alt="current avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={currentAvatar || DEFAULT_AVATAR_SVG} alt="current avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               {/* Стрелка */}
               <div style={{ fontSize: 28, color: palette.navInactive, userSelect: 'none' }}>→</div>
@@ -187,7 +172,7 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
               >
                 {avatar ? (
-                  <img src={avatar} alt="new avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={avatar || DEFAULT_AVATAR_SVG} alt="new avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <span style={{ color: palette.navInactive, fontSize: 28, textAlign: 'center', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                     {/* SVG иконка фотоаппарата */}

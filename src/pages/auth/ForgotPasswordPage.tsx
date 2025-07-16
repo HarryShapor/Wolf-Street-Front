@@ -4,12 +4,13 @@ import AuthFormHeader from "./components/AuthFormHeader";
 import AuthFormFooter from "./components/AuthFormFooter";
 import ErrorAlert from "../../components/ui/ErrorAlert";
 import axios from "axios";
+import { API_HOST } from '../../services/Api';
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-const API_BASE = "http://89.169.183.192:8080";
+const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 const ForgotPasswordPage: React.FC = () => {
   const query = useQuery();
@@ -38,7 +39,7 @@ const ForgotPasswordPage: React.FC = () => {
     setIsLoading(true);
     try {
       // ОТКЛЮЧЕНО: Проверка существования email
-      // const res = await axios.get(`${API_BASE}/user-service/user/me`, { params: { email } });
+      // const res = await axios.get(`${API_BASE}/user/me`, { params: { email } });
       // if (!res.data || !res.data.email) {
       //   setNotFound(true);
       //   setIsLoading(false);
@@ -66,7 +67,7 @@ const ForgotPasswordPage: React.FC = () => {
     }
     try {
       // Отправка нового пароля на реальный эндпоинт
-      await axios.post(`${API_BASE}/user-service/auth/change-password`, {
+      await axios.post(`${API_BASE}/auth/change-password`, {
         email: emailFromQuery,
         token,
         newPassword,

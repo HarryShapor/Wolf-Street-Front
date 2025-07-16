@@ -23,7 +23,7 @@ describe('loginUser', () => {
   it('должен возвращать токены при успешном логине', async () => {
     (api.post as any).mockResolvedValueOnce({ data: tokens });
     await expect(loginUser(credentials)).resolves.toEqual(tokens);
-    expect(api.post).toHaveBeenCalledWith('/auth/login', credentials);
+    expect(api.post).toHaveBeenCalledWith('/user-service/v1/auth/login', credentials);
   });
 
   it('должен выбрасывать ошибку при ошибке api', async () => {
