@@ -54,7 +54,7 @@ export default function Header({
 
   useEffect(() => {
     setIsAuth(!!localStorage.getItem("accessToken"));
-  }, []);
+  }, []); // только при монтировании
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

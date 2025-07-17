@@ -138,19 +138,19 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
 
   return (
     <>
-      <div className="w-full min-w-[340px] max-w-xl mx-auto mt-1 bg-light-card dark:bg-dark-card border border-light-border/60 dark:border-dark-border/60 rounded-2xl shadow-sm">
+      <div className="w-full min-w-[220px] max-w-[320px] mx-auto mt-1 bg-light-card/90 dark:bg-dark-card/90 border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl transition-shadow hover:shadow-[0_0_48px_12px_rgba(80,255,180,0.35)]">
         {/* Вкладки Buy/Sell */}
         <div className="flex border-b border-light-border/40 dark:border-dark-border/40">
           <button className={tabStyles(tab === 'buy', true, true, false)} style={{marginRight: '-1px'}} onClick={() => setTab('buy')}>Купить</button>
           <button className={tabStyles(tab === 'sell', false, false, true)} onClick={() => setTab('sell')}>Продать</button>
         </div>
         {/* Вкладки Лимит/Рынок */}
-        <div className="flex gap-1 px-3 pt-1 pb-0.5">
+        <div className="flex gap-1 px-2 pt-1 pb-0.5">
           <button className={orderTabStyles(orderType === 'limit')} onClick={() => setOrderType('limit')}>Лимит</button>
           <button className={orderTabStyles(orderType === 'market')} onClick={() => setOrderType('market')}>Рынок</button>
         </div>
         {/* Форма */}
-        <form className="flex flex-col gap-1 px-3 pb-2 pt-0.5" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-1 px-2 pb-2 pt-0.5" onSubmit={handleSubmit}>
           {/* Инструмент */}
           <label className="text-xs font-semibold text-light-fg-secondary dark:text-dark-brown mb-0.5">Инструмент</label>
           {loading ? (
@@ -175,7 +175,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
               step="any"
               value={priceRub}
               onChange={e => setPriceRub(Math.min(Number(e.target.value), 100000000))}
-              className="w-full min-h-[32px] px-2 py-1.5 border-b-2 border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-lg text-right font-semibold transition-all duration-300 focus:shadow-[0_2px_0_0_rgba(108,99,255,0.25)] dark:focus:shadow-[0_2px_0_0_rgba(129,199,132,0.25)] rounded-xl"
+              className="w-full min-h-[28px] px-2 py-1 border-b border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-sm text-right font-semibold transition-all duration-300 rounded"
             />
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">RUB</span>
           </div>
@@ -190,7 +190,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
               value={amount}
               onChange={e => setAmount(Math.min(Number(e.target.value), 1000000).toString())}
               placeholder="Введите количество"
-              className="w-full min-h-[32px] px-2 py-1.5 border-b-2 border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-lg text-right font-semibold transition-all duration-300 focus:shadow-[0_2px_0_0_rgba(108,99,255,0.25)] dark:focus:shadow-[0_2px_0_0_rgba(129,199,132,0.25)] rounded-xl"
+              className="w-full min-h-[28px] px-2 py-1 border-b border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-sm text-right font-semibold transition-all duration-300 rounded"
             />
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">{instrument}</span>
           </div>
@@ -235,7 +235,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
           <button
             type="submit"
             disabled={!isAmountValid}
-            className={`w-full mt-2 py-2 rounded-xl font-bold text-base transition-all duration-150
+            className={`w-full mt-1 py-1.5 rounded font-bold text-sm transition-all duration-150
             ${tab === 'buy'
               ? 'bg-light-success/90 text-white dark:bg-dark-accent/90 dark:text-dark-bg hover:bg-light-success dark:hover:bg-dark-accent'
               : 'bg-[#e0a6a6] text-[#7a3a3a] dark:bg-[#6d2323] dark:text-[#e0a6a6] hover:bg-[#e7c3c3] dark:hover:bg-[#8b3232]'}

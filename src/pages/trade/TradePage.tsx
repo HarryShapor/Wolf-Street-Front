@@ -9,11 +9,12 @@ import TradeChart from './TradeChart';
 import TradesList from './TradesList';
 import InstrumentSelector from './InstrumentSelector';
 import TradeFormWithTabs from './TradeFormWithTabs';
-import UserOrdersSection from '../portfolio/components/UserOrdersSection';
+import UserOrdersSection from './UserOrdersSection';
 import { API_HOST } from '../../services/Api';
 import { useInstruments } from '../../hooks/useInstruments';
 import type { Instrument } from '../../hooks/useInstruments';
 import InstrumentsList from '../instruments/InstrumentsList';
+import { useNavigate } from "react-router-dom";
 
 const initialPositions = [
   { symbol: 'BTC', amount: 0.02, entry: 60000, pnl: 1000 },
@@ -106,6 +107,13 @@ export default function TradePage() {
   const [positions, setPositions] = useState(initialPositions);
   const [balance] = useState(mockBalance);
   const [orderType, setOrderType] = useState<'limit'|'market'>('limit');
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!localStorage.getItem('accessToken')) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
 
   // Удаляю все useState/useEffect для mockChartData
 
@@ -165,32 +173,30 @@ export default function TradePage() {
 
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-4">
-      {/* Header с парой, ценой, изменением, поиском */}
       <Header {...headerProps} />
-      <div className="pt-20 flex flex-row w-full max-w-[1800px] mx-auto gap-2 items-start px-2 md:px-4 lg:px-0">
-        {/* Левая колонка: стакан */}
-        <div className="orderbook-col w-[260px] min-w-[180px] flex flex-col gap-2 mr-2">
-          <InstrumentSelector
-            value={selected?.ticker || ''}
-            onChange={ticker => {
-              const found = instruments.find(inst => inst.ticker === ticker);
-              if (found) setSelected(found);
-            }}
-            options={filtered.map(inst => ({ symbol: inst.ticker, name: inst.title }))}
-          />
-          <OrderBook
-            price={0}
-            orderBookSell={orderBookSell}
-            orderBookBuy={orderBookBuy}
-            loadingOrderBook={loadingOrderBook}
-            errorOrderBook={errorOrderBook}
-          />
-        </div>
-        {/* Центр: график + форма */}
-        <div className="flex-1 flex flex-col min-w-0 gap-2">
-          {/* Вкладка и таймфреймы */}
-          
-          <div className="chart-row flex-1 min-h-[50vh]">
+      <div className="pt-20 flex flex-col w-full max-w-[1800px] mx-auto gap-4 items-stretch px-2 md:px-4 lg:px-0">
+        {/* Верхняя часть: две колонки */}
+        <div className="flex flex-row gap-10 justify-center items-stretch">
+          {/* Левая колонка */}
+          <div className="flex flex-col gap-4 w-[260px] min-w-[180px]">
+            <InstrumentSelector
+              value={selected?.ticker || ''}
+              onChange={ticker => {
+                const found = instruments.find(inst => inst.ticker === ticker);
+                if (found) setSelected(found);
+              }}
+              options={filtered.map(inst => ({ symbol: inst.ticker, name: inst.title }))}
+            />
+            <OrderBook
+              price={0}
+              orderBookSell={orderBookSell}
+              orderBookBuy={orderBookBuy}
+              loadingOrderBook={loadingOrderBook}
+              errorOrderBook={errorOrderBook}
+            />
+          </div>
+          {/* Правая колонка */}
+          <div className="w-[1040px]">
             <TradeChart
               data={ohlcData}
               loading={loadingOhlc}
@@ -202,22 +208,19 @@ export default function TradePage() {
               setTimeframe={setTimeframe}
             />
           </div>
-          {/* Форма ордера — одна, по центру, широкая */}
-          <div className="trade-form-row w-full max-w-2xl mx-auto mt-2">
+        </div>
+        {/* Нижняя часть: форма, заявки и сделки в одну линию */}
+        <div className="flex flex-row gap-4 items-start w-[1392px] mx-auto mt-4">
+          <div className="w-[320px] min-w-[320px] max-w-[320px] h-full overflow-auto flex-shrink-0">
             <TradeFormWithTabs />
           </div>
-        </div>
-        {/* Правая колонка: только сделки на рынке */}
-        <div className="right-col w-[340px] min-w-[260px] flex flex-col gap-2 ml-2">
-          {/* Только сделки на рынке */}
-          <div className="trades-list-col">
+          <div className="w-[650px] min-w-[650px] max-w-[650px] h-full flex flex-col justify-start">
+            <UserOrdersSection />
+          </div>
+          <div className="w-[360px] min-w-[360px] max-w-[360px] h-full overflow-auto flex flex-col justify-start">
             <TradesList />
           </div>
         </div>
-      </div>
-      {/* Секция заявок пользователя вынесена и изолирована */}
-      <div className="max-w-[1500px] mx-auto px-4 md:px-8 lg:px-0 mt-10 mb-4">
-        <UserOrdersSection />
       </div>
     </div>
   );

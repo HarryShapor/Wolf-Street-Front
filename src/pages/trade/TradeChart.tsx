@@ -51,7 +51,7 @@ const mockCandles = [
 ];
 
 const TradeChart: React.FC<TradeChartProps> = ({ data, loading, error, selected, price, change, timeframe, setTimeframe }) => (
-  <Card className="flex-1 p-0 flex flex-col bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border gap-1 rounded-2xl shadow-sm">
+  <Card className="flex-1 p-0 flex flex-col bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border gap-1 rounded-2xl shadow-2xl transition-shadow h-full hover:shadow-[0_0_32px_0_rgba(80,255,180,0.45)]">
     <div className="flex flex-row items-start justify-between px-6 pt-2 pb-0.5">
       <div className="flex flex-col gap-0.5">
         <div className="flex items-baseline gap-2">

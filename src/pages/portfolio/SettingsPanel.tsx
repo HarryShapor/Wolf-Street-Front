@@ -16,6 +16,7 @@ import Modal from '../../components/ui/Modal';
 import DEFAULT_AVATAR_SVG from '../../components/ui/defaultAvatar';
 import { getUserAvatarUrl } from '../../services/AvatarService';
 import { API_HOST } from '../../services/Api';
+import { useNavigate } from "react-router-dom";
 
 // const API_BASE = "http://158.160.190.168:8080/user-service/api/v1";
 const API_BASE = `${API_HOST}/user-service/api/v1`;
@@ -67,6 +68,8 @@ export default function SettingsPanel() {
 
   // Для отслеживания, был ли 401 после успешного изменения
   const [pendingLogout, setPendingLogout] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -184,7 +187,7 @@ export default function SettingsPanel() {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       Cookies.remove(PASSWORD_COOKIE_KEY);
-      window.location.href = "/login?profileUpdated=1";
+      navigate("/login?profileUpdated=1", { replace: true });
       return;
     }
   };

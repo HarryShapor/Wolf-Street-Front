@@ -4,6 +4,7 @@ import Modal from '../../../components/ui/Modal';
 import DEFAULT_AVATAR_SVG from '../../../components/ui/defaultAvatar';
 import { uploadUserAvatar } from '../../../services/AvatarService';
 import { API_HOST } from '../../../services/Api';
+import { useNavigate } from "react-router-dom";
 
 interface ModalEditProfileProps {
   open: boolean;
@@ -108,6 +109,7 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
   };
 
   if (!open) return null;
+  const navigate = useNavigate();
   return (
     <>
       <Modal
@@ -118,7 +120,7 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
             setPendingLogout(false);
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
-            window.location.href = "/login?profileUpdated=1";
+            navigate("/login?profileUpdated=1", { replace: true });
           }
         }}
         title={modalTitle}

@@ -11,6 +11,7 @@ import usdtIcon from "../../image/crypto/usdt.svg";
 import tonIcon from "../../image/crypto/ton.svg";
 import { useInstrumentImages } from '../../hooks/useInstrumentImages';
 import { useInstrumentMarketData } from '../../hooks/useInstrumentMarketData';
+import { useNavigate } from "react-router-dom";
 
 const TYPE_FILTERS = [
   { label: "Все", value: "all" },
@@ -87,6 +88,13 @@ export default function InstrumentsPage() {
   const [sort, setSort] = useState("alpha-asc");
   const [show, setShow] = useState(false);
   const [cardsVisible, setCardsVisible] = useState<number>(0);
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!localStorage.getItem('accessToken')) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
 
   // Фильтрация
   let filtered = instruments.filter((item) => {

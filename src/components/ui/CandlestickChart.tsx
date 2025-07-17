@@ -13,10 +13,10 @@ export type Candle = {
 };
 
 interface CandlestickChartProps {
-  data: Candle[];
+  data?: Candle[];
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
@@ -157,7 +157,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
     seriesRef.current = candleSeries;
     candleSeries.setData(data);
     chart.timeScale().fitContent();
-    setRerender(x => x + 1); // чтобы панель кнопок не "отставала" при ресете
+    // setRerender(x => x + 1); // УБРАНО чтобы не было бесконечного рендера
 
     // --- Курсор ---
     let isMouseDown = false;
@@ -240,8 +240,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data }) => {
   const [showPanel, setShowPanel] = useState(false);
 
   // Определяем цвет последней цены
-  const lastPrice = data.length > 0 ? data[data.length - 1].close : null;
-  const lastPriceColor = lastPrice !== null ? (lastPrice > data[data.length - 2]?.close ? upColor : downColor) : '#888';
+  const lastPrice = data && data.length > 0 ? data[data.length - 1].close : null;
+  const lastPriceColor = lastPrice !== null && data && data.length > 1 ? (lastPrice > data[data.length - 2]?.close ? upColor : downColor) : '#888';
 
   return (
     <div style={{ width: '100%', position: 'relative', height: '100%' }}>

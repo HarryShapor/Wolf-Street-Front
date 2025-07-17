@@ -34,7 +34,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ price, orderBookSell, orderBookBu
   const buyRows = orderBookBuy.slice(0, visibleRows);
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-hidden rounded-2xl group transition-colors duration-200 border border-light-border/40 dark:border-dark-border/40 group-hover:border-light-accent/40 dark:group-hover:border-dark-accent/40" style={{boxShadow: 'inset 0 6px 32px 0 rgba(0,0,0,0.22), inset 0 -2px 8px 0 rgba(0,0,0,0.18)'}}>
+    <div ref={containerRef} className="flex-1 h-full overflow-hidden rounded-2xl group transition-colors duration-200 border border-light-border/40 dark:border-dark-border/40 group-hover:border-light-accent/40 dark:group-hover:border-dark-accent/40 shadow-2xl transition-shadow hover:shadow-[0_0_32px_0_rgba(80,255,180,0.45)]">
       <Card className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl shadow-inner h-full">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">

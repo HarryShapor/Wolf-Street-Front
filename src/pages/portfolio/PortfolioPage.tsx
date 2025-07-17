@@ -9,6 +9,7 @@ import TradeSection from './TradeSection';
 import BalanceSection from './BalanceSection';
 import AssetsSection from './AssetsSection';
 import HistorySection from './HistorySection';
+import { useNavigate } from "react-router-dom";
 
 const SECTIONS: { [key: string]: React.FC<any> } = {
   'Портфель': (props) => <ProfileSection onGoToDeposit={() => {}} {...props} />,
@@ -34,6 +35,14 @@ const MENU_LABELS = [
 export default function PortfolioPage({ theme, setTheme, NAV }: { theme: string, setTheme: (t: string) => void, NAV: { id: string, label: string}[] }) {
   const [activeMenu, setActiveMenu] = useState('Портфель');
   const SectionComponent = SECTIONS[activeMenu] || ProfileSection;
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!localStorage.getItem('accessToken')) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg font-sans pt-20 relative overflow-hidden">
       {/* Шапка сайта */}

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_HOST = "http://158.160.190.168:8080";
+export const API_HOST = "http://158.160.184.138:8080";
 
 const api = axios.create({
   // baseURL: `${API_HOST}/user-service/api/v1`,

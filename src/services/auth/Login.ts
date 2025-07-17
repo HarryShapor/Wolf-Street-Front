@@ -67,6 +67,6 @@ export const clearTokens = (): void => {
 export const logout = (): void => {
   clearTokens();
   localStorage.setItem('logout', 'true'); // Ставим флаг logout
-  // Перенаправление на страницу логина
-  window.location.href = "/login";
+  // Перенаправление теперь должно происходить на уровне компонента через navigate
+  // window.location.href = "/login";
 };

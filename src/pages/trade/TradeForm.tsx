@@ -19,7 +19,7 @@ interface TradeFormProps {
 
 const TradeForm: React.FC<TradeFormProps> = ({ selected, amount, setAmount, side, setSide, orderType, setOrderType, price, total, balance, handleAllClick, handleTrade }) => (
   <div className="mt-2">
-    <Card className="w-full p-6 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border flex flex-col gap-4 rounded-2xl shadow-sm">
+    <Card className="w-full p-6 bg-light-card/90 dark:bg-dark-card/90 border border-light-border/40 dark:border-dark-border/40 flex flex-col gap-4 rounded-2xl shadow-2xl transition-shadow hover:shadow-[0_0_48px_12px_rgba(80,255,180,0.35)]">
       <form onSubmit={handleTrade} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div className="md:col-span-2">
           <label className="text-xs text-light-fg-secondary dark:text-dark-brown font-medium mb-1 block">Инструмент</label>
