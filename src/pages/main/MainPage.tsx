@@ -4,7 +4,6 @@ import Footer from "../../components/footer/Footer";
 import HeroSection from "./section/HeroSection";
 import SearchModal from "../../components/ui/SearchModal";
 import AboutSection from "./section/AboutSection";
-import ChartSection from "./section/ChartSection";
 import FAQSection from "./section/FAQSection";
 import { useScrollTracking } from "../../hooks/useScrollTracking";
 import { usePageAnimations } from "../../hooks/usePageAnimations";
@@ -13,7 +12,6 @@ import { useSnapScroll } from "../../hooks/useSnapScroll";
 const NAV = [
   { id: "main", label: "Главная" },
   { id: "about", label: "О проекте" },
-  { id: "chart", label: "График" },
   { id: "faq", label: "FAQ" },
   { id: "footer", label: "Контакты" },
 ];
@@ -63,9 +61,6 @@ export default function MainPage() {
 
       {/* About Section */}
       <AboutSection />
-
-      {/* Chart Section */}
-      <ChartSection />
 
       {/* FAQ Section */}
       <FAQSection />

@@ -26,7 +26,7 @@ export default function FeatureCard({
         {icon}
       </span>
 
-      {/* Анимация заголовка */}
+      {/* Анимация заголовка - основной цвет */}
       <div
         className={`text-lg font-bold mb-1 text-light-fg dark:text-dark-fg transition-all duration-400 delay-100 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
@@ -35,9 +35,9 @@ export default function FeatureCard({
         {title}
       </div>
 
-      {/* Анимация текста */}
+      {/* Анимация текста - приглушенный цвет как в Footer */}
       <div
-        className={`text-light-fg dark:text-dark-fg text-sm leading-[1.6] flex-1 flex items-start transition-all duration-500 delay-200 ${
+        className={`text-light-fg/70 dark:text-dark-brown text-sm leading-[1.6] flex-1 flex items-start transition-all duration-500 delay-200 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
         }`}
       >

@@ -17,8 +17,6 @@ export default function HeroSection({ heroVisible }: HeroSectionProps) {
     totalUsers: 25600,
   });
 
-  // Функция для обработки клика по инструменту
-
   // Функция для получения приветствия по времени суток
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();

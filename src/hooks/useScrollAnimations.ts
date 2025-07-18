@@ -18,6 +18,7 @@ export function useScrollAnimations(
     new Array(itemsCount).fill(false)
   );
   const containerRef = useRef<HTMLDivElement>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -26,19 +27,32 @@ export function useScrollAnimations(
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
+          // Сначала сбрасываем все элементы
+          setVisibleItems(new Array(itemsCount).fill(false));
+
+          // Очищаем предыдущие таймауты
+          timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+          timeoutsRef.current = [];
+
           // Запускаем анимацию карточек с задержками
           for (let i = 0; i < itemsCount; i++) {
-            setTimeout(() => {
+            const timeout = setTimeout(() => {
               setVisibleItems((prev) => {
                 const newState = [...prev];
                 newState[i] = true;
                 return newState;
               });
             }, i * staggerDelay);
-          }
 
-          // Отключаем observer после первого срабатывания
-          observer.unobserve(container);
+            timeoutsRef.current.push(timeout);
+          }
+        } else {
+          // Когда элемент уходит из viewport, сбрасываем анимацию
+          setVisibleItems(new Array(itemsCount).fill(false));
+
+          // Очищаем таймауты при выходе из viewport
+          timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+          timeoutsRef.current = [];
         }
       },
       {
@@ -50,6 +64,9 @@ export function useScrollAnimations(
     observer.observe(container);
 
     return () => {
+      // Очищаем таймауты при unmount
+      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+
       if (container) {
         observer.unobserve(container);
       }
