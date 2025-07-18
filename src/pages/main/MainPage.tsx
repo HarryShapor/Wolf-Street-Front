@@ -15,6 +15,7 @@ const NAV = [
   { id: "about", label: "О проекте" },
   { id: "chart", label: "График" },
   { id: "faq", label: "FAQ" },
+  { id: "footer", label: "Контакты" },
 ];
 
 export default function MainPage() {
