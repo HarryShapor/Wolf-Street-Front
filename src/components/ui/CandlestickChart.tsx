@@ -16,6 +16,19 @@ interface CandlestickChartProps {
   data?: Candle[];
 }
 
+function getChartColors() {
+  try {
+    const raw = localStorage.getItem('chartColors');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.up === 'string' && typeof parsed.down === 'string') {
+        return parsed;
+      }
+    }
+  } catch {}
+  return { up: '#22d3a8', down: '#f43f5e' };
+}
+
 const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -25,6 +38,25 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   const [cursor, setCursor] = useState<'crosshair' | 'pointer' | 'grabbing'>('crosshair');
   const isMouseDown = useRef(false);
   const [crosshair, setCrosshair] = useState<{x: number, y: number, price: number | null, time: string | null} | null>(null);
+  const [chartColors, setChartColors] = useState(getChartColors());
+
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key === 'chartColors') setChartColors(getChartColors());
+    }
+    window.addEventListener('storage', onStorage);
+    // Polling для обновления в этой же вкладке
+    const interval = setInterval(() => {
+      const current = getChartColors();
+      if (current.up !== chartColors.up || current.down !== chartColors.down) {
+        setChartColors(current);
+      }
+    }, 400);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      clearInterval(interval);
+    };
+  }, [chartColors.up, chartColors.down]);
 
   // Управление графиком
   const scrollChart = (delta: number) => {
@@ -92,8 +124,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     const chartBg = isDark ? '#1c1b1b' : '#fff'; // Tailwind dark-bg
     const textColor = isDark ? '#e5e7ef' : '#23263a';
     const gridColor = isDark ? '#23263a' : '#e5e7ef';
-    const upColor = isDark ? '#22e57a' : '#22c55e';
-    const downColor = isDark ? '#ff4b6b' : '#ef4444';
+    const upColor = chartColors.up;
+    const downColor = chartColors.down;
     const wickColor = isDark ? '#e5e7ef' : '#23263a';
     const borderColor = isDark ? '#222' : '#e5e7ef';
 

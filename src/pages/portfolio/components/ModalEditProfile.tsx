@@ -36,6 +36,7 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [pendingLogout, setPendingLogout] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) {
@@ -109,7 +110,6 @@ const ModalEditProfile: React.FC<ModalEditProfileProps> = ({
   };
 
   if (!open) return null;
-  const navigate = useNavigate();
   return (
     <>
       <Modal

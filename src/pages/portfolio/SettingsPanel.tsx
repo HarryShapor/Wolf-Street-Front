@@ -393,7 +393,7 @@ export default function SettingsPanel() {
         onClose={() => setChartStyleModal(false)}
         palette={{}}
         current={chartColors}
-        onConfirm={v => { setChartColors(v); setChartStyleModal(false); }}
+        onConfirm={v => { setChartColors(v); localStorage.setItem('chartColors', JSON.stringify(v)); setChartStyleModal(false); }}
       />
       {/* Модальные уведомления */}
       <Modal
@@ -547,7 +547,7 @@ export default function SettingsPanel() {
                   ) : (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   )}
                 </button>
@@ -569,37 +569,6 @@ export default function SettingsPanel() {
           >
             Изменить
           </button>
-        </div>
-      </div>
-      {/* Уведомления */}
-      <div className="bg-gradient-to-br from-light-card to-light-bg dark:from-dark-card dark:to-[#181926] rounded-2xl shadow-lg card-glow backdrop-blur-md bg-opacity-90 hover:shadow-2xl transition-all p-4 sm:p-6 md:p-8 mb-8 border border-light-border dark:border-dark-border max-w-full">
-        <div className="text-lg md:text-xl font-bold text-light-accent dark:text-dark-accent mb-1">Уведомления</div>
-        <div className="text-light-fg/80 dark:text-dark-nav-inactive text-base md:text-[15px] mb-6 max-w-2xl">Управляйте своими уведомлениями — выберите, как мы можем держать вас в курсе самого важного. Мы ценим ваше доверие и никогда не будем злоупотреблять вашим вниманием.</div>
-        <div className="space-y-4 md:space-y-6">
-          {/* Email уведомления */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="text-[16px] font-semibold text-light-fg dark:text-dark-fg">Получать рассылку на Email</div>
-              <div className="text-[14px] text-light-fg/80 dark:text-dark-nav-inactive">Получайте <span className="text-light-accent dark:text-dark-accent font-semibold">важные новости</span>, обновления и персональные предложения на вашу электронную почту. Мы не рассылаем спам и заботимся о вашей приватности.</div>
-            </div>
-            <CustomSwitch checked={emailNotif} onChange={setEmailNotif} ariaLabel="Email уведомления" />
-          </div>
-          {/* SMS уведомления */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="text-[16px] font-semibold text-light-fg dark:text-dark-fg">Получать рассылку на телефон (SMS)</div>
-              <div className="text-[14px] text-light-fg/80 dark:text-dark-nav-inactive">Оперативные уведомления о <span className="text-light-accent dark:text-dark-accent font-semibold">безопасности</span> и важных событиях. Только действительно важная информация — никаких рекламных сообщений.</div>
-            </div>
-            <CustomSwitch checked={smsNotif} onChange={setSmsNotif} ariaLabel="SMS уведомления" />
-          </div>
-          {/* Push уведомления */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="text-[16px] font-semibold text-light-fg dark:text-dark-fg">Push-уведомления в браузере</div>
-              <div className="text-[14px] text-light-fg/80 dark:text-dark-nav-inactive">Будьте в курсе событий в <span className="text-light-accent dark:text-dark-accent font-semibold">реальном времени</span> прямо в браузере. Вы всегда сможете изменить этот выбор в настройках.</div>
-            </div>
-            <CustomSwitch checked={browserNotif} onChange={setBrowserNotif} ariaLabel="Push уведомления" />
-          </div>
         </div>
       </div>
       {/* Предпочитаемые настройки */}

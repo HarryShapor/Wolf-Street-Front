@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_HOST } from '../../services/Api';
+import Modal from '../../components/ui/Modal';
 
 interface Order {
   id: string | number;
@@ -28,6 +29,16 @@ export default function UserOrdersSection() {
   const [sorts, setSorts] = useState<{ field: string, dir: 'asc' | 'desc' }[]>([{ field: 'date', dir: 'desc' }]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancelLoading, setCancelLoading] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+
+  // Автоматическое закрытие модалки через 2 секунды
+  useEffect(() => {
+    if (!modalOpen) return;
+    const timer = setTimeout(() => setModalOpen(false), 2000);
+    return () => clearTimeout(timer);
+  }, [modalOpen]);
 
   useEffect(() => {
     setLoading(true);
@@ -59,7 +70,62 @@ export default function UserOrdersSection() {
       })
       .catch(err => setError(err.message || 'Ошибка загрузки заявок'))
       .finally(() => setLoading(false));
+
+    // Polling каждые 3 секунды
+    const interval = setInterval(() => {
+      fetch(`${API_HOST}/order-service/api/v1/orders`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      })
+        .then(async res => {
+          if (res.status === 401) throw new Error('Пользователь не авторизован!');
+          if (res.status === 404) return [];
+          if (!res.ok) throw new Error('Ошибка загрузки заявок');
+          return res.json();
+        })
+        .then(data => {
+          const openStatuses = ['NEW', 'PARTIALLY_EXECUTED'];
+          setOrders(Array.isArray(data) ? data.filter((o: any) => openStatuses.includes(o.status)).map((o: any) => ({
+            id: o.orderId,
+            date: o.createdAt,
+            pair: o.instrumentId,
+            type: o.type,
+            side: o.side,
+            price: o.lotPrice,
+            amount: o.count,
+            filled: o.filled ?? 0,
+          })) : []);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
+
+  async function handleCancelOrder(orderId: string | number) {
+    setCancelLoading(String(orderId));
+    setModalMessage('');
+    try {
+      const res = await fetch(`${API_HOST}/order-service/api/v1/orders/${orderId}/cancelled`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
+      if (res.status === 401 || res.status === 403) throw new Error('Пользователь не авторизован!');
+      if (res.status === 404) throw new Error('Заявка не найдена!');
+      if (!res.ok) throw new Error('Ошибка отмены заявки');
+      setModalMessage('Заявка успешно отменена!');
+      setModalOpen(true);
+      // Удаляем отменённую заявку из списка
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch (err: any) {
+      setModalMessage(err.message || 'Ошибка отмены заявки');
+      setModalOpen(true);
+    } finally {
+      setCancelLoading(null);
+    }
+  }
 
   function handleSort(field: string) {
     setSorts(prev => {
@@ -172,8 +238,13 @@ export default function UserOrdersSection() {
                     <td className="px-2 py-1 text-light-fg dark:text-dark-fg font-mono text-center">{order.price}</td>
                     <td className="px-2 py-1 text-light-fg dark:text-dark-fg font-mono text-center">{order.amount}</td>
                     <td className="px-2 py-1 text-center">
-                      <button className="bg-transparent border-none outline-none shadow-none px-0 py-0 text-light-fg dark:text-dark-fg hover:text-light-accent dark:hover:text-dark-accent font-semibold text-xs transition-colors duration-150 cursor-pointer" title="Отменить">
-                        Отменить
+                      <button
+                        className="bg-transparent border-none outline-none shadow-none px-0 py-0 text-light-fg dark:text-dark-fg hover:text-light-accent dark:hover:text-dark-accent font-semibold text-xs transition-colors duration-150 cursor-pointer disabled:opacity-60"
+                        title="Отменить"
+                        onClick={() => handleCancelOrder(order.id)}
+                        disabled={cancelLoading === String(order.id)}
+                      >
+                        {cancelLoading === String(order.id) ? '...' : 'Отменить'}
                       </button>
                     </td>
                   </tr>
@@ -183,6 +254,9 @@ export default function UserOrdersSection() {
           </table>
         </div>
       )}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="">
+        <div className="text-center text-base text-light-accent dark:text-dark-accent px-2 py-2">{modalMessage}</div>
+      </Modal>
     </div>
   );
 } 

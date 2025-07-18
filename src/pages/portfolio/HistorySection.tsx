@@ -113,18 +113,23 @@ export default function HistorySection() {
     // eslint-disable-next-line
   }, [pageCount]);
 
+  // Защита от выхода за пределы диапазона страниц
+  function safeSetPage(newPage: number) {
+    setPage(Math.max(1, Math.min(newPage, pageCount)));
+  }
+
   // Функция для отображения кнопок пагинации с ...
   function getPaginationButtons(current: number, total: number): (number | string)[] {
-    const delta = 1;
-    const range: (number | string)[] = [];
-    for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
-      range.push(i);
+    if (total <= 4) {
+      return Array.from({ length: total }, (_, i) => i + 1);
     }
-    if (current - delta > 2) range.unshift('...');
-    if (current + delta < total - 1) range.push('...');
-    range.unshift(1);
-    if (total > 1) range.push(total);
-    return [...new Set(range)];
+    if (current <= 3) {
+      return [1, 2, 3, '...', total];
+    }
+    if (current >= total - 1) {
+      return [1, '...', total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
   }
 
   return (
@@ -270,7 +275,7 @@ export default function HistorySection() {
         {pageCount > 1 && (
           <div className="flex justify-center mt-6 gap-2 min-h-[40px]">
             <button
-              onClick={() => setPage(page - 1)}
+              onClick={() => safeSetPage(page - 1)}
               disabled={page === 1}
               className="h-8 px-3 flex items-center justify-center rounded-full bg-transparent text-light-accent dark:text-dark-accent transition hover:bg-light-accent hover:text-white hover:opacity-80 active:opacity-60 dark:hover:bg-dark-accent dark:hover:text-white disabled:opacity-40 text-base"
             >
@@ -278,10 +283,10 @@ export default function HistorySection() {
             </button>
             {getPaginationButtons(page, pageCount).map((btn, idx) =>
               btn === '...'
-                ? <span key={idx} className="h-8 w-8 flex items-center justify-center rounded-full text-light-fg/80 dark:text-dark-fg/80 text-center text-base">...</span>
+                ? <span key={`dots-${idx}`} className="h-8 w-8 flex items-center justify-center rounded-full text-light-fg/80 dark:text-dark-fg/80 text-center text-base">...</span>
                 : <button
-                    key={btn}
-                    onClick={() => setPage(Number(btn))}
+                    key={`page-${btn}-${idx}`}
+                    onClick={() => safeSetPage(Number(btn))}
                     className={`h-8 w-8 flex items-center justify-center rounded-full font-medium transition duration-150 text-base ${page === btn
                       ? 'bg-light-accent dark:bg-dark-accent text-white shadow hover:opacity-80 active:opacity-60'
                       : 'bg-transparent text-light-accent dark:text-dark-accent hover:bg-light-accent hover:text-white hover:opacity-80 active:opacity-60 dark:hover:bg-dark-accent dark:hover:text-white'}`}
@@ -290,7 +295,7 @@ export default function HistorySection() {
                   </button>
             )}
             <button
-              onClick={() => setPage(page + 1)}
+              onClick={() => safeSetPage(page + 1)}
               disabled={page === pageCount}
               className="h-8 px-3 flex items-center justify-center rounded-full bg-transparent text-light-accent dark:text-dark-accent transition hover:bg-light-accent hover:text-white hover:opacity-80 active:opacity-60 dark:hover:bg-dark-accent dark:hover:text-white disabled:opacity-40 text-base"
             >

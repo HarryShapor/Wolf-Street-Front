@@ -10,21 +10,13 @@ interface ModalProps {
 const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
-      <div className="absolute inset-0 bg-black bg-opacity-60 transition-opacity duration-300" onClick={onClose} />
+    <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none" style={{minWidth:220, maxWidth:380}}>
       <div
-        className="relative bg-gradient-to-br from-white to-light-card dark:from-dark-card dark:to-[#181926] border-2 border-light-accent dark:border-dark-accent rounded-2xl shadow-2xl p-8 min-w-[320px] max-w-[95vw] max-w-[380px] text-light-fg dark:text-dark-fg z-10 transition-all duration-300"
-        onClick={e => e.stopPropagation()}
+        className="bg-gradient-to-br from-white to-light-card dark:from-dark-card dark:to-[#181926] border-2 border-light-accent dark:border-dark-accent rounded-2xl shadow-2xl px-6 py-4 text-light-fg dark:text-dark-fg transition-all duration-300"
+        style={{ pointerEvents: 'auto' }}
       >
-        {title && <div className="text-xl font-bold mb-4 text-light-accent dark:text-dark-accent">{title}</div>}
+        {title && <div className="text-xl font-bold mb-2 text-light-accent dark:text-dark-accent">{title}</div>}
         {children}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-[22px] text-neutral-500 hover:text-light-accent transition-colors bg-transparent border-none outline-none"
-          aria-label="Закрыть"
-        >
-          ×
-        </button>
       </div>
     </div>
   );

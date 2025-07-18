@@ -47,21 +47,27 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!instrumentId) return;
-    setLoading(true);
-    setError(null);
-    // fetch(`${API_HOST}/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`)
-    fetch(`${API_HOST}/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Ошибка получения ордербука');
-        return res.json();
-      })
-      .then(data => {
-        setSell(Array.isArray(data.asks) ? data.asks.map((o: any) => ({ price: o.price, amount: o.count })) : []);
-        setBuy(Array.isArray(data.bids) ? data.bids.map((o: any) => ({ price: o.price, amount: o.count })) : []);
-      })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+    let ignore = false;
+    function fetchOrderBook() {
+      if (!instrumentId) return;
+      setLoading(true);
+      setError(null);
+      fetch(`${API_HOST}/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Ошибка получения ордербука');
+          return res.json();
+        })
+        .then(data => {
+          if (ignore) return;
+          setSell(Array.isArray(data.asks) ? data.asks.map((o: any) => ({ price: o.price, amount: o.count })) : []);
+          setBuy(Array.isArray(data.bids) ? data.bids.map((o: any) => ({ price: o.price, amount: o.count })) : []);
+        })
+        .catch(e => { if (!ignore) setError(e.message); })
+        .finally(() => { if (!ignore) setLoading(false); });
+    }
+    fetchOrderBook();
+    const interval = setInterval(fetchOrderBook, 3000);
+    return () => { ignore = true; clearInterval(interval); };
   }, [instrumentId, limit]);
 
   return { sell, buy, loading, error };
@@ -133,7 +139,7 @@ export default function TradePage() {
   const symbolToId = Object.fromEntries(instruments.map(inst => [inst.ticker, inst.instrumentId]));
   const instrumentId = selected ? symbolToId[selected.ticker] : undefined;
   // Используем instrumentId для стакана и графика
-  const { sell: orderBookSell, buy: orderBookBuy, loading: loadingOrderBook, error: errorOrderBook } = useOrderBook(instrumentId ?? 0, 8);
+  const { sell: orderBookSell, buy: orderBookBuy, loading: loadingOrderBook, error: errorOrderBook } = useOrderBook(instrumentId ?? 0, 10);
   const { data: ohlcData, loading: loadingOhlc, error: errorOhlc } = useOhlcData(instrumentId ?? 0, timeframe, 12);
 
   // Моки для Header (минимально необходимые пропсы)

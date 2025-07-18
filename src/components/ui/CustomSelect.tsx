@@ -37,6 +37,14 @@ export default function CustomSelect({ value, onChange, options, label, placehol
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  // Закрывать dropdown при скролле страницы
+  useEffect(() => {
+    if (!open) return;
+    const handleScroll = () => setOpen(false);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [open]);
+
   // Portal dropdown positioning
   useEffect(() => {
     if (open && buttonRef.current) {

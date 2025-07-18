@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import LoginForm from "./components/LoginForm";
 import AuthPromoBanner from "./components/AuthPromoBanner";
 import AuthSuccessMessage from "../../components/ui/AuthSuccessMessage";
@@ -15,6 +15,7 @@ const LoginPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [toast, setToast] = useState<{open: boolean, message: string, type?: 'success'|'error'|'info', title?: string}>({open: false, message: ''});
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const profileUpdated = params.get('profileUpdated') === '1';
   // const passwordChanged = params.get('passwordChanged') === '1';
@@ -34,6 +35,14 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (profileUpdated) setToast({open: true, message: "Профиль успешно обновлён. Войдите с новыми данными. Если не удаётся войти — попробуйте позже или обратитесь в поддержку.", type: "success"});
   }, [profileUpdated]);
+
+  // Автоматически закрывать error-toast через 2.5 сек
+  useEffect(() => {
+    if (toast.open && toast.type === 'error') {
+      const timer = setTimeout(() => setToast(t => ({...t, open: false})), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.open, toast.type]);
 
   // --- АВТОЛОГИН ---
   useEffect(() => {
@@ -59,6 +68,13 @@ const LoginPage: React.FC = () => {
     };
     tryAutoLogin();
   }, []);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => navigate('/portfolio', {replace: true}), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [success, navigate]);
 
   if (success) {
     return (

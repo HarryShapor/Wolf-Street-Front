@@ -41,34 +41,54 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
   // --- курс USDT→RUB ---
   const usdToRub = 92; // TODO: заменить на актуальный курс, если появится API
 
-  React.useEffect(() => {
+  // При выборе инструмента выставлять цену по умолчанию
+  useEffect(() => {
+    if (instruments.length && instrument) {
+      const found = instruments.find(inst => inst.ticker === instrument);
+      if (found && found.price) setPriceRub(found.price);
+    }
+  }, [instruments, instrument]);
+
+  // При первом рендере выставлять цену по умолчанию
+  useEffect(() => {
     if (instruments.length && !instrument) {
       setInstrument(instruments[0].ticker);
+      if (instruments[0].price) setPriceRub(instruments[0].price);
     }
   }, [instruments, instrument]);
 
   // Загрузка инструментов портфеля
   useEffect(() => {
-    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-    })
-      .then(res => res.json())
-      .then(data => setPortfolioInstruments(data))
-      .catch(() => setPortfolioInstruments([]));
+    function fetchPortfolio() {
+      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+      })
+        .then(res => res.json())
+        .then(data => setPortfolioInstruments(data))
+        .catch(() => setPortfolioInstruments([]));
+    }
+    fetchPortfolio();
+    const interval = setInterval(fetchPortfolio, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Загрузка баланса
   useEffect(() => {
-    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-    })
-      .then(res => res.json())
-      .then(data => setBalance(data[0]?.availableAmount ?? 0))
-      .catch(() => setBalance(0));
+    function fetchBalance() {
+      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+      })
+        .then(res => res.json())
+        .then(data => setBalance(data[0]?.availableAmount ?? 0))
+        .catch(() => setBalance(0));
+    }
+    fetchBalance();
+    const interval = setInterval(fetchBalance, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Цена теперь в RUB
-  const [priceRub, setPriceRub] = useState(65000 * usdToRub); // по умолчанию 65000 USDT * курс
+  const [priceRub, setPriceRub] = useState(0);
   // Итоговая сумма в RUB
   const totalRub = amount ? Number(amount) * priceRub : 0;
   const maxBuy = priceRub > 0 ? balance / priceRub : 0;
@@ -91,8 +111,12 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!amount || Number(amount) <= 0) {
-      setToast({ open: true, message: 'Укажите количество', type: 'error' });
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      setToast({ open: true, message: 'Укажите корректное количество (> 0)', type: 'error' });
+      return;
+    }
+    if (!priceRub || isNaN(Number(priceRub)) || Number(priceRub) <= 0) {
+      setToast({ open: true, message: 'Укажите корректную цену (> 0)', type: 'error' });
       return;
     }
     if (tab === 'buy' && Number(amount) * priceRub > balance) {
@@ -173,8 +197,16 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
               min="0"
               max="100000000"
               step="any"
-              value={priceRub}
-              onChange={e => setPriceRub(Math.min(Number(e.target.value), 100000000))}
+              value={priceRub === 0 ? '' : priceRub}
+              onChange={e => {
+                let val = e.target.value.replace(/^0+(?=\d)/, '');
+                // Запретить отрицательные, пустые, 0 и нечисловые значения
+                if (!val || isNaN(Number(val)) || Number(val) <= 0) {
+                  setPriceRub(0);
+                } else {
+                  setPriceRub(Number(val));
+                }
+              }}
               className="w-full min-h-[28px] px-2 py-1 border-b border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-sm text-right font-semibold transition-all duration-300 rounded"
             />
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">RUB</span>
@@ -188,7 +220,15 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
               max="1000000"
               step="any"
               value={amount}
-              onChange={e => setAmount(Math.min(Number(e.target.value), 1000000).toString())}
+              onChange={e => {
+                let val = e.target.value.replace(/^0+(?=\d)/, '');
+                // Запретить отрицательные, пустые, 0 и нечисловые значения
+                if (!val || isNaN(Number(val)) || Number(val) <= 0) {
+                  setAmount('');
+                } else {
+                  setAmount(val);
+                }
+              }}
               placeholder="Введите количество"
               className="w-full min-h-[28px] px-2 py-1 border-b border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:border-b-light-accent dark:focus:border-dark-accent outline-none text-sm text-right font-semibold transition-all duration-300 rounded"
             />

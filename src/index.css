@@ -229,3 +229,62 @@ html::-webkit-scrollbar {
   backdrop-filter: blur(120px);
   -webkit-backdrop-filter: blur(120px);
 }
+
+/* Биржевой animated background: движущиеся линии/свечи */
+.trading-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.trading-bg-candles {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.trading-candle {
+  position: absolute;
+  bottom: 0;
+  width: 4px;
+  border-radius: 2px;
+  opacity: 0.18;
+  animation: trading-candle-move 8s linear infinite;
+}
+
+.trading-candle.up {
+  background: linear-gradient(180deg, #81c784 0%, #b9f6ca 100%);
+}
+.trading-candle.down {
+  background: linear-gradient(180deg, #ff638a 0%, #ffd6e0 100%);
+}
+
+@keyframes trading-candle-move {
+  0% {
+    transform: translateY(40vh) scaleY(0.2);
+    opacity: 0.12;
+  }
+  10% {
+    opacity: 0.22;
+  }
+  80% {
+    opacity: 0.22;
+  }
+  100% {
+    transform: translateY(-60vh) scaleY(1.1);
+    opacity: 0.10;
+  }
+}
+
+.dark .trading-candle.up {
+  background: linear-gradient(180deg, #34d399 0%, #bbf7d0 100%);
+}
+.dark .trading-candle.down {
+  background: linear-gradient(180deg, #ff638a 0%, #fda4af 100%);
+}

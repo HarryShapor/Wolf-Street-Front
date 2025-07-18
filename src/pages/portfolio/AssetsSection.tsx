@@ -10,6 +10,7 @@ import { Portfolio3DPie } from './ProfileSection';
 import { API_HOST } from '../../services/Api';
 import { useInstruments } from '../../hooks/useInstruments';
 import CustomSelect from '../../components/ui/CustomSelect';
+import Modal from '../../components/ui/Modal';
 
 // Тип для инструмента
 interface Instrument {
@@ -132,6 +133,15 @@ async function deleteInstrument(instrumentId: number, onResult: (err?: string) =
   }
 }
 
+// Функция для перевода ошибок на русский
+function getErrorMessage(err: string) {
+  if (/400/.test(err) && /position|values|contains/i.test(err)) return 'Пользователь содержит позиции по инструменту!';
+  if (/401/.test(err)) return 'Пользователь не авторизован!';
+  if (/404/.test(err)) return 'Портфель пользователя или инструмент не найден!';
+  if (/успешно удален|success/i.test(err)) return 'Инструмент успешно удалён!';
+  return 'Произошла ошибка. Попробуйте ещё раз.';
+}
+
 export default function AssetsSection() {
   const [search, setSearch] = useState('');
   const [instruments, setInstruments] = useState<Instrument[]>([]);
@@ -222,13 +232,25 @@ export default function AssetsSection() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
   const [selectedToDelete, setSelectedToDelete] = useState<number | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
 
   const handleAdd = () => {
     const testInstrumentId = Object.keys(instrumentMeta)[0] ? Number(Object.keys(instrumentMeta)[0]) : 9007199254740991;
     setActionLoading(true);
     setActionError('');
     addInstrument(testInstrumentId, (err) => {
-      if (err) setActionError(err);
+      if (err) {
+        setModalTitle('Ошибка');
+        let msg = err;
+        try {
+          const parsed = JSON.parse(err);
+          msg = parsed.message || parsed.error || err;
+        } catch {}
+        setModalMessage(getErrorMessage(msg));
+        setModalOpen(true);
+      }
       setActionLoading(false);
       // Обновить список инструментов
       setLoading(true);
@@ -253,7 +275,16 @@ export default function AssetsSection() {
     setActionLoading(true);
     setActionError('');
     deleteInstrument(selectedToDelete, (err) => {
-      if (err) setActionError(err);
+      if (err) {
+        setModalTitle('Ошибка');
+        let msg = err;
+        try {
+          const parsed = JSON.parse(err);
+          msg = parsed.message || parsed.error || err;
+        } catch {}
+        setModalMessage(getErrorMessage(msg));
+        setModalOpen(true);
+      }
       setActionLoading(false);
       // Обновить список инструментов
       setLoading(true);
@@ -275,15 +306,13 @@ export default function AssetsSection() {
 
   // --- state for custom dropdown ---
   const [showDropdown, setShowDropdown] = useState(false);
-  // Закрытие dropdown при клике вне
+
+  // Автоматическое закрытие модалки через 2 секунды
   useEffect(() => {
-    if (!showDropdown) return;
-    const handler = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('.custom-dropdown-delete')) setShowDropdown(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showDropdown]);
+    if (!modalOpen) return;
+    const timer = setTimeout(() => setModalOpen(false), 2000);
+    return () => clearTimeout(timer);
+  }, [modalOpen]);
 
   return (
     <div className="bg-gradient-to-br from-light-card/95 to-light-bg/80 dark:from-dark-card/95 dark:to-[#181926]/90 rounded-3xl shadow-2xl card-glow backdrop-blur-xl border border-light-border/40 dark:border-dark-border/40 p-8 flex flex-col gap-5 transition-all duration-300">
@@ -326,7 +355,16 @@ export default function AssetsSection() {
               />
               <button
                 onClick={() => selectedToAdd && addInstrument(selectedToAdd, (err) => {
-                  if (err) setActionError(err);
+                  if (err) {
+                    setModalTitle('Ошибка');
+                    let msg = err;
+                    try {
+                      const parsed = JSON.parse(err);
+                      msg = parsed.message || parsed.error || err;
+                    } catch {}
+                    setModalMessage(getErrorMessage(msg));
+                    setModalOpen(true);
+                  }
                   setActionLoading(false);
                   setSelectedToAdd(null);
                   // обновить список инструментов ...
@@ -374,7 +412,16 @@ export default function AssetsSection() {
               />
               <button
                 onClick={() => selectedToDelete && deleteInstrument(selectedToDelete, (err) => {
-                  if (err) setActionError(err);
+                  if (err) {
+                    setModalTitle('Ошибка');
+                    let msg = err;
+                    try {
+                      const parsed = JSON.parse(err);
+                      msg = parsed.message || parsed.error || err;
+                    } catch {}
+                    setModalMessage(getErrorMessage(msg));
+                    setModalOpen(true);
+                  }
                   setActionLoading(false);
                   setSelectedToDelete(null);
                   // обновить список инструментов ...
@@ -404,7 +451,9 @@ export default function AssetsSection() {
                 Удалить инструмент
               </button>
             </div>
-            {actionError && <span className="text-red-500 mt-1 text-center">{actionError}</span>}
+            <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={modalTitle}>
+               <div className="text-red-500 dark:text-red-400 text-center text-base whitespace-pre-line" style={{minWidth:220}}>{modalMessage}</div>
+            </Modal>
           </div>
         </div>
         {/* Диаграмма справа */}

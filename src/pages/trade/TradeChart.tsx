@@ -60,16 +60,17 @@ const TradeChart: React.FC<TradeChartProps> = ({ data, loading, error, selected,
           <span className={`text-base font-semibold leading-tight ${change > 0 ? 'text-light-success dark:text-dark-accent' : change < 0 ? 'text-light-error dark:text-error' : 'text-light-fg-secondary dark:text-dark-brown'}`}>{change > 0 ? '+' : ''}{change}%</span>
         </div>
       </div>
-      <div className="flex gap-1 items-start mt-0.5 overflow-x-auto scrollbar-thin scrollbar-thumb-light-border/30 dark:scrollbar-thumb-dark-border/30">
+      <div className="flex gap-2 items-start mt-0.5 overflow-x-auto py-1">
         {timeframes.map(tf => (
           <button
             key={tf}
             onClick={() => setTimeframe(tf)}
-            className={`rounded-lg px-5 py-2 text-base font-semibold transition-all duration-150 border border-light-border dark:border-dark-border
+            className={`inline-flex items-center justify-center px-4 py-1.5 text-[13px] font-semibold rounded-full border transition-all duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40
               ${tf === timeframe
-                ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg shadow-sm'
-                : 'bg-transparent text-light-fg dark:text-dark-fg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10'}
+                ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent shadow-md'
+                : 'bg-light-bg/80 dark:bg-dark-bg/80 text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-light-accent/10 dark:hover:bg-dark-accent/10'}
             `}
+            style={{ minWidth: 38, minHeight: 28, letterSpacing: 0.5 }}
           >
             {tf}
           </button>

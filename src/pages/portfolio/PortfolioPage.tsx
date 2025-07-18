@@ -32,7 +32,7 @@ const MENU_LABELS = [
   'Настройки',
 ];
 
-export default function PortfolioPage({ theme, setTheme, NAV }: { theme: string, setTheme: (t: string) => void, NAV: { id: string, label: string}[] }) {
+export default function PortfolioPage({ theme, setTheme, NAV }: { theme: "dark" | "light", setTheme: (t: "dark" | "light") => void, NAV: { id: string, label: string}[] }) {
   const [activeMenu, setActiveMenu] = useState('Портфель');
   const SectionComponent = SECTIONS[activeMenu] || ProfileSection;
   const navigate = useNavigate();
@@ -63,7 +63,9 @@ export default function PortfolioPage({ theme, setTheme, NAV }: { theme: string,
         {/* Контент */}
         <main className="w-full flex flex-col gap-5">
           <div key={activeMenu} className="animate-portfolio-fade">
-            <SectionComponent />
+            {activeMenu === 'Портфель'
+              ? <ProfileSection onGoToDeposit={() => setActiveMenu('Пополните счет')} />
+              : <SectionComponent />}
           </div>
         </main>
       </div>
