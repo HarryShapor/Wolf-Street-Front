@@ -1,4 +1,6 @@
-import CurrencyRates from "../../../components/ui/CurrencyRates";
+import { useTypedEffect } from "../../../hooks/useTypedEffect";
+import { useState, useEffect } from "react";
+import { FaChartLine, FaUsers, FaExchangeAlt, FaGlobe } from "react-icons/fa";
 
 interface HeroSectionProps {
   heroVisible: boolean;
@@ -6,12 +8,113 @@ interface HeroSectionProps {
   email: string;
 }
 
-export default function HeroSection({
-  heroVisible,
-  setEmail,
-  email,
-}: HeroSectionProps) {
-  const handleStart = () => alert(`Введён email: ${email}`);
+export default function HeroSection({ heroVisible }: HeroSectionProps) {
+  const [greeting, setGreeting] = useState("");
+  const [platformStats, setPlatformStats] = useState({
+    tradingVolume: 2400000,
+    activeTraders: 15247,
+    todayTrades: 1247,
+    totalUsers: 25600,
+  });
+
+  // Функция для получения приветствия по времени суток
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 4 && hour <= 11) {
+      return "Доброе утро! Готовы к торговле?";
+    } else if (hour >= 12 && hour <= 17) {
+      return "Добрый день! Готовы к торговле?";
+    } else if (hour >= 18 && hour <= 21) {
+      return "Добрый вечер! Готовы к торговле?";
+    } else {
+      return "Доброй ночи! Готовы к торговле?";
+    }
+  };
+
+  // Генерация mock данных для статистики (только нужные поля)
+  const generateMockStats = () => {
+    const baseVolume = 2400000;
+    const baseTraders = 15247;
+    const baseTrades = 1247;
+    const baseUsers = 25600;
+
+    // Добавляем небольшие реалистичные колебания
+    const volumeVariation = 0.95 + Math.random() * 0.1; // ±5%
+    const tradersVariation = 0.98 + Math.random() * 0.04; // ±2%
+    const tradesVariation = 0.9 + Math.random() * 0.2; // ±10%
+    const usersVariation = 1.001 + Math.random() * 0.002; // Медленный рост
+
+    return {
+      tradingVolume: Math.floor(baseVolume * volumeVariation),
+      activeTraders: Math.floor(baseTraders * tradersVariation),
+      todayTrades: Math.floor(baseTrades * tradesVariation),
+      totalUsers: Math.floor(baseUsers * usersVariation),
+    };
+  };
+
+  // Форматирование чисел для отображения
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(0)}K`;
+    }
+    return num.toString();
+  };
+
+  const formatUserNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(0)}K`;
+    }
+    return num.toString();
+  };
+
+  // Устанавливаем приветствие и обновляем статистику
+  useEffect(() => {
+    const updateGreeting = () => {
+      setGreeting(getTimeBasedGreeting());
+    };
+
+    const updateStats = () => {
+      setPlatformStats(generateMockStats());
+    };
+
+    // Устанавливаем сразу
+    updateGreeting();
+    updateStats();
+
+    // Обновляем приветствие каждую минуту
+    const greetingInterval = setInterval(updateGreeting, 60000);
+
+    // Обновляем статистику каждые 30 секунд для "живости"
+    const statsInterval = setInterval(updateStats, 30000);
+
+    return () => {
+      clearInterval(greetingInterval);
+      clearInterval(statsInterval);
+    };
+  }, []);
+
+  // Эффект печатания для заголовка
+  const { displayText } = useTypedEffect({
+    texts: [
+      "Биржа будущего",
+      "Торгуйте с Wolf Street",
+      "Инвестируйте умно",
+      "Ваш путь к успеху",
+    ],
+    typeSpeed: 80,
+    backSpeed: 40,
+    startDelay: 800,
+    backDelay: 2500,
+    loop: true,
+    showCursor: false,
+  });
 
   return (
     <>
@@ -48,12 +151,18 @@ export default function HeroSection({
                 : "opacity-0 translate-y-10"
             }`}
         >
-          {/* Левая часть: заголовок, описание, форма */}
+          {/* Левая часть: заголовок, описание, популярные инструменты */}
           <div className="flex flex-col items-start justify-center w-full max-w-md lg:max-w-[460px] text-center lg:text-left">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-[42px] font-extrabold text-light-fg dark:text-dark-fg mb-4 lg:mb-6 leading-tight tracking-tight">
-              Биржа будущего{" "}
+            {/* Персонализированное приветствие */}
+            <div className="mb-3 lg:mb-4">
+              <p className="text-sm sm:text-base lg:text-lg text-light-accent dark:text-dark-accent font-medium opacity-90 animate-fade-in">
+                {greeting}
+              </p>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-[42px] font-extrabold text-light-fg dark:text-dark-fg mb-4 lg:mb-6 leading-tight tracking-tight min-h-[1.2em]">
               <span className="text-light-accent dark:text-dark-accent">
-                уже здесь
+                {displayText}
               </span>
             </h1>
 
@@ -63,43 +172,100 @@ export default function HeroSection({
               здесь.
             </p>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleStart();
-              }}
-              className="w-full flex flex-col sm:flex-row items-center gap-3 lg:gap-4 mb-4 lg:mb-6"
-            >
-              <div className="relative w-full">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Введите ваш e-mail"
-                  className="w-full pl-10 pr-4 py-2.5 lg:py-3 rounded-full border border-light-accent dark:border-dark-accent outline-none bg-light-card dark:bg-dark-card text-light-fg dark:text-dark-fg text-base lg:text-lg shadow-lg focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent focus:ring-opacity-20 transition-all"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full sm:w-auto py-2.5 lg:py-3 px-6 lg:px-8 bg-light-accent dark:bg-dark-accent text-light-nav-text dark:text-dark-nav-text rounded-full font-bold text-base lg:text-lg shadow-lg border-none cursor-pointer hover:scale-105 transition-transform whitespace-nowrap"
-              >
-                Начать
-              </button>
-            </form>
+            {/* Минималистичный баннер с фоном как у статистики */}
+            <div className="w-full mb-4 lg:mb-6">
+              <div className="bg-light-card dark:bg-dark-card rounded-lg shadow-lg border border-light-accent dark:border-dark-accent">
+                <div className="p-6 text-center">
+                  {/* Основной текст */}
+                  <p className="text-light-fg/70 dark:text-dark-fg/70 mb-5 text-lg max-w-md mx-auto">
+                    {formatUserNumber(platformStats.activeTraders)} трейдеров
+                    уже выбрали нас. Присоединяйтесь к успешному сообществу.
+                  </p>
 
-            <span className="text-light-fg/80 dark:text-dark-brown text-xs lg:text-sm opacity-70 text-center lg:text-left">
-              * Мы не рассылаем спам. Только важные новости и инсайды.
-            </span>
+                  {/* Широкая кнопка по центру */}
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={() => (window.location.href = "/login")}
+                      className="py-2.5 px-24 bg-light-accent dark:bg-dark-accent text-white rounded-xl font-semibold text-lg hover:opacity-90 hover:scale-105 transition-all shadow-lg"
+                    >
+                      Начать
+                    </button>
+                    <p className="text-xs text-light-fg/50 dark:text-dark-fg/50 mt-2">
+                      Войти или создать аккаунт
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Правая часть: курсы валют */}
-          <div className="flex flex-col items-center justify-center w-full max-w-[350px] lg:max-w-[400px] mt-4 lg:mt-0">
+          {/* Правая часть: статистика платформы */}
+          <div className="flex flex-col items-center justify-center w-full max-w-[380px] lg:max-w-[420px] mt-4 lg:mt-0">
             <div className="bg-light-card dark:bg-dark-card rounded-lg shadow-lg p-6 w-full border border-light-accent dark:border-dark-accent">
-              <h3 className="text-base font-semibold mb-4 text-light-accent dark:text-dark-accent text-center flex items-center justify-center gap-2">
-                Актуальные курсы
+              <h3 className="text-lg font-semibold mb-6 text-light-accent dark:text-dark-accent text-center">
+                Статистика платформы
               </h3>
-              <CurrencyRates compact={true} />
+              <div className="space-y-4">
+                {/* Объем торгов */}
+                <div className="flex items-center gap-4 p-3 bg-light-bg dark:bg-dark-bg rounded-lg">
+                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <FaChartLine className="text-green-500 text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs text-light-fg/70 dark:text-dark-fg/70 mb-1">
+                      Объем торгов 24ч
+                    </div>
+                    <div className="font-bold text-green-500 text-lg">
+                      {formatNumber(platformStats.tradingVolume)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Активные трейдеры */}
+                <div className="flex items-center gap-4 p-3 bg-light-bg dark:bg-dark-bg rounded-lg">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <FaUsers className="text-blue-500 text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs text-light-fg/70 dark:text-dark-fg/70 mb-1">
+                      Активных трейдеров
+                    </div>
+                    <div className="font-bold text-blue-500 text-lg">
+                      {formatUserNumber(platformStats.activeTraders)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Сделки за сегодня */}
+                <div className="flex items-center gap-4 p-3 bg-light-bg dark:bg-dark-bg rounded-lg">
+                  <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                    <FaExchangeAlt className="text-orange-500 text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs text-light-fg/70 dark:text-dark-fg/70 mb-1">
+                      Сделок сегодня
+                    </div>
+                    <div className="font-bold text-orange-500 text-lg">
+                      {formatUserNumber(platformStats.todayTrades)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Всего пользователей */}
+                <div className="flex items-center gap-4 p-3 bg-light-bg dark:bg-dark-bg rounded-lg">
+                  <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                    <FaGlobe className="text-indigo-500 text-lg" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs text-light-fg/70 dark:text-dark-fg/70 mb-1">
+                      Всего пользователей
+                    </div>
+                    <div className="font-bold text-indigo-500 text-lg">
+                      {formatUserNumber(platformStats.totalUsers)}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

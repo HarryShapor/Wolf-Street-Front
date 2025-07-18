@@ -122,44 +122,54 @@ export default function Header({
           </span>
         </div>
 
-        {/* Навигация по центру */}
-        <nav className="flex-1 flex justify-center gap-2">
-          {(() => {
-            const navWithMain = NAV.some((s) => s.id === "main")
-              ? NAV
-              : [{ id: "main", label: "Главная" }, ...NAV];
-            return navWithMain.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => handleNavClick(section.id)}
-                className={`text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200
-                  ${
-                    isMain && activeSection === section.id
-                      ? "bg-light-accent/90 dark:bg-dark-accent/90 text-white shadow-md"
-                      : "bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
-                  }
-                `}
-              >
-                {section.label}
-              </button>
-            ));
-          })()}
-        </nav>
+        {/* Центральная навигация с торговыми кнопками */}
+        <div className="flex-1 flex justify-center items-center gap-6">
+          {/* Основная навигация */}
+          <nav className="flex gap-2">
+            {(() => {
+              const navWithMain = NAV.some((s) => s.id === "main")
+                ? NAV
+                : [{ id: "main", label: "Главная" }, ...NAV];
+              return navWithMain.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => handleNavClick(section.id)}
+                  className={`text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200
+                    ${
+                      isMain && activeSection === section.id
+                        ? "bg-light-accent/90 dark:bg-dark-accent/90 text-white shadow-md"
+                        : "bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
+                    }
+                  `}
+                >
+                  {section.label}
+                </button>
+              ));
+            })()}
+          </nav>
 
-        {/* Actions справа */}
-        <div className="flex items-center gap-2 ml-auto">
-          <button
-            onClick={() => navigate("/trade")}
-            className="px-4 py-1.5 rounded-full bg-gradient-to-r from-light-accent to-light-accent/80 dark:from-dark-accent dark:to-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
-          >
-            Торговля
-          </button>
-          <button
-            onClick={() => navigate("/instruments")}
-            className="px-4 py-1.5 rounded-full bg-light-accent/80 dark:bg-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
-          >
-            Инструменты
-          </button>
+          {/* Разделитель */}
+          <div className="w-px h-6 bg-light-border dark:bg-dark-border opacity-50"></div>
+
+          {/* Торговые кнопки */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate("/trade")}
+              className="px-4 py-1.5 rounded-full bg-gradient-to-r from-light-accent to-light-accent/80 dark:from-dark-accent dark:to-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
+            >
+              Торговля
+            </button>
+            <button
+              onClick={() => navigate("/instruments")}
+              className="px-4 py-1.5 rounded-full bg-light-accent/80 dark:bg-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
+            >
+              Инструменты
+            </button>
+          </div>
+        </div>
+
+        {/* Actions справа (только утилиты) */}
+        <div className="flex items-center gap-2">
           <button
             ref={searchBtnRef}
             onClick={() => {
