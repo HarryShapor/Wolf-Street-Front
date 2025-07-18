@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LoginForm from "./components/LoginForm";
 import AuthPromoBanner from "./components/AuthPromoBanner";
@@ -27,9 +27,9 @@ const LoginPage: React.FC = () => {
     { text: "Безопасность средств" },
   ];
 
-  const showToast = (opts: {message: string, type?: 'success'|'error'|'info', title?: string}) => {
+  const showToast = useCallback((opts: {message: string, type?: 'success'|'error'|'info', title?: string}) => {
     setToast({open: true, ...opts});
-  };
+  }, []);
 
   // Показывать toast при profileUpdated
   useEffect(() => {

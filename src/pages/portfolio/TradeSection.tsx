@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import CustomSelect from '../../components/ui/CustomSelect';
 import Button from '../../components/ui/Button';
+import { usePortfolioId } from '../../hooks/usePortfolioId';
 
 // Тип для инструмента
 // type Instrument = { instrumentId: number; symbol?: string; name?: string; totalAmount: number; price?: number; ... }
@@ -12,6 +13,8 @@ export default function TradeSection({ instruments, balance }: { instruments: an
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  const portfolioId = usePortfolioId();
 
   // Выбор первого инструмента
   useEffect(() => {
@@ -44,6 +47,13 @@ export default function TradeSection({ instruments, balance }: { instruments: an
       setFormError('Недостаточно средств для покупки такого количества инструмента.');
       return;
     }
+    if (!portfolioId) {
+      setFormError('Не удалось определить портфель пользователя.');
+      return;
+    }
+    // TODO: здесь должен быть реальный POST-запрос с portfolioId
+    // Пример:
+    // await fetch(`/api/v1/some-endpoint`, { method: 'POST', body: JSON.stringify({ portfolioId, ... }) })
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);

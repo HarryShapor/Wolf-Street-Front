@@ -1,7 +1,7 @@
 import axios from "axios";
 
-export const API_HOST = "http://158.160.184.138:8080";
-
+// export const API_HOST = "http://158.160.184.138:8080";
+export const API_HOST = "http://wolf-street.ru";
 const api = axios.create({
   // baseURL: `${API_HOST}/user-service/api/v1`,
   baseURL: `${API_HOST}/user-service/api/v1`,
@@ -113,3 +113,6 @@ export async function getCurrencyRates() {
     CNY: CNY.Value,
   };
 }
+
+// Глобальный флаг для переключения между mock WebSocket и реальным сервером
+export const USE_WS_MOCK = false;

@@ -40,27 +40,8 @@ function getChartColors() {
   return { up: '#22d3a8', down: '#f43f5e' };
 }
 
-const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
-  if (!data || data.length === 0) {
-    return (
-      <div
-        style={{
-          width: "100%",
-          height: "400px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--light-card, #f8f9fa)",
-          borderRadius: "16px",
-        }}
-      >
-        <p style={{ color: "var(--light-fg, #333)", fontSize: "18px" }}>
-          Загрузка данных графика...
-        </p>
-      </div>
-    );
-  }
 
+const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
@@ -71,6 +52,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   );
   const isMouseDown = useRef(false);
   const [chartColors, setChartColors] = useState(getChartColors());
+  const [crosshair, setCrosshair] = useState<{
+    x: number;
+    y: number;
+    price: number | null;
+    time: string | null;
+  } | null>(null);
 
   useEffect(() => {
     function onStorage(e: StorageEvent) {
@@ -89,12 +76,6 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
       clearInterval(interval);
     };
   }, [chartColors.up, chartColors.down]);
-  const [crosshair, setCrosshair] = useState<{
-    x: number;
-    y: number;
-    price: number | null;
-    time: string | null;
-  } | null>(null);
 
   // Управление графиком
   const scrollChart = (delta: number) => {
@@ -163,15 +144,14 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
       chartRef.current = null;
     }
     // Цвета для премиального стиля
-
-    const isDark = theme === "dark";
-    const chartBg = isDark ? "#1c1b1b" : "#fff"; // Tailwind dark-bg
-    const textColor = isDark ? "#e5e7ef" : "#23263a";
-    const gridColor = isDark ? "#23263a" : "#e5e7ef";
-    const upColor = isDark ? "#22e57a" : "#22c55e";
-    const downColor = isDark ? "#ff4b6b" : "#ef4444";
-    const wickColor = isDark ? "#e5e7ef" : "#23263a";
-    const borderColor = isDark ? "#222" : "#e5e7ef";
+    const isDark = theme === 'dark';
+    const chartBg = isDark ? '#1c1b1b' : '#fff'; // Tailwind dark-bg
+    const textColor = isDark ? '#e5e7ef' : '#23263a';
+    const gridColor = isDark ? '#23263a' : '#e5e7ef';
+    const upColor = chartColors.up;
+    const downColor = chartColors.down;
+    const wickColor = isDark ? '#e5e7ef' : '#23263a';
+    const borderColor = isDark ? '#222' : '#e5e7ef';
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -232,7 +212,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     } as CandlestickSeriesOptions);
     seriesRef.current = candleSeries;
     candleSeries.setData(data);
-    chart.timeScale().fitContent();
+    chart.timeScale().fitContent(); // fitContent только при первом рендере
     // setRerender(x => x + 1); // УБРАНО чтобы не было бесконечного рендера
     setRerender((x) => x + 1); // чтобы панель кнопок не "отставала" при ресете
 
@@ -306,7 +286,18 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
         window.removeEventListener("mouseup", handleMouseUp);
       }
     };
-  }, [data, theme]);
+  }, [theme, chartColors.up, chartColors.down]);
+
+  // Новый useEffect: обновление данных без сброса зума
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current) return;
+    const timeScale = chartRef.current.timeScale();
+    const prevRange = timeScale.getVisibleLogicalRange();
+    seriesRef.current.setData(data);
+    if (prevRange) {
+      timeScale.setVisibleLogicalRange(prevRange);
+    }
+  }, [data]);
 
   // Стили для плавающей панели
   const isDark = theme === "dark";
@@ -322,7 +313,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
 
   // Определяем цвет последней цены
   const lastPrice = data && data.length > 0 ? data[data.length - 1].close : null;
-  const lastPriceColor = lastPrice !== null && data && data.length > 1 ? (lastPrice > data[data.length - 2]?.close ? upColor : downColor) : '#888';
+  const lastPriceColor = lastPrice !== null && data && data.length > 1 ? (lastPrice > data[data.length - 2]?.close ? chartColors.up : chartColors.down) : '#888';
 
   return (
     <div style={{ width: "100%", position: "relative", height: "100%" }}>
@@ -516,6 +507,29 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
           <FaUndo />
         </button>
       </div>
+      {/* Если данных нет — показываем надпись поверх графика */}
+      {(!data || data.length === 0) && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255,255,255,0.7)",
+            borderRadius: 24,
+            zIndex: 30,
+            fontSize: 20,
+            color: "#888",
+            fontWeight: 600,
+          }}
+        >
+          Нет данных для выбранного инструмента/интервала
+        </div>
+      )}
     </div>
   );
 };

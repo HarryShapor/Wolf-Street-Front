@@ -4,6 +4,12 @@ import ToastModal from './ToastModal';
 import { API_HOST } from '../../services/Api';
 import { useInstruments } from '../../hooks/useInstruments';
 import type { Instrument } from '../../hooks/useInstruments';
+import { usePortfolioId } from '../../hooks/usePortfolioId';
+
+// Добавляю price как опциональное поле
+interface InstrumentWithPrice extends Instrument {
+  price?: number;
+}
 
 const tabStyles = (active: boolean, buy: boolean, first: boolean, last: boolean) =>
   `flex-1 text-center py-2 text-sm font-bold transition-colors duration-150 cursor-pointer
@@ -36,6 +42,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
 
   // --- portfolio state ---
   const [portfolioInstruments, setPortfolioInstruments] = useState<{ instrumentId: number, availableAmount: number, ticker: string }[]>([]);
+  const portfolioId = usePortfolioId();
   const [balance, setBalance] = useState<number>(0);
 
   // --- курс USDT→RUB ---
@@ -43,21 +50,21 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
 
   // При выборе инструмента выставлять цену по умолчанию
   useEffect(() => {
-    if (instruments.length && instrument) {
-      const found = instruments.find(inst => inst.ticker === instrument);
+    if ((instruments as InstrumentWithPrice[]).length && instrument) {
+      const found = (instruments as InstrumentWithPrice[]).find(inst => inst.ticker === instrument);
       if (found && found.price) setPriceRub(found.price);
     }
   }, [instruments, instrument]);
 
   // При первом рендере выставлять цену по умолчанию
   useEffect(() => {
-    if (instruments.length && !instrument) {
-      setInstrument(instruments[0].ticker);
-      if (instruments[0].price) setPriceRub(instruments[0].price);
+    if ((instruments as InstrumentWithPrice[]).length && !instrument) {
+      setInstrument((instruments as InstrumentWithPrice[])[0].ticker);
+      if ((instruments as InstrumentWithPrice[])[0].price) setPriceRub((instruments as InstrumentWithPrice[])[0].price!);
     }
   }, [instruments, instrument]);
 
-  // Загрузка инструментов портфеля
+  // Загрузка инструментов портфеля (без portfolioId)
   useEffect(() => {
     function fetchPortfolio() {
       fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
@@ -132,6 +139,17 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
       setToast({ open: true, message: 'Инструмент не выбран!', type: 'error' });
       return;
     }
+    if (!portfolioId) {
+      setToast({ open: true, message: 'Портфель не загружен, попробуйте позже', type: 'error' });
+      return;
+    }
+    if (portfolioId === 1) {
+      setToast({ open: true, message: 'Внимание: portfolioId=1. Проверьте, что вы авторизованы и backend возвращает корректный id.', type: 'error' });
+      console.warn('portfolioId is 1! This is likely a backend or auth issue.');
+      return;
+    }
+    console.log('portfolioId used for order:', portfolioId);
+    console.log('instruments:', instruments);
     try {
       const res = await fetch(`${API_HOST}/order-service/api/v1/orders`, {
         method: 'POST',
@@ -140,7 +158,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify({
-          portfolioId: 1, // TODO: заменить на реальный id портфеля пользователя
+          portfolioId: portfolioId, // теперь реальный id портфеля
           lotPrice: priceRub,
           instrumentId: selectedInstrument.instrumentId,
           count: Number(amount),
@@ -162,7 +180,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
 
   return (
     <>
-      <div className="w-full min-w-[220px] max-w-[320px] mx-auto mt-1 bg-light-card/90 dark:bg-dark-card/90 border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl transition-shadow hover:shadow-[0_0_48px_12px_rgba(80,255,180,0.35)]">
+      <div className="w-full min-w-[220px] max-w-[280px] h-full flex flex-col justify-between bg-light-card dark:bg-dark-card border border-light-border/40 dark:border-dark-border/40 rounded-2xl transition-shadow hover:shadow-[0_0_24px_0_#6c63ff] dark:hover:shadow-[0_0_24px_0_#81c784] self-start">
         {/* Вкладки Buy/Sell */}
         <div className="flex border-b border-light-border/40 dark:border-dark-border/40">
           <button className={tabStyles(tab === 'buy', true, true, false)} style={{marginRight: '-1px'}} onClick={() => setTab('buy')}>Купить</button>
@@ -174,13 +192,15 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
           <button className={orderTabStyles(orderType === 'market')} onClick={() => setOrderType('market')}>Рынок</button>
         </div>
         {/* Форма */}
-        <form className="flex flex-col gap-1 px-2 pb-2 pt-0.5" onSubmit={handleSubmit}>
+        <form className="flex flex-col justify-between gap-1 px-2 pb-2 pt-0.5 h-full" onSubmit={handleSubmit}>
           {/* Инструмент */}
           <label className="text-xs font-semibold text-light-fg-secondary dark:text-dark-brown mb-0.5">Инструмент</label>
           {loading ? (
             <div className="py-2 text-center text-light-fg-secondary dark:text-dark-brown">Загрузка инструментов...</div>
           ) : error ? (
-            <div className="py-2 text-center text-red-500 dark:text-red-400">{error}</div>
+            <div className="py-2 px-2 my-2 text-center text-red-500 dark:text-red-400 bg-red-50 dark:bg-[#2a1a1a] rounded-xl border border-red-200 dark:border-red-400/30 min-h-[36px]">
+              {error}
+            </div>
           ) : (
             <CustomSelect
               value={instrument}

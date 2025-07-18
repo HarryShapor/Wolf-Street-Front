@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { FaLock, FaCreditCard, FaApple, FaGoogle, FaWallet, FaArrowRight } from 'react-icons/fa';
 import Button from '../../components/ui/Button';
 import { API_HOST } from '../../services/Api';
+import { usePortfolioId } from '../../hooks/usePortfolioId';
 
 const quickAmounts = [1000, 5000, 10000, 50000];
 const methods = [
@@ -22,6 +23,8 @@ export default function DepositSection() {
   const [loading, setLoading] = useState(false);
   const [depositError, setDepositError] = useState('');
   const [depositSuccess, setDepositSuccess] = useState(false);
+
+  const portfolioId = usePortfolioId();
 
   const handleQuickAmount = (val: number) => setAmount(val.toString());
 
@@ -54,13 +57,14 @@ export default function DepositSection() {
     setDepositError('');
     setDepositSuccess(false);
     try {
+      if (!portfolioId) throw new Error('Не удалось определить портфель пользователя!');
       const res = await fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/cash`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({ currency: currency || 'RUB', amount: Number(amount) })
+        body: JSON.stringify({ currency: currency || 'RUB', amount: Number(amount), portfolioId }) // добавлен portfolioId
       });
       if (res.status === 401) throw new Error('Пользователь не авторизован!');
       if (res.status === 404) throw new Error('Портфель пользователя не найден!');

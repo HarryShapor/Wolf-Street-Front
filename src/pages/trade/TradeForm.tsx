@@ -18,8 +18,8 @@ interface TradeFormProps {
 }
 
 const TradeForm: React.FC<TradeFormProps> = ({ selected, amount, setAmount, side, setSide, orderType, setOrderType, price, total, balance, handleAllClick, handleTrade }) => (
-  <div className="mt-2">
-    <Card className="w-full p-6 bg-light-card/90 dark:bg-dark-card/90 border border-light-border/40 dark:border-dark-border/40 flex flex-col gap-4 rounded-2xl shadow-2xl transition-shadow hover:shadow-[0_0_48px_12px_rgba(80,255,180,0.35)]">
+  <div className="mt-2 max-w-[280px] min-w-[220px] w-full">
+    <Card className="w-full p-6 bg-light-card dark:bg-dark-card border border-light-border/40 dark:border-dark-border/40 flex flex-col gap-4 rounded-2xl transition-shadow hover:shadow-[0_0_24px_0_#6c63ff] dark:hover:shadow-[0_0_24px_0_#81c784] z-10">
       <form onSubmit={handleTrade} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div className="md:col-span-2">
           <label className="text-xs text-light-fg-secondary dark:text-dark-brown font-medium mb-1 block">Инструмент</label>
@@ -39,7 +39,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ selected, amount, setAmount, side
           <button
             type="button"
             className={`rounded-lg py-1.5 text-sm font-semibold transition-all duration-150 w-full
-              ${side === 'buy' ? 'bg-light-success text-white dark:bg-dark-accent dark:text-dark-bg shadow-sm' : 'bg-transparent text-light-fg dark:text-dark-fg border border-light-border dark:border-dark-border hover:bg-light-success/10 dark:hover:bg-dark-accent/10'}`}
+              ${side === 'buy' ? 'bg-[#81c784] text-black dark:bg-[#81c784] dark:text-black shadow-sm' : 'bg-transparent text-light-fg dark:text-dark-fg border border-light-border dark:border-dark-border hover:bg-[#81c784]/10 dark:hover:bg-[#81c784]/10'}`}
             onClick={() => setSide('buy')}
           >Купить</button>
           <button
@@ -115,7 +115,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ selected, amount, setAmount, side
           <button
             type="submit"
             className={`rounded-lg text-base font-bold py-2 mt-2 w-full transition-all duration-150
-              ${side === 'buy' ? 'bg-light-success text-white dark:bg-dark-accent dark:text-dark-bg' : 'bg-light-error text-white dark:bg-error dark:text-dark-bg'}
+              ${side === 'buy' ? 'bg-[#81c784] text-black dark:bg-[#81c784] dark:text-black' : 'bg-light-error text-white dark:bg-error dark:text-dark-bg'}
             `}
           >{side === 'buy' ? 'Купить' : 'Продать'} {selected.symbol}</button>
         </div>

@@ -24,9 +24,12 @@ const Card: React.FC<CardProps> = ({
 }) => (
   <div
     className={clsx(
-      'flex flex-col rounded-2xl border-2 bg-light-card dark:bg-dark-card transition-colors duration-200 shadow-xl p-6',
+      // glassmorphism + анимация + тени
+      'flex flex-col rounded-2xl border-2 shadow-xl p-6 transition-all duration-300',
+      'bg-white/30 dark:bg-dark-card/40 backdrop-blur-md',
+      'hover:shadow-[0_0_32px_0_theme("colors.light-accent")] dark:hover:shadow-[0_0_32px_0_#81c784] hover:scale-[1.03]',
+      'animate-fadein',
       accent ? 'border-light-accent dark:border-dark-accent' : 'border-light-border dark:border-dark-border',
-      'hover:shadow-2xl hover:scale-[1.02] animate-fadein',
       className
     )}
     style={{ boxSizing: 'border-box' }}

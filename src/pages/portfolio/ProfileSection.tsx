@@ -23,6 +23,8 @@ import { useTheme } from '../../context/ThemeContext';
 import DEFAULT_AVATAR_SVG from '../../components/ui/defaultAvatar';
 import { getUserAvatarUrl } from '../../services/AvatarService';
 import { useNavigate } from 'react-router-dom';
+import { FaWallet, FaChartLine, FaCreditCard } from 'react-icons/fa';
+import { BiAnalyse } from 'react-icons/bi';
 // Локальное определение типа Instrument для аналитики
 type Instrument = {
   instrumentId: number;
@@ -503,7 +505,7 @@ function StepperPanel({
     {
       key: 'wallet',
       title: 'Актуальный кошелёк',
-      // icon убран
+      icon: <FaWallet className="text-[38px] ml-4 flex-shrink-0 text-light-accent dark:text-dark-accent" />, // заменили emoji на иконку
       content: (
         <div className="flex flex-col items-start gap-1 w-full">
           {walletLoading ? (
@@ -531,7 +533,7 @@ function StepperPanel({
     {
       key: 'empty',
       title: 'Анализ портфеля',
-      icon: '💹',
+      icon: <BiAnalyse className="text-[38px] ml-4 flex-shrink-0 text-light-accent dark:text-dark-accent" />, // цвет в палитру сайта
       content: <div className="w-full flex flex-col items-start"><PortfolioMiniAnalytics instruments={instruments} loading={instrumentsLoading} error={instrumentsError} /></div>,
     },
   ];
@@ -539,7 +541,7 @@ function StepperPanel({
     cards.push({
       key: 'deposit',
       title: 'Пополнить счёт',
-      icon: '💳',
+      icon: <FaCreditCard className="text-[38px] ml-4 flex-shrink-0 text-light-accent dark:text-dark-accent" />, // заменили emoji на иконку
       content: <div className="w-full flex flex-col items-start"><DepositSection /></div>,
     });
   }
@@ -760,7 +762,9 @@ function PortfolioMiniAnalytics({ instruments, loading, error }: { instruments: 
   }));
   return (
     <div className="flex flex-col gap-2 items-center justify-center w-full">
-      <span className="text-[22px] font-extrabold text-light-accent dark:text-dark-accent mb-0.5">💹</span>
+      <span className="text-[22px] font-extrabold text-light-accent dark:text-dark-accent mb-0.5">
+        <BiAnalyse className="inline-block align-middle text-[22px] mr-1 text-light-accent dark:text-dark-accent" />
+      </span>
       <div className="text-[13px] text-light-fg/80 dark:text-dark-brown">Суммарная стоимость</div>
       <div className="text-[18px] font-extrabold text-light-accent dark:text-dark-accent mb-1">₽ {total.toLocaleString('ru-RU')}</div>
       <div className="w-full flex flex-col gap-1">
@@ -786,36 +790,45 @@ function PortfolioMiniAnalytics({ instruments, loading, error }: { instruments: 
 }
 
 // Простой компонент для отображения списка инструментов
+import { useInstrumentProfitability } from '../../hooks/useInstrumentProfitability';
 function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { instruments: Instrument[], loading: boolean, error: string, noMargin?: boolean }) {
   if (loading) return <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>;
   if (error) return <div className="text-red-500 dark:text-red-400">{error}</div>;
   if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
   return (
     <div className={`bg-white/90 dark:bg-[#18191c] border border-light-border/30 dark:border-[#23243a] shadow-inner dark:shadow-[inset_0_2px_16px_0_rgba(0,0,0,0.25)] rounded-2xl h-full ${noMargin ? '' : 'mt-2'} p-0`}>
-      <div className="p-6 h-full flex flex-col">
-        <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-4">Ваши инструменты</div>
-        <div className="overflow-x-auto flex-1">
-          <table className="min-w-full text-left text-[15px]">
-            <thead>
-              <tr className="text-light-fg/80 dark:text-dark-brown font-semibold">
-                <th className="py-2 px-3">Символ</th>
-                <th className="py-2 px-3">Название</th>
-                <th className="py-2 px-3">Количество</th>
-                <th className="py-2 px-3">Стоимость</th>
-              </tr>
-            </thead>
-            <tbody>
-              {instruments.map(inst => (
+      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-4">Ваши инструменты</div>
+      <div className="overflow-x-auto flex-1">
+        <table className="min-w-full text-left text-[15px]">
+          <thead>
+            <tr className="text-light-fg/80 dark:text-dark-brown font-semibold">
+              <th className="py-2 px-3">Символ</th>
+              <th className="py-2 px-3">Название</th>
+              <th className="py-2 px-3">Количество</th>
+              <th className="py-2 px-3">Стоимость</th>
+              <th className="py-2 px-3">Доходность</th>
+            </tr>
+          </thead>
+          <tbody>
+            {instruments.map(inst => {
+              const { data, loading, error } = useInstrumentProfitability(inst.instrumentId);
+              return (
                 <tr key={inst.instrumentId} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all">
                   <td className="py-2 px-3 font-mono font-bold text-light-accent dark:text-dark-accent">{inst.symbol || inst.instrumentId}</td>
                   <td className="py-2 px-3">{inst.name || '-'}</td>
                   <td className="py-2 px-3 font-mono">{inst.totalAmount}</td>
                   <td className="py-2 px-3 font-mono">₽ {(inst.price && inst.totalAmount) ? (inst.price * inst.totalAmount).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) : '—'}</td>
+                  <td className="py-2 px-3 font-mono">
+                    {loading ? <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
+                      : error ? <span className="text-xs text-red-500 dark:text-red-400">!</span>
+                      : data && data.profitability !== undefined ? <span className="text-xs text-light-accent dark:text-dark-accent font-semibold">{data.profitability}%</span>
+                      : <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Нет аналитики</span>}
+                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

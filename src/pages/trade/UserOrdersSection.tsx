@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_HOST } from '../../services/Api';
 import Modal from '../../components/ui/Modal';
+import { usePortfolioId } from '../../hooks/usePortfolioId';
 
 interface Order {
   id: string | number;
@@ -32,6 +33,7 @@ export default function UserOrdersSection() {
   const [cancelLoading, setCancelLoading] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+  const portfolioId = usePortfolioId();
 
   // Автоматическое закрытие модалки через 2 секунды
   useEffect(() => {
@@ -41,9 +43,10 @@ export default function UserOrdersSection() {
   }, [modalOpen]);
 
   useEffect(() => {
+    if (!portfolioId) return;
     setLoading(true);
     setError('');
-    fetch(`${API_HOST}/order-service/api/v1/orders`, {
+    fetch(`${API_HOST}/order-service/api/v1/orders?portfolioId=${portfolioId}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
       },
@@ -73,7 +76,7 @@ export default function UserOrdersSection() {
 
     // Polling каждые 3 секунды
     const interval = setInterval(() => {
-      fetch(`${API_HOST}/order-service/api/v1/orders`, {
+      fetch(`${API_HOST}/order-service/api/v1/orders?portfolioId=${portfolioId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
@@ -100,7 +103,7 @@ export default function UserOrdersSection() {
         .catch(() => {});
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [portfolioId]);
 
   async function handleCancelOrder(orderId: string | number) {
     setCancelLoading(String(orderId));
@@ -163,7 +166,7 @@ export default function UserOrdersSection() {
   });
 
   return (
-    <div className="w-full h-[450px] bg-light-card dark:bg-dark-card border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl transition-shadow hover:shadow-[0_0_48px_12px_rgba(80,255,180,0.35)] flex flex-col p-0">
+    <div className="w-full h-[450px] bg-white/30 dark:bg-dark-card/40 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl transition-all duration-300 hover:shadow-[0_0_32px_0_theme('colors.light-accent')] dark:hover:shadow-[0_0_32px_0_#81c784] hover:scale-[1.03] animate-fadein flex flex-col p-0">
       <div className="flex items-center justify-between pl-4 pt-3 pb-2 border-b border-light-border/30 dark:border-dark-border/30 bg-light-bg dark:bg-dark-bg rounded-t-2xl">
         <span className="text-xs font-bold text-light-accent dark:text-dark-accent tracking-wide uppercase">Мои заявки</span>
       </div>

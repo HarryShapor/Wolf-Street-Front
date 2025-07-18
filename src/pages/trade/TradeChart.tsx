@@ -51,7 +51,7 @@ const mockCandles = [
 ];
 
 const TradeChart: React.FC<TradeChartProps> = ({ data, loading, error, selected, price, change, timeframe, setTimeframe }) => (
-  <Card className="flex-1 p-0 flex flex-col bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border gap-1 rounded-2xl shadow-2xl transition-shadow h-full hover:shadow-[0_0_32px_0_rgba(80,255,180,0.45)]">
+  <Card className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl transition-shadow hover:shadow-[0_0_24px_0_theme('colors.light-accent')] dark:hover:shadow-[0_0_24px_0_#81c784] h-full">
     <div className="flex flex-row items-start justify-between px-6 pt-2 pb-0.5">
       <div className="flex flex-col gap-0.5">
         <div className="flex items-baseline gap-2">
@@ -77,9 +77,8 @@ const TradeChart: React.FC<TradeChartProps> = ({ data, loading, error, selected,
         ))}
       </div>
     </div>
-    <div className="flex-1 w-full mx-auto rounded-2xl overflow-hidden" style={{width: '100%', maxWidth: '100%', height: '60vh', minHeight: 400, minWidth: 320, margin: '0 auto', background: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
-      {/* Используем мок-данные для теста графика */}
-      <CandlestickChart data={mockCandles} />
+    <div className="flex-1 w-full mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-white/60 via-light-accent/10 to-light-bg/40 dark:from-dark-card/60 dark:via-dark-accent/10 dark:to-dark-bg/40 backdrop-blur-md shadow-2xl transition-all duration-300 animate-fadein" style={{width: '100%', maxWidth: '100%', height: '60vh', minHeight: 400, minWidth: 320, margin: '0 auto', background: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+      <CandlestickChart data={data} />
     </div>
   </Card>
 );

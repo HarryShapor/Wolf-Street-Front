@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import { getUserAvatarUrl } from '../../services/AvatarService';
 
 interface HeaderProps {
   scrolled: boolean;
@@ -51,9 +52,16 @@ export default function Header({
   const [isAuth, setIsAuth] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setIsAuth(!!localStorage.getItem("accessToken"));
+    // Получаем аватарку через сервис, как в ProfileSection/SettingsPanel
+    if (localStorage.getItem("accessToken")) {
+      getUserAvatarUrl().then(setAvatarUrl);
+    } else {
+      setAvatarUrl(null);
+    }
   }, []); // только при монтировании
 
   useEffect(() => {
@@ -75,6 +83,8 @@ export default function Header({
     navigate("/login");
   };
 
+  const mainButtonClass = `px-4 py-1.5 rounded-full bg-gradient-to-r from-light-accent to-light-accent/80 dark:from-dark-accent dark:to-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform`;
+
   return (
     <>
       <header
@@ -87,7 +97,7 @@ export default function Header({
           ${
             scrolled
               ? "bg-white/95 dark:bg-dark-bg/95 shadow-lg backdrop-blur-md"
-              : "bg-transparent"
+              : "bg-white dark:bg-dark-bg"
           }`}
       >
         {/* Логотип и название слева */}
@@ -121,10 +131,8 @@ export default function Header({
             Wolf Street
           </span>
         </div>
-
-        {/* Центральная навигация с торговыми кнопками */}
+        {/* Центральный блок: навигация + кнопки */}
         <div className="flex-1 flex justify-center items-center gap-6">
-          {/* Основная навигация */}
           <nav className="flex gap-2">
             {(() => {
               const navWithMain = NAV.some((s) => s.id === "main")
@@ -134,34 +142,28 @@ export default function Header({
                 <button
                   key={section.id}
                   onClick={() => handleNavClick(section.id)}
-                  className={`text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200
-                    ${
-                      isMain && activeSection === section.id
-                        ? "bg-light-accent/90 dark:bg-dark-accent/90 text-white shadow-md"
-                        : "bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
-                    }
-                  `}
+                  className={
+                    (isMain && activeSection === section.id)
+                      ? mainButtonClass
+                      : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
+                  }
                 >
                   {section.label}
                 </button>
               ));
             })()}
           </nav>
-
-          {/* Разделитель */}
-          <div className="w-px h-6 bg-light-border dark:bg-dark-border opacity-50"></div>
-
-          {/* Торговые кнопки */}
+          {/* Кнопки Торговля/Инструменты */}
           <div className="flex gap-2">
             <button
               onClick={() => navigate("/trade")}
-              className="px-4 py-1.5 rounded-full bg-gradient-to-r from-light-accent to-light-accent/80 dark:from-dark-accent dark:to-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
+              className={location.pathname.startsWith('/trade') ? mainButtonClass : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"}
             >
               Торговля
             </button>
             <button
               onClick={() => navigate("/instruments")}
-              className="px-4 py-1.5 rounded-full bg-light-accent/80 dark:bg-dark-accent/80 text-white font-semibold text-sm border-none cursor-pointer shadow-sm hover:scale-105 transition-transform"
+              className={location.pathname.startsWith('/instruments') ? mainButtonClass : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"}
             >
               Инструменты
             </button>
@@ -215,16 +217,13 @@ export default function Header({
                 className="w-9 h-9 rounded-full bg-light-card dark:bg-dark-card flex items-center justify-center border border-light-border dark:border-dark-border shadow transition-all duration-200 hover:scale-110 hover:shadow-xl"
                 aria-label="Профиль"
               >
-                <svg
-                  className="w-6 h-6 text-light-fg dark:text-dark-fg"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4" />
-                </svg>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="avatar"
+                    className="w-7 h-7 rounded-full object-cover border border-light-border dark:border-dark-border"
+                  />
+                ) : null}
               </button>
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-dark-card shadow-lg rounded-lg z-50 border border-light-border dark:border-dark-border transition-all duration-200 origin-top-right animate-profile-menu">
