@@ -1,5 +1,6 @@
 import FeatureCard from "../../../components/ui/FeatureCard";
 import SectionContainer from "../../../components/ui/SectionContainer";
+import { useScrollAnimations } from "../../../hooks/useScrollAnimations";
 
 export default function AboutSection() {
   const features = [
@@ -30,6 +31,7 @@ export default function AboutSection() {
       ),
       title: "Гарантия безопасности",
       text: "Ваши активы под защитой: многоуровневое шифрование, резервные копии и круглосуточный мониторинг. Мы — ваш цифровой сейф.",
+      gridClass: "col-start-1 row-start-1",
     },
     {
       icon: (
@@ -59,6 +61,7 @@ export default function AboutSection() {
       ),
       title: "Технологии будущего",
       text: "Интеллектуальные алгоритмы, автоматизация сделок и интеграция с топовыми банками. Всё для вашего роста и удобства.",
+      gridClass: "col-start-2 row-start-1",
     },
     {
       icon: (
@@ -78,6 +81,7 @@ export default function AboutSection() {
       ),
       title: "Премиальный стиль",
       text: "Дизайн, который вдохновляет: минимализм, скорость, внимание к деталям. Управляйте капиталом с удовольствием.",
+      gridClass: "col-start-3 row-start-1",
     },
     {
       icon: (
@@ -111,22 +115,49 @@ export default function AboutSection() {
       ),
       title: "Живое сообщество",
       text: "Wolf Street — это не только сервис, но и люди. Форумы, поддержка 24/7, обмен опытом и совместные инвестиции.",
+      gridClass: "col-start-2 row-start-2",
     },
   ];
+
+  // Хук для анимаций скролла с задержками
+  const [containerRef, visibleItems] = useScrollAnimations(features.length, {
+    threshold: 0.2,
+    rootMargin: "0px 0px -100px 0px",
+    staggerDelay: 200, // 200ms задержка между карточками
+  });
 
   return (
     <SectionContainer id="about">
       <h2 className="text-3xl font-extrabold text-light-accent dark:text-dark-accent mb-8 text-center tracking-wide">
         О проекте
       </h2>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6">
+
+      {/* Grid с анимациями появления */}
+      <div
+        ref={containerRef}
+        className="grid grid-cols-1 md:grid-cols-3 auto-rows-fr gap-6 max-w-4xl mx-auto"
+      >
         {features.map((feature, idx) => (
-          <FeatureCard
+          <div
             key={idx}
-            icon={feature.icon}
-            title={feature.title}
-            text={feature.text}
-          />
+            className={`${
+              feature.gridClass
+            } flex transition-all duration-700 ease-out ${
+              visibleItems[idx]
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 translate-y-8 scale-95"
+            }`}
+            style={{
+              transitionDelay: `${idx * 100}ms`,
+            }}
+          >
+            <FeatureCard
+              icon={feature.icon}
+              title={feature.title}
+              text={feature.text}
+              isVisible={visibleItems[idx]}
+            />
+          </div>
         ))}
       </div>
     </SectionContainer>

@@ -1,4 +1,5 @@
 import CurrencyRates from "../../../components/ui/CurrencyRates";
+import { useTypedEffect } from "../../../hooks/useTypedEffect";
 
 interface HeroSectionProps {
   heroVisible: boolean;
@@ -12,6 +13,22 @@ export default function HeroSection({
   email,
 }: HeroSectionProps) {
   const handleStart = () => alert(`Введён email: ${email}`);
+
+  // Эффект печатания для заголовка (без курсора)
+  const { displayText } = useTypedEffect({
+    texts: [
+      "Биржа будущего уже здесь",
+      "Торгуйте с Wolf Street",
+      "Инвестируйте умно",
+      "Ваш путь к успеху",
+    ],
+    typeSpeed: 80,
+    backSpeed: 40,
+    startDelay: 800,
+    backDelay: 2500,
+    loop: true,
+    showCursor: false, // Отключаем курсор
+  });
 
   return (
     <>
@@ -50,10 +67,10 @@ export default function HeroSection({
         >
           {/* Левая часть: заголовок, описание, форма */}
           <div className="flex flex-col items-start justify-center w-full max-w-md lg:max-w-[460px] text-center lg:text-left">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-[42px] font-extrabold text-light-fg dark:text-dark-fg mb-4 lg:mb-6 leading-tight tracking-tight">
-              Биржа будущего{" "}
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-[42px] font-extrabold text-light-fg dark:text-dark-fg mb-4 lg:mb-6 leading-tight tracking-tight min-h-[1.2em]">
+              {/* Основной текст с эффектом печатания (без курсора) */}
               <span className="text-light-accent dark:text-dark-accent">
-                уже здесь
+                {displayText}
               </span>
             </h1>
 
