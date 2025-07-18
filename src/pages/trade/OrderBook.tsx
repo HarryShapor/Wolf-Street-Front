@@ -8,7 +8,7 @@ interface OrderBookProps {
   orderBookBuy: { price: number; amount: number }[];
   loadingOrderBook: boolean;
   errorOrderBook: string | null;
-  instrumentId?: number | string;
+  instrumentId: number;
 }
 
 // 1. Увеличиваем высоту стакана (например, до 600px)
@@ -17,6 +17,13 @@ interface OrderBookProps {
 const ROW_HEIGHT = 28; // px, подбери под свой дизайн
 
 const OrderBook: React.FC<OrderBookProps> = ({ price, orderBookSell, orderBookBuy, loadingOrderBook, errorOrderBook, instrumentId }) => {
+  if (!instrumentId || isNaN(Number(instrumentId)) || instrumentId === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-light-fg-secondary dark:text-dark-brown text-sm">
+        Выберите инструмент для отображения стакана
+      </div>
+    );
+  }
   const { midPrice, bestBid, bestAsk, loading } = useOrderbookSpread(instrumentId);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleRows, setVisibleRows] = useState(10);
@@ -73,7 +80,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ price, orderBookSell, orderBookBu
   }, [bids]);
 
   return (
-    <div ref={containerRef} className="flex-1 h-full max-w-[220px] mx-auto overflow-hidden rounded-2xl group border border-light-border/40 dark:border-dark-border/40 shadow-2xl transition-all duration-300 bg-white/30 dark:bg-dark-card/40 backdrop-blur-md hover:shadow-[0_0_32px_0_theme('colors.light-accent')] dark:hover:shadow-[0_0_32px_0_#81c784] hover:scale-[1.03] animate-fadein mt-2">
+    <div ref={containerRef} className="flex-1 h-full max-w-[220px] w-full overflow-hidden rounded-2xl group border border-light-border/40 dark:border-dark-border/40 shadow-2xl transition-all duration-300 bg-white/30 dark:bg-dark-card/40 backdrop-blur-md hover:shadow-[0_0_32px_0_theme('colors.light-accent')] dark:hover:shadow-[0_0_32px_0_#81c784] hover:scale-[1.03] animate-fadein mt-2">
       <Card className="p-4 flex flex-col bg-transparent rounded-2xl h-full">
         <div className="relative z-10">
           <div className="flex flex-col gap-0 mb-0">

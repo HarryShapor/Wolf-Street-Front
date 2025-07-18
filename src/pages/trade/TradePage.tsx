@@ -18,7 +18,6 @@ import { useNavigate } from "react-router-dom";
 import { createWS } from '../../services/WebSocketService';
 import type { OrderBookData, Candle } from '../../services/WebSocketService';
 import { USE_WS_MOCK } from '../../services/Api';
-import { useInstrumentProfitability } from '../../hooks/useInstrumentProfitability';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
@@ -159,12 +158,13 @@ function TradePage() {
   const [balance] = useState(mockBalance);
   const [orderType, setOrderType] = useState<'limit'|'market'>('limit');
   const navigate = useNavigate();
-  const profitability = useInstrumentProfitability(selected?.instrumentId);
+  const [profitability, setProfitability] = useState<{ loading: boolean; error: string | null; data: any }>({ loading: false, error: null, data: null });
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [profitPeriod, setProfitPeriod] = useState<'1d' | '1w' | '1m'>('1d');
 
   // Для примера: сопоставим ticker -> instrumentId
   const symbolToId = Object.fromEntries(instruments.map(inst => [inst.ticker, inst.instrumentId]));
-  const instrumentId = selected ? symbolToId[selected.ticker] : undefined;
+  const instrumentId = selected && symbolToId[selected.ticker] ? symbolToId[selected.ticker] : 0;
 
   // 1. Загружаем историю через REST
   useEffect(() => {
@@ -224,13 +224,35 @@ function TradePage() {
     }
   }, [instruments, selected]);
 
+  // Загрузка аналитики
+  useEffect(() => {
+    if (!selected?.instrumentId) return;
+    setProfitability({ loading: true, error: null, data: null });
+    fetch(`${API_HOST}/analytic-service/api/v1/profitability?instrumentIds=${selected.instrumentId}&period=${profitPeriod}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    })
+      .then(res => {
+        if (!res.ok) {
+          if (res.status === 404) throw new Error('Нет аналитики для этого инструмента');
+          if (res.status === 401 || res.status === 403) throw new Error('Не авторизован');
+          if (res.status === 400) throw new Error('Некорректный запрос');
+          throw new Error('Нет аналитики для этого инструмента');
+        }
+        return res.json();
+      })
+      .then(data => setProfitability({ loading: false, error: null, data }))
+      .catch(e => setProfitability({ loading: false, error: e.message, data: null }));
+  }, [selected?.instrumentId, profitPeriod]);
+
   const filtered = instruments.filter(inst =>
     inst.ticker.toLowerCase().includes(search.toLowerCase()) ||
     inst.title.toLowerCase().includes(search.toLowerCase())
   );
 
   // Используем instrumentId для стакана и графика
-  const { sell: orderBookSell, buy: orderBookBuy, loading: loadingOrderBook, error: errorOrderBook } = useOrderBook(instrumentId ?? 0, 10);
+  const { sell: orderBookSell, buy: orderBookBuy, loading: loadingOrderBook, error: errorOrderBook } = useOrderBook(instrumentId, 10);
   // Подписка на OHLC через STOMP/SockJS при изменении instrumentId или timeframe
   // const [ohlcStompData, setOhlcStompData] = useState<Candle[]>([]);
   // useEffect(() => {
@@ -367,12 +389,69 @@ function TradePage() {
                   orderBookBuy={orderBookBuy}
                   loadingOrderBook={loadingOrderBook}
                   errorOrderBook={errorOrderBook}
+                  instrumentId={instrumentId}
                 />
               </div>
             </div>
             {/* Правая колонка: график и аналитика сбоку */}
             <div className="w-[1040px] flex flex-row gap-6 items-start">
               <div className="flex-1 rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
+                {/* --- Верхняя панель: название, доходность, периоды --- */}
+                <div className="flex flex-wrap items-center gap-4 mb-2 justify-between">
+                  {/* Левая часть: название, доходность, периоды доходности */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl font-bold text-light-accent dark:text-dark-accent truncate">{selected?.title} ({selected?.ticker})</span>
+                    {/* Доходность и стрелка */}
+                    {profitability.loading ? (
+                      <span className="text-xs text-light-fg-secondary dark:text-dark-brown ml-2">Загрузка...</span>
+                    ) : profitability.data && selected && String(selected.instrumentId) in profitability.data ? (
+                      (() => {
+                        const val = Number(profitability.data[String(selected.instrumentId)]);
+                        const isUp = val > 0;
+                        const isDown = val < 0;
+                        return (
+                          <span className={"text-sm font-semibold flex items-center gap-1 ml-2 " + (isUp ? 'text-green-600 dark:text-green-400' : isDown ? 'text-red-500 dark:text-red-400' : '')}>
+                            {val.toFixed(2)}%
+                            {isUp && <span>↑</span>}
+                            {isDown && <span>↓</span>}
+                          </span>
+                        );
+                      })()
+                    ) : null}
+                    {/* Переключатель периода доходности */}
+                    <div className="flex gap-1 ml-2">
+                      {['1d','1w','1m'].map(p => (
+                        <button
+                          key={p}
+                          className={`px-2 py-0.5 rounded text-xs font-bold border transition-colors duration-150
+                            ${profitPeriod === p
+                              ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent'
+                              : 'bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-light-accent/10 dark:hover:bg-dark-accent/10'}
+                          `}
+                          onClick={() => setProfitPeriod(p as '1d'|'1w'|'1m')}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Правая часть: таймфреймы графика */}
+                  <div className="flex gap-1 ml-auto">
+                    {['1m','5m','15m','1h','1d'].map(tf => (
+                      <button
+                        key={tf}
+                        className={`px-2 py-0.5 rounded text-xs font-bold border transition-colors duration-150
+                          ${timeframe === tf
+                            ? 'bg-green-500 text-white dark:bg-green-400 dark:text-dark-bg border-green-500 dark:border-green-400'
+                            : 'bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-green-400/10 dark:hover:bg-green-600/10'}
+                        `}
+                        onClick={() => setTimeframe(tf)}
+                      >
+                        {tf}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <TradeChart
                   data={Array.isArray(candles) ? candles.filter(c => c && c.time) : []}
                   loading={false}
@@ -384,18 +463,6 @@ function TradePage() {
                   setTimeframe={setTimeframe}
                 />
               </div>
-              <Card className="w-[340px] min-w-[260px] max-w-[420px] ml-2 p-4 rounded-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/30 dark:border-dark-border/30 shadow-md">
-                <div className="text-lg font-bold text-light-accent dark:text-dark-accent mb-2">Аналитика инструмента</div>
-                {profitability.loading ? (
-                  <div className="text-sm text-light-fg-secondary dark:text-dark-brown">Загрузка аналитики...</div>
-                ) : profitability.error ? (
-                  <div className="text-sm text-red-500 dark:text-red-400">{profitability.error}</div>
-                ) : profitability.data && profitability.data.profitability !== undefined ? (
-                  <div className="text-base text-light-accent dark:text-dark-accent font-semibold">Доходность: {profitability.data.profitability}%</div>
-                ) : (
-                  <div className="text-sm text-light-fg-secondary dark:text-dark-brown">Нет аналитики для этого инструмента</div>
-                )}
-              </Card>
             </div>
           </div>
           {/* Нижняя часть: форма, заявки и сделки в одну линию */}

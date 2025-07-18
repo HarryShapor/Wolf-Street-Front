@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Header from "../../components/header/Header";
 import Footer from "../../components/footer/Footer";
 import InstrumentFilters from "./InstrumentFilters";
@@ -80,7 +80,10 @@ function FloatingCurrenciesBackground() {
 
 export default function InstrumentsPage() {
   const { instruments, loading, error } = useInstruments();
-  const ids = instruments.map(inst => inst.instrumentId);
+  const ids = useMemo(
+    () => [...new Set(instruments.map(inst => inst.instrumentId))].sort((a, b) => a - b),
+    [instruments]
+  );
   const { images, loading: loadingImages } = useInstrumentImages(ids);
   const { prices, loading: loadingPrices } = useInstrumentMarketData(ids);
   const [search, setSearch] = useState("");
@@ -96,37 +99,36 @@ export default function InstrumentsPage() {
     }
   }, [navigate]);
 
-  // Фильтрация
-  let filtered = instruments.filter((item) => {
-    const matchesSearch =
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.ticker.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
-  });
-
-  // Сортировка
-  filtered = filtered.slice().sort((a, b) => {
-    if (sort === "alpha-asc") return a.title.localeCompare(b.title);
-    if (sort === "alpha-desc") return b.title.localeCompare(a.title);
-    return 0;
-  });
-
+  // Показываем страницу только при первом рендере
   useEffect(() => {
     setShow(true);
-    // Определяем, первый ли это рендер
-    const isFirstRender = !show;
+  }, []);
+
+  // Мемоизированная фильтрация и сортировка
+  const filtered = useMemo(() => {
+    let result = instruments.filter((item) => {
+      const matchesSearch =
+        item.title.toLowerCase().includes(search.toLowerCase()) ||
+        item.ticker.toLowerCase().includes(search.toLowerCase());
+      return matchesSearch;
+    });
+    result = result.slice().sort((a, b) => {
+      if (sort === "alpha-asc") return a.title.localeCompare(b.title);
+      if (sort === "alpha-desc") return b.title.localeCompare(a.title);
+      return 0;
+    });
+    return result;
+  }, [instruments, search, sort]);
+
+  // Анимация карточек только при изменении фильтра/сортировки/поиска/инструментов
+  useEffect(() => {
     if (filtered.length > 0) {
-      if (isFirstRender) {
-        setCardsVisible(0);
-        filtered.forEach((_, i) => {
-          setTimeout(() => setCardsVisible(v => Math.max(v, i + 1)), 50 + i * 30);
-        });
-      } else {
-        setCardsVisible(filtered.length);
-      }
+      setCardsVisible(0);
+      filtered.forEach((_, i) => {
+        setTimeout(() => setCardsVisible(v => Math.max(v, i + 1)), 50 + i * 30);
+      });
     }
-    // eslint-disable-next-line
-  }, [filter, sort, search, instruments]);
+  }, [filter, sort, search, instruments, filtered]);
 
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg font-sans">
@@ -158,7 +160,13 @@ export default function InstrumentsPage() {
         {loading ? (
           <div className="text-center py-8">Загрузка инструментов...</div>
         ) : error ? (
-          <div className="text-center text-red-500 py-8">{error}</div>
+          <div className="text-center text-red-500 py-8">
+            <div>Ошибка загрузки инструментов!</div>
+            <div className="mt-2 text-sm text-red-400 break-all">{error}</div>
+            <div className="mt-2 text-xs text-light-fg/60 dark:text-dark-fg/60">Проверьте, что вы авторизованы и backend доступен.<br/>Если ошибка 401 — попробуйте перелогиниться.<br/>Если ошибка 500 — проверьте backend.</div>
+          </div>
+        ) : instruments.length === 0 ? (
+          <div className="text-center text-lg opacity-60 py-12">Нет доступных инструментов. Проверьте соединение с сервером или обратитесь к администратору.</div>
         ) : (
           <InstrumentsList instruments={filtered} cardsVisible={cardsVisible} images={images} loadingImages={loadingImages || loadingPrices} prices={prices} />
         )}

@@ -317,13 +317,13 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({ sideDefault = 'bu
         `}
         </style>
       </div>
-      <ToastModal
+      {/* <ToastModal
         open={toast.open}
         onClose={() => setToast(t => ({ ...t, open: false }))}
         message={toast.message}
         type={toast.type}
         duration={2500}
-      />
+      /> */}
     </>
   );
 };
