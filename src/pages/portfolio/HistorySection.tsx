@@ -4,11 +4,12 @@ import axios from 'axios';
 import { FaArrowDown, FaArrowUp, FaShoppingCart, FaExchangeAlt } from 'react-icons/fa';
 import { Listbox } from '@headlessui/react';
 import { API_HOST } from '../../services/Api';
+import { useInstruments } from '../../hooks/useInstruments';
 
 const API_URL = `${API_HOST}/order-service/api/v1/orders`;
 
 // Преобразование данных API к формату таблицы
-function mapApiToTable(item: any) {
+function mapApiToTable(item: any, instruments: any[]) {
   // orderId, instrumentId, count, lotPrice, type, status, createdAt
   let type = '';
   switch (item.type) {
@@ -25,12 +26,17 @@ function mapApiToTable(item: any) {
     case 'CANCELLED': status = 'Ошибка'; break;
     default: status = item.status;
   }
+
+  // Находим информацию об инструменте
+  const instrument = instruments.find(instr => instr.instrumentId === item.instrumentId);
+
   return {
     id: item.orderId,
     date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ru-RU') + ', ' + new Date(item.createdAt).toLocaleTimeString('ru-RU') : '',
     type,
     amount: item.lotPrice && item.count ? item.lotPrice * item.count : 0,
     status,
+    instrument: instrument ? { ticker: instrument.ticker, title: instrument.title } : null,
   };
 }
 
@@ -56,6 +62,7 @@ export default function HistorySection() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { instruments } = useInstruments();
 
   // Загрузка истории из API
   useEffect(() => {
@@ -70,7 +77,7 @@ export default function HistorySection() {
       })
       .then(data => {
         if (Array.isArray(data)) {
-          setData(data.map(mapApiToTable));
+          setData(data.map(item => mapApiToTable(item, instruments)));
         } else {
           setData([]);
         }
@@ -80,7 +87,7 @@ export default function HistorySection() {
         setData([]);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [instruments]);
 
   // Фильтрация и поиск
   const filteredData = useMemo(() => {
@@ -91,7 +98,9 @@ export default function HistorySection() {
         item.type.toLowerCase().includes(search.toLowerCase()) ||
         item.status.toLowerCase().includes(search.toLowerCase()) ||
         String(item.amount).includes(search) ||
-        item.date.includes(search);
+        item.date.includes(search) ||
+        (item.instrument?.ticker?.toLowerCase().includes(search.toLowerCase()) ||
+         item.instrument?.title?.toLowerCase().includes(search.toLowerCase()));
       return matchesType && matchesStatus && matchesSearch;
     });
   }, [search, type, status, data]);
@@ -212,6 +221,7 @@ export default function HistorySection() {
               <tr className="bg-light-bg dark:bg-dark-bg">
                 <th className="py-2 px-4 font-semibold">Дата</th>
                 <th className="py-2 px-4 font-semibold">Тип</th>
+                <th className="py-2 px-4 font-semibold">Инструмент</th>
                 <th className="py-2 px-4 font-semibold">Сумма</th>
                 <th className="py-2 px-4 font-semibold">Статус</th>
               </tr>
@@ -219,12 +229,12 @@ export default function HistorySection() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-light-fg/70 dark:text-dark-fg/70">Загрузка...</td>
+                  <td colSpan={5} className="py-6 text-center text-light-fg/70 dark:text-dark-fg/70">Загрузка...</td>
                 </tr>
               ) : error ? (
                 error === 'Портфель пользователя не найден!' ? (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center">
+                    <td colSpan={5} className="py-12 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <div className="text-[20px] font-bold text-light-fg dark:text-dark-fg mb-1">Сделок пока не было</div>
                         <div className="text-[15px] text-light-fg/70 dark:text-dark-fg/70">Ваша история появится здесь после первой операции</div>
@@ -233,12 +243,12 @@ export default function HistorySection() {
                   </tr>
                 ) : (
                   <tr>
-                    <td colSpan={4} className="py-6 text-center text-red-500 dark:text-red-400">{error}</td>
+                    <td colSpan={5} className="py-6 text-center text-red-500 dark:text-red-400">{error}</td>
                   </tr>
                 )
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-light-fg/70 dark:text-dark-fg/70">Нет данных</td>
+                  <td colSpan={5} className="py-6 text-center text-light-fg/70 dark:text-dark-fg/70">Нет данных</td>
                 </tr>
               ) : (
                 paginatedData.map(item => (
@@ -247,6 +257,13 @@ export default function HistorySection() {
                     <td className="py-2 px-4 flex items-center gap-2">
                       {typeIcons[item.type]}
                       <span>{item.type}</span>
+                    </td>
+                    <td className="py-2 px-4">
+                      {item.instrument ? (
+                        <span className="font-semibold text-light-accent dark:text-dark-accent">{item.instrument.ticker}</span>
+                      ) : (
+                        <span className="text-light-fg/50 dark:text-dark-fg/50">—</span>
+                      )}
                     </td>
                     <td className="py-2 px-4 font-semibold group-hover:text-light-accent dark:group-hover:text-dark-accent transition">{item.amount?.toLocaleString('ru-RU') ?? 0} ₽</td>
                     <td className="py-2 px-4">

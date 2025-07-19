@@ -33,8 +33,38 @@ const PRESETS = [
   },
 ];
 
+// Обновленная палитра на основе цветов из tailwind.config.js
 const PALETTE = [
-  '#22d3a8', '#f43f5e', '#b6d01b', '#e6007a', '#2196f3', '#ff9800', '#6366f1', '#f59e42', '#10b981', '#fbbf24', '#3b82f6', '#ef4444', '#fff', '#222'
+  // Основные цвета темы
+  '#6c63ff', // light-accent
+  '#81c784', // dark-accent
+  '#3ecf8e', // light-success
+  '#ff5c8a', // light-error
+  '#ef4444', // error
+  '#FFD600', // warning
+  
+  // Цвета для графиков
+  '#22d3a8', // зеленый для роста
+  '#f43f5e', // красный для падения
+  '#b6d01b', // желто-зеленый
+  '#e6007a', // розовый
+  '#2196f3', // синий
+  '#ff9800', // оранжевый
+  
+  // Дополнительные цвета
+  '#6366f1', // индиго
+  '#f59e42', // янтарный
+  '#10b981', // изумрудный
+  '#fbbf24', // желтый
+  '#3b82f6', // голубой
+  
+  // Нейтральные цвета
+  '#3a3a4d', // light-fg
+  '#6e7287', // light-fg-secondary
+  '#f0f4f0', // dark-fg
+  '#b0b3b8', // dark-nav-inactive
+  '#ffffff', // белый
+  '#000000', // черный
 ];
 
 interface ModalChartStyleProps {
@@ -44,6 +74,12 @@ interface ModalChartStyleProps {
   current: { up: string; down: string };
   onConfirm: (colors: { up: string; down: string }) => void;
 }
+
+// Ключи для localStorage
+const STORAGE_KEYS = {
+  CHART_COLORS: 'chart_colors',
+  LAST_PRESET: 'chart_last_preset'
+};
 
 function randomCandles(up: string, down: string) {
   // Генерирует массив свечей для предпросмотра
@@ -60,71 +96,18 @@ function randomCandles(up: string, down: string) {
   return arr.map((c, i) => ({ ...c, color: c.close >= c.open ? up : down, idx: i }));
 }
 
-function ColorPickerButton({ color, onChange, accent }: { color: string; onChange: (c: string) => void; accent: string }) {
-  const [open, setOpen] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        style={{
-          width: 36, height: 36, borderRadius: '50%', background: color,
-          border: `2.5px solid ${open ? accent : '#222'}`,
-          boxShadow: open ? `0 0 0 4px ${accent}33` : '0 2px 8px #0002',
-          cursor: 'pointer',
-          outline: 'none',
-          transition: 'box-shadow 0.18s, border 0.18s',
-          position: 'relative',
-        }}
-        tabIndex={0}
-        aria-label="Выбрать цвет"
-      />
-      {open && (
-        <div style={{
-          position: 'absolute', left: '50%', top: 44, transform: 'translateX(-50%)',
-          background: '#23272f', borderRadius: 12, boxShadow: `0 4px 24px #0008`, padding: 14, zIndex: 10,
-          minWidth: 170, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        }}>
-          <input
-            type="color"
-            value={color}
-            onChange={e => { onChange(e.target.value); setOpen(false); }}
-            style={{ width: 38, height: 38, border: 'none', background: 'none', borderRadius: '50%', marginBottom: 10, cursor: 'pointer' }}
-          />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
-            {PALETTE.map(p => (
-              <span
-                key={p}
-                onClick={() => { onChange(p); setOpen(false); }}
-                style={{
-                  width: 22, height: 22, borderRadius: '50%', background: p, border: p === color ? `2px solid ${accent}` : '2px solid #222',
-                  display: 'inline-block', cursor: 'pointer', margin: 2,
-                  boxShadow: p === color ? `0 0 0 2px ${accent}55` : 'none',
-                  transition: 'box-shadow 0.15s, border 0.15s',
-                }}
-                tabIndex={0}
-                aria-label={`Выбрать цвет ${p}`}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Вспомогательные функции hsv/rgb/hex
 function rgbToHex(r: number, g: number, b: number) {
   return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
+
 function hexToRgb(hex: string) {
   let c = hex.replace('#', '');
   if (c.length === 3) c = c.split('').map(x => x + x).join('');
   const num = parseInt(c, 16);
   return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 }
+
 function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -142,6 +125,7 @@ function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   }
   return [h * 360, s, v];
 }
+
 function hsvToRgb(h: number, s: number, v: number) {
   let r = 0, g = 0, b = 0;
   let i = Math.floor(h / 60);
@@ -159,318 +143,388 @@ function hsvToRgb(h: number, s: number, v: number) {
   }
   return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
 }
+
 function hexToHsv(hex: string): [number, number, number] {
   const { r, g, b } = hexToRgb(hex);
   return rgbToHsv(r, g, b);
 }
+
 function hsvToHex(h: number, s: number, v: number): string {
   const { r, g, b } = hsvToRgb(h, s, v);
   return rgbToHex(r, g, b);
 }
 
-function clamp(v: number, min: number, max: number): number { return Math.max(min, Math.min(max, v)); }
-
-function ColorWheel({ hsv, setHSV }: { hsv: [number, number, number]; setHSV: (hsv: [number, number, number]) => void }) {
-  // SVG круг для выбора HUE
-  const size = 140;
-  const r = size / 2 - 10;
-  const [drag, setDrag] = useState(false);
-  const ref = useRef(null);
-  // Переводим угол в координаты
-  const angle = hsv[0] * Math.PI / 180;
-  const cx = size / 2 + r * Math.cos(angle - Math.PI / 2);
-  const cy = size / 2 + r * Math.sin(angle - Math.PI / 2);
-  function handle(e) {
-    const rect = ref.current.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left - size / 2;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top - size / 2;
-    let deg = Math.atan2(y, x) * 180 / Math.PI + 90;
-    if (deg < 0) deg += 360;
-    setHSV([deg, hsv[1], hsv[2]]);
-  }
-  return (
-    <svg
-      ref={ref}
-      width={size}
-      height={size}
-      className="block mx-auto cursor-pointer select-none"
-      onMouseDown={e => { setDrag(true); handle(e); }}
-      onMouseMove={e => drag && handle(e)}
-      onMouseUp={() => setDrag(false)}
-      onMouseLeave={() => setDrag(false)}
-      onTouchStart={e => { setDrag(true); handle(e); }}
-      onTouchMove={e => drag && handle(e)}
-      onTouchEnd={() => setDrag(false)}
-      style={{ touchAction: 'none' }}
-    >
-      <defs>
-        <radialGradient id="wheel-white" r="80%">
-          <stop offset="60%" stopColor="#fff" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-        </radialGradient>
-        <conicGradient id="wheel-hue">
-          <stop offset="0%" stopColor="#f00" />
-          <stop offset="16.6%" stopColor="#ff0" />
-          <stop offset="33.3%" stopColor="#0f0" />
-          <stop offset="50%" stopColor="#0ff" />
-          <stop offset="66.6%" stopColor="#00f" />
-          <stop offset="83.3%" stopColor="#f0f" />
-          <stop offset="100%" stopColor="#f00" />
-        </conicGradient>
-      </defs>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="url(#wheel-hue)" strokeWidth="18" />
-      <circle cx={size/2} cy={size/2} r={r-9} fill="url(#wheel-white)" />
-      <circle cx={cx} cy={cy} r={8} fill="#fff" stroke="#222" strokeWidth="2" />
-    </svg>
-  );
+function clamp(v: number, min: number, max: number): number { 
+  return Math.max(min, Math.min(max, v)); 
 }
 
-function SVSquare({ hsv, setHSV }: { hsv: [number, number, number]; setHSV: (hsv: [number, number, number]) => void }) {
-  // Квадрат для выбора S/V
-  const size = 140;
-  const [drag, setDrag] = useState(false);
-  const ref = useRef(null);
-  function handle(e) {
-    const rect = ref.current.getBoundingClientRect();
-    const x = clamp((e.touches ? e.touches[0].clientX : e.clientX) - rect.left, 0, size);
-    const y = clamp((e.touches ? e.touches[0].clientY : e.clientY) - rect.top, 0, size);
-    setHSV([hsv[0], x/size, 1-y/size]);
-  }
-  // Цвет фона — выбранный HUE
-  const { r, g, b } = hsvToRgb(hsv[0], 1, 1);
-  const color = `rgb(${r},${g},${b})`;
-  const x = hsv[1] * size;
-  const y = (1-hsv[2]) * size;
-  return (
-    <div
-      ref={ref}
-      className="relative mx-auto mt-2 mb-4 cursor-pointer"
-      style={{ width: size, height: size, background: `linear-gradient(90deg,#fff,${color}),linear-gradient(0deg,#0000,#000)` }}
-      onMouseDown={e => { setDrag(true); handle(e); }}
-      onMouseMove={e => drag && handle(e)}
-      onMouseUp={() => setDrag(false)}
-      onMouseLeave={() => setDrag(false)}
-      onTouchStart={e => { setDrag(true); handle(e); }}
-      onTouchMove={e => drag && handle(e)}
-      onTouchEnd={() => setDrag(false)}
-      style={{ touchAction: 'none', width: size, height: size, borderRadius: 10, boxShadow: '0 1px 6px #0002' }}
-    >
-      <div
-        className="absolute border-2 border-light-accent dark:border-dark-accent rounded-full pointer-events-none"
-        style={{ left: x-8, top: y-8, width: 16, height: 16, background: '#fff8', boxShadow: '0 0 0 2px #0002' }}
-      />
-    </div>
-  );
-}
-
-function ModernColorPickerPopover({ anchorRef, color, onChange, onClose }: {
-  anchorRef: React.RefObject<HTMLButtonElement>;
+// Улучшенный компонент выбора цвета
+function ModernColorPicker({ color, onChange, onClose }: {
   color: string;
   onChange: (c: string) => void;
   onClose: () => void;
 }) {
-  // HSV <-> RGB <-> HEX
   const [hsv, setHSV] = useState<[number, number, number]>(hexToHsv(color));
-  useEffect(() => { setHSV(hexToHsv(color)); }, [color]);
-  useEffect(() => { onChange(hsvToHex(...hsv)); }, [hsv]);
+  const [drag, setDrag] = useState<'hue' | 'sv' | null>(null);
+  const hueRef = useRef<HTMLCanvasElement>(null);
+  const svRef = useRef<HTMLCanvasElement>(null);
 
-  // Позиционирование popover
-  const [pos, setPos] = useState({ left: 0, top: 0 });
-  const popRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (anchorRef.current && popRef.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      const popW = 320, popH = 400, margin = 10;
-      let left = rect.left + rect.width / 2 - popW / 2 + window.scrollX;
-      let top = rect.bottom + window.scrollY + margin;
-      if (top + popH > window.innerHeight - 8) {
-        top = rect.top + window.scrollY - popH - margin;
-      }
-      if (left < 8) left = 8;
-      if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-      setPos({ left, top });
-    }
-  }, [anchorRef, color]);
+  useEffect(() => { 
+    setHSV(hexToHsv(color)); 
+  }, [color]);
 
-  // Color wheel на canvas
-  const wheelRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => { 
+    onChange(hsvToHex(...hsv)); 
+  }, [hsv, onChange]);
+
+  // Отрисовка цветового круга
   useEffect(() => {
-    const canvas = wheelRef.current;
+    const canvas = hueRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const size = 180, r = 80;
+    
+    const size = 200;
+    const center = size / 2;
+    const radius = 80;
+    
     ctx.clearRect(0, 0, size, size);
-    for (let a = 0; a < 360; a += 1) {
-      const rad = (a - 90) * Math.PI / 180;
+    
+    // Рисуем цветовой круг
+    for (let angle = 0; angle < 360; angle += 1) {
+      const rad = (angle - 90) * Math.PI / 180;
       ctx.beginPath();
-      ctx.moveTo(size/2, size/2);
-      ctx.arc(size/2, size/2, r, rad, rad + Math.PI/180, false);
+      ctx.moveTo(center, center);
+      ctx.arc(center, center, radius, rad, rad + Math.PI/180, false);
       ctx.closePath();
-      ctx.fillStyle = hsvToHex(a, 1, 1);
+      ctx.fillStyle = hsvToHex(angle, 1, 1);
       ctx.fill();
     }
+    
     // Белый круг внутри
     ctx.beginPath();
-    ctx.arc(size/2, size/2, r-18, 0, 2*Math.PI);
-    ctx.fillStyle = ctx.createRadialGradient(size/2, size/2, r-30, size/2, size/2, r-10);
+    ctx.arc(center, center, radius - 20, 0, 2 * Math.PI);
     ctx.fillStyle = '#fff';
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0.9;
     ctx.fill();
     ctx.globalAlpha = 1;
-  }, [hsv[0]]);
+  }, []);
 
-  // SV-квадрат на canvas
-  const svRef = useRef<HTMLCanvasElement>(null);
+  // Отрисовка SV квадрата
   useEffect(() => {
     const canvas = svRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const size = 180;
-    // Цвет по hue
-    for (let x = 0; x < size; x++) {
-      for (let y = 0; y < size; y++) {
-        const s = x / (size-1);
-        const v = 1 - y / (size-1);
-        ctx.fillStyle = hsvToHex(hsv[0], s, v);
-        ctx.fillRect(x, y, 1, 1);
-      }
-    }
+    
+    const size = 200;
+    
+    // Градиент по выбранному hue
+    const { r, g, b } = hsvToRgb(hsv[0], 1, 1);
+    const hueColor = `rgb(${r},${g},${b})`;
+    
+    // Создаем градиент
+    const gradient = ctx.createLinearGradient(0, 0, size, 0);
+    gradient.addColorStop(0, '#fff');
+    gradient.addColorStop(1, hueColor);
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    
+    // Добавляем вертикальный градиент
+    const vGradient = ctx.createLinearGradient(0, 0, 0, size);
+    vGradient.addColorStop(0, 'rgba(0,0,0,0)');
+    vGradient.addColorStop(1, '#000');
+    
+    ctx.fillStyle = vGradient;
+    ctx.fillRect(0, 0, size, size);
   }, [hsv[0]]);
 
-  // Drag&drop для wheel
-  function handleWheel(e: React.MouseEvent | React.TouchEvent) {
-    const canvas = wheelRef.current;
+  // Обработчики событий
+  const handleHueClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = hueRef.current;
     if (!canvas) return;
+    
     const rect = canvas.getBoundingClientRect();
-    const size = 180, r = 80;
-    const x = (e.type.startsWith('touch') ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX) - rect.left - size/2;
-    const y = (e.type.startsWith('touch') ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY) - rect.top - size/2;
-    const dist = Math.sqrt(x*x + y*y);
-    if (dist < r-22 || dist > r+8) return;
-    let deg = Math.atan2(y, x) * 180 / Math.PI + 90;
-    if (deg < 0) deg += 360;
-    setHSV([deg, hsv[1], hsv[2]]);
-  }
-  // Drag&drop для SV
-  function handleSV(e: React.MouseEvent | React.TouchEvent) {
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const x = e.clientX - rect.left - centerX;
+    const y = e.clientY - rect.top - centerY;
+    const distance = Math.sqrt(x * x + y * y);
+    
+    // Внешний радиус 80, внутренний 60
+    if (distance >= 60 && distance <= 80) {
+      let angle = Math.atan2(y, x) * 180 / Math.PI + 90;
+      if (angle < 0) angle += 360;
+      setHSV([angle, hsv[1], hsv[2]]);
+    }
+  };
+
+  const handleSVClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = svRef.current;
     if (!canvas) return;
+    
     const rect = canvas.getBoundingClientRect();
-    const size = 180;
-    const x = (e.type.startsWith('touch') ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX) - rect.left;
-    const y = (e.type.startsWith('touch') ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY) - rect.top;
-    setHSV([hsv[0], clamp(x/size,0,1), clamp(1-y/size,0,1)]);
-  }
+    const x = clamp(e.clientX - rect.left, 0, rect.width);
+    const y = clamp(e.clientY - rect.top, 0, rect.height);
+    
+    setHSV([hsv[0], x / rect.width, 1 - y / rect.height]);
+  };
 
-  // Поля HEX/RGB
+  // Добавляем обработчики для drag
+  const handleHueMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setDrag('hue');
+    handleHueClick(e);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (drag === 'hue') {
+        const canvas = hueRef.current;
+        if (!canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const x = e.clientX - rect.left - centerX;
+        const y = e.clientY - rect.top - centerY;
+        const distance = Math.sqrt(x * x + y * y);
+        
+        if (distance >= 60 && distance <= 80) {
+          let angle = Math.atan2(y, x) * 180 / Math.PI + 90;
+          if (angle < 0) angle += 360;
+          setHSV([angle, hsv[1], hsv[2]]);
+        }
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setDrag(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleSVMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setDrag('sv');
+    handleSVClick(e);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (drag === 'sv') {
+        const canvas = svRef.current;
+        if (!canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = clamp(e.clientX - rect.left, 0, rect.width);
+        const y = clamp(e.clientY - rect.top, 0, rect.height);
+        
+        setHSV([hsv[0], x / rect.width, 1 - y / rect.height]);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setDrag(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Touch обработчики для мобильных устройств
+  const handleHueTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const canvas = hueRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const x = touch.clientX - rect.left - centerX;
+    const y = touch.clientY - rect.top - centerY;
+    const distance = Math.sqrt(x * x + y * y);
+    
+    if (distance >= 60 && distance <= 80) {
+      let angle = Math.atan2(y, x) * 180 / Math.PI + 90;
+      if (angle < 0) angle += 360;
+      setHSV([angle, hsv[1], hsv[2]]);
+    }
+  };
+
+  const handleSVTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const canvas = svRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = clamp(touch.clientX - rect.left, 0, rect.width);
+    const y = clamp(touch.clientY - rect.top, 0, rect.height);
+    
+    setHSV([hsv[0], x / rect.width, 1 - y / rect.height]);
+  };
+
+  // Позиции маркеров
+  const hueAngle = (hsv[0] - 90) * Math.PI / 180;
+  const hueX = 100 + 70 * Math.cos(hueAngle); // 70 - средний радиус между 60 и 80
+  const hueY = 100 + 70 * Math.sin(hueAngle);
+  const svX = 200 * hsv[1];
+  const svY = 200 * (1 - hsv[2]);
+
   const { r, g, b } = hsvToRgb(...hsv);
   const hex = hsvToHex(...hsv);
-  function handleHexInput(v: string) {
-    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) setHSV(hexToHsv(v));
-  }
-  function handleRgbInput(idx: number, v: string) {
-    const arr = [r, g, b];
-    arr[idx] = clamp(Number(v), 0, 255);
-    setHSV(rgbToHsv(...arr));
-  }
 
-  // Маркеры
-  const wheelAngle = (hsv[0]-90)*Math.PI/180;
-  const wheelR = 80;
-  const wheelX = 90 + wheelR * Math.cos(wheelAngle);
-  const wheelY = 90 + wheelR * Math.sin(wheelAngle);
-  const svX = 180 * hsv[1];
-  const svY = 180 * (1-hsv[2]);
+  return (
+    <div className="fixed inset-0 z-[1202] flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div 
+        className="bg-light-card dark:bg-dark-card rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4 border border-light-border dark:border-dark-border"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Заголовок */}
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold text-light-fg dark:text-dark-fg">Выбор цвета</h3>
+          <button
+            onClick={onClose}
+            className="text-light-nav-inactive dark:text-dark-nav-inactive hover:text-light-accent dark:hover:text-dark-accent text-2xl transition-colors"
+          >
+            ×
+          </button>
+        </div>
 
-    return (
-    <div
-      ref={popRef}
-      className="fixed z-[1201] bg-white/80 dark:bg-dark-card/80 shadow-2xl rounded-2xl p-4 flex flex-col items-center backdrop-blur-xl"
-      style={{ left: pos.left, top: pos.top, width: 240, minWidth: 220, minHeight: 320, maxWidth: 270 }}
-    >
-      <button
-        onClick={onClose}
-        className="absolute right-4 top-4 text-[22px] text-neutral-500 hover:text-light-accent dark:hover:text-dark-accent transition-colors bg-transparent border-none outline-none"
-        style={{ lineHeight: 1 }}
-        aria-label="Закрыть"
-      >×</button>
-      {/* Большая превью выбранного цвета */}
-      <div className="w-24 h-24 rounded-full mb-4 border-4 border-white dark:border-dark-bg shadow-xl" style={{ background: hex, boxShadow: `0 2px 24px ${hex}55` }} />
-      {/* Color wheel */}
-      <div className="relative mb-4">
-        <canvas
-          ref={wheelRef}
-          width={180}
-          height={180}
-          className="block rounded-full cursor-pointer select-none"
-          style={{ background: 'transparent' }}
-          onMouseDown={e => { handleWheel(e); window.onmousemove = ev => handleWheel(ev as any); window.onmouseup = () => { window.onmousemove = null; }; }}
-          onTouchStart={e => { handleWheel(e); window.ontouchmove = ev => handleWheel(ev as any); window.ontouchend = () => { window.ontouchmove = null; }; }}
-        />
-        {/* Маркер на wheel */}
-        <div
-          className="absolute"
-          style={{ left: wheelX-12, top: wheelY-12, width: 24, height: 24, borderRadius: '50%', border: '3px solid #fff', boxShadow: '0 0 0 2px #222, 0 2px 8px #0006', background: hex, pointerEvents: 'none', transition: 'box-shadow 0.18s' }}
-        />
-      </div>
-      {/* SV-квадрат */}
-      <div className="relative mb-4">
-        <canvas
-          ref={svRef}
-          width={180}
-          height={180}
-          className="block rounded-xl cursor-pointer select-none"
-          style={{ background: 'transparent' }}
-          onMouseDown={e => { handleSV(e); window.onmousemove = ev => handleSV(ev as any); window.onmouseup = () => { window.onmousemove = null; }; }}
-          onTouchStart={e => { handleSV(e); window.ontouchmove = ev => handleSV(ev as any); window.ontouchend = () => { window.ontouchmove = null; }; }}
-        />
-        {/* Маркер на квадрате */}
-        <div
-          className="absolute"
-          style={{ left: svX-12, top: svY-12, width: 24, height: 24, borderRadius: '50%', border: '3px solid #fff', boxShadow: '0 0 0 2px #222, 0 2px 8px #0006', background: hex, pointerEvents: 'none', transition: 'box-shadow 0.18s' }}
-        />
-      </div>
-      {/* HEX/RGB */}
-      <div className="flex items-center gap-3 mb-2 mt-2">
-        <span className="text-xs text-light-fg/80 dark:text-dark-nav-inactive">HEX</span>
-        <input
-          className="w-28 px-2 py-1 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-center text-lg font-mono shadow focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent transition-all"
-          value={hex}
-          onChange={e => handleHexInput(e.target.value)}
-          maxLength={7}
-          type="text"
-        />
-      </div>
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-xs text-light-fg/80 dark:text-dark-nav-inactive">R</span>
-        <input
-          type="text"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          className="w-14 px-1 py-1 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-center text-lg font-mono shadow focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent transition-all"
-          value={r}
-          onChange={e => handleRgbInput(0, e.target.value)}
-        />
-        <span className="text-xs text-light-fg/80 dark:text-dark-nav-inactive">G</span>
-        <input
-          type="text"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          className="w-14 px-1 py-1 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-center text-lg font-mono shadow focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent transition-all"
-          value={g}
-          onChange={e => handleRgbInput(1, e.target.value)}
-        />
-        <span className="text-xs text-light-fg/80 dark:text-dark-nav-inactive">B</span>
-        <input
-          type="text"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          className="w-14 px-1 py-1 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-center text-lg font-mono shadow focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent transition-all"
-          value={b}
-          onChange={e => handleRgbInput(2, e.target.value)}
-        />
+        {/* Превью цвета */}
+        <div className="flex items-center gap-4 mb-6">
+          <div 
+            className="w-16 h-16 rounded-full border-4 border-white dark:border-dark-bg shadow-lg"
+            style={{ background: hex }}
+          />
+          <div className="flex-1">
+            <div className="text-sm text-light-fg-secondary dark:text-dark-nav-inactive mb-1">HEX</div>
+            <input
+              type="text"
+              value={hex}
+              onChange={e => {
+                const value = e.target.value;
+                if (/^#[0-9a-f]{6}$/i.test(value)) {
+                  setHSV(hexToHsv(value));
+                }
+              }}
+              className="w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-lg bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg font-mono text-sm focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent focus:border-transparent"
+              maxLength={7}
+            />
+          </div>
+        </div>
+
+                 {/* Цветовой круг */}
+         <div className="relative mb-4">
+           <canvas
+             ref={hueRef}
+             width={200}
+             height={200}
+             className="block mx-auto cursor-pointer rounded-full select-none"
+             onClick={handleHueClick}
+             onMouseDown={handleHueMouseDown}
+             onTouchStart={handleHueTouchStart}
+             style={{ touchAction: 'none' }}
+           />
+           {/* Маркер на круге */}
+           <div
+             className="absolute w-6 h-6 rounded-full border-3 border-white shadow-lg pointer-events-none"
+             style={{ 
+               left: hueX - 12, 
+               top: hueY - 12,
+               background: hex,
+               boxShadow: '0 0 0 2px #000, 0 2px 8px rgba(0,0,0,0.3)'
+             }}
+           />
+         </div>
+
+         {/* SV квадрат */}
+         <div className="relative mb-4">
+           <canvas
+             ref={svRef}
+             width={200}
+             height={200}
+             className="block mx-auto cursor-pointer rounded-lg select-none"
+             onClick={handleSVClick}
+             onMouseDown={handleSVMouseDown}
+             onTouchStart={handleSVTouchStart}
+             style={{ touchAction: 'none' }}
+           />
+           {/* Маркер на квадрате */}
+           <div
+             className="absolute w-6 h-6 rounded-full border-3 border-white shadow-lg pointer-events-none"
+             style={{ 
+               left: svX - 12, 
+               top: svY - 12,
+               background: hex,
+               boxShadow: '0 0 0 2px #000, 0 2px 8px rgba(0,0,0,0.3)'
+             }}
+           />
+         </div>
+
+                 {/* RGB поля */}
+         <div className="grid grid-cols-3 gap-2 mb-4">
+           {[
+             { label: 'R', value: r },
+             { label: 'G', value: g },
+             { label: 'B', value: b }
+           ].map(({ label, value }, idx) => (
+             <div key={label}>
+               <div className="text-xs text-light-fg-secondary dark:text-dark-nav-inactive mb-1">{label}</div>
+               <input
+                 type="number"
+                 min="0"
+                 max="255"
+                 value={value}
+                 onChange={e => {
+                   const newValue = clamp(Number(e.target.value), 0, 255);
+                   const newRgb = [r, g, b];
+                   newRgb[idx] = newValue;
+                   setHSV(rgbToHsv(newRgb[0], newRgb[1], newRgb[2]));
+                 }}
+                 className="w-full px-2 py-1 border border-light-border dark:border-dark-border rounded bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg text-center text-sm focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent focus:border-transparent"
+               />
+             </div>
+           ))}
+         </div>
+
+         {/* Палитра быстрых цветов */}
+         <div className="mb-4">
+           <div className="text-sm text-light-fg-secondary dark:text-dark-nav-inactive mb-2">Быстрые цвета:</div>
+           <div className="grid grid-cols-8 gap-2">
+             {PALETTE.map(paletteColor => (
+               <button
+                 key={paletteColor}
+                 onClick={() => setHSV(hexToHsv(paletteColor))}
+                 className="w-8 h-8 rounded-full border-2 border-light-border dark:border-dark-border hover:border-light-accent dark:hover:border-dark-accent transition-colors"
+                 style={{ background: paletteColor }}
+                 aria-label={`Выбрать цвет ${paletteColor}`}
+               />
+             ))}
+           </div>
+         </div>
+
+         {/* Кнопки */}
+         <div className="flex gap-3">
+           <button
+             onClick={onClose}
+             className="flex-1 px-4 py-2 border border-light-border dark:border-dark-border rounded-lg text-light-fg dark:text-dark-fg hover:bg-light-bg dark:hover:bg-dark-bg transition-colors"
+           >
+             Отмена
+           </button>
+           <button
+             onClick={() => {
+               onChange(hex);
+               onClose();
+             }}
+             className="flex-1 px-4 py-2 bg-light-accent dark:bg-dark-accent text-white rounded-lg hover:bg-light-accent/90 dark:hover:bg-dark-accent/90 transition-colors"
+           >
+             Применить
+           </button>
+         </div>
       </div>
     </div>
   );
@@ -480,114 +534,235 @@ const ModalChartStyle: React.FC<ModalChartStyleProps> = ({ open, onClose, palett
   const [selected, setSelected] = useState(current);
   const [custom, setCustom] = useState(false);
   const [showPicker, setShowPicker] = useState<'up' | 'down' | null>(null);
-  const upBtnRef = useRef<HTMLButtonElement>(null);
-  const downBtnRef = useRef<HTMLButtonElement>(null);
+  const [lastPreset, setLastPreset] = useState<string | null>(null);
 
+  // Загрузка сохраненных настроек
   useEffect(() => {
     if (open) {
-      setSelected(current);
-      setCustom(false);
-      setShowPicker(null);
+      try {
+        const savedColors = localStorage.getItem(STORAGE_KEYS.CHART_COLORS);
+        const savedPreset = localStorage.getItem(STORAGE_KEYS.LAST_PRESET);
+        
+        if (savedColors) {
+          const parsed = JSON.parse(savedColors);
+          setSelected(parsed);
+          // Если есть сохраненный пресет, не считаем это кастомными цветами
+          setCustom(savedPreset !== 'preset');
+        }
+        
+        if (savedPreset) {
+          setLastPreset(savedPreset);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки сохраненных настроек:', error);
+      }
     }
-  }, [open, current]);
+  }, [open]);
+
+  // Слушаем изменения в localStorage
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.CHART_COLORS && open) {
+        try {
+          const savedColors = localStorage.getItem(STORAGE_KEYS.CHART_COLORS);
+          const savedPreset = localStorage.getItem(STORAGE_KEYS.LAST_PRESET);
+          
+          if (savedColors) {
+            const parsed = JSON.parse(savedColors);
+            setSelected(parsed);
+            setCustom(savedPreset !== 'preset');
+          }
+        } catch (error) {
+          console.error('Ошибка обработки изменения localStorage:', error);
+        }
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [open]);
+
+  // Сохранение настроек
+  const saveSettings = (colors: { up: string; down: string }, presetKey?: string) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CHART_COLORS, JSON.stringify(colors));
+      if (presetKey) {
+        localStorage.setItem(STORAGE_KEYS.LAST_PRESET, presetKey);
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения настроек:', error);
+    }
+  };
+
+  const handleConfirm = (colors: { up: string; down: string }) => {
+    saveSettings(colors);
+    onConfirm(colors);
+    onClose();
+  };
+
+  const handlePresetSelect = (preset: typeof PRESETS[0]) => {
+    setSelected({ up: preset.up, down: preset.down });
+    setCustom(false);
+    setLastPreset(preset.key);
+    // Сохраняем информацию о том, что выбран пресет
+    localStorage.setItem(STORAGE_KEYS.LAST_PRESET, preset.key);
+  };
 
   if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" aria-modal="true" role="dialog">
-      <div className="relative bg-white dark:bg-dark-card border-2 border-light-accent dark:border-dark-accent rounded-2xl shadow-2xl p-8 min-w-[320px] max-w-[95vw] max-w-[420px] text-light-fg dark:text-dark-fg z-10 transition-all duration-300 animate-scalein">
-        {/* Кнопка закрытия */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-[22px] text-neutral-500 hover:text-light-accent dark:hover:text-dark-accent transition-colors bg-transparent border-none outline-none"
-          style={{ lineHeight: 1 }}
-          aria-label="Закрыть"
-        >×</button>
+    <>
+      <div className="fixed inset-0 z-[1201] flex items-center justify-center bg-black/60 backdrop-blur-sm" aria-modal="true" role="dialog">
+        <div className="relative w-full max-w-md mx-4 bg-light-card dark:bg-dark-card rounded-2xl shadow-2xl border border-light-border dark:border-dark-border overflow-hidden">
         {/* Заголовок */}
-        <div className="text-center mb-6">
-          <div className="text-[24px] font-extrabold text-light-accent dark:text-dark-accent mb-1">Настройка стиля графика</div>
-          <div className="text-[15px] text-light-fg/80 dark:text-dark-nav-inactive">Выберите цветовую схему или задайте свои цвета</div>
+        <div className="flex items-center justify-between p-6 border-b border-light-border/20 dark:border-dark-border/20">
+          <div>
+            <h3 className="text-xl font-bold text-light-fg dark:text-dark-fg">
+              Настройка стиля графика
+            </h3>
+            <p className="text-sm text-light-fg-secondary dark:text-dark-nav-inactive mt-1">
+              Выберите цветовую схему или задайте свои цвета
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors"
+          >
+            <svg className="w-5 h-5 text-light-nav-inactive dark:text-dark-nav-inactive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+
         {/* Пресеты */}
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="p-6 space-y-3">
           {PRESETS.map(preset => (
             <div
               key={preset.key}
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150 ${selected.up === preset.up && selected.down === preset.down && !custom ? 'border-light-accent dark:border-dark-accent bg-light-accent/10 dark:bg-dark-accent/10' : 'border-light-border dark:border-dark-border hover:bg-light-bg/60 dark:hover:bg-dark-bg/60'}`}
-              onClick={() => { setSelected({ up: preset.up, down: preset.down }); setCustom(false); }}
+              onClick={() => handlePresetSelect(preset)}
+              className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                selected.up === preset.up && selected.down === preset.down && !custom
+                  ? 'border-light-accent dark:border-dark-accent bg-light-accent/10 dark:bg-dark-accent/10 shadow-md'
+                  : 'border-light-border dark:border-dark-border hover:border-light-accent/40 dark:hover:border-dark-accent/40 hover:bg-light-bg dark:hover:bg-dark-bg'
+              }`}
             >
-              <div className="flex gap-2">
-                {preset.icon.map((ic, i) => (
-                  <span key={i} className="w-6 h-6 rounded-full border-2 border-light-border dark:border-dark-border" style={{ background: ic.color }} />
-                ))}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2">
+                    {preset.icon.map((ic, i) => (
+                      <span 
+                        key={i} 
+                        className="w-5 h-5 rounded-full border border-light-border dark:border-dark-border" 
+                        style={{ background: ic.color }} 
+                      />
+                    ))}
+                  </div>
+                  <span className="font-medium text-sm text-light-fg dark:text-dark-fg">
+                    {preset.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {lastPreset === preset.key && (
+                    <span className="text-xs text-light-accent dark:text-dark-accent bg-light-accent/20 dark:bg-dark-accent/20 px-2 py-1 rounded">
+                      Последний
+                    </span>
+                  )}
+                  {selected.up === preset.up && selected.down === preset.down && !custom && (
+                    <div className="w-5 h-5 bg-light-accent dark:bg-dark-accent rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className="font-semibold text-[16px]">{preset.name}</span>
             </div>
           ))}
-            </div>
+        </div>
+
         {/* Кастомные цвета */}
-        <div className="mb-6">
-          <div className="font-semibold text-[15px] mb-2">Свои цвета:</div>
-          <div className="flex gap-4 items-center">
-            <button
-              ref={upBtnRef}
-              type="button"
-              className="w-10 h-10 rounded-full border-2 border-light-accent dark:border-dark-accent shadow-md"
-              style={{ background: selected.up }}
-              onClick={e => { e.preventDefault(); e.stopPropagation(); setShowPicker(showPicker === 'up' ? null : 'up'); setCustom(true); }}
-              aria-label="Выбрать цвет роста"
-            />
-            <span className="font-semibold text-[15px]">Рост</span>
-            <button
-              ref={downBtnRef}
-              type="button"
-              className="w-10 h-10 rounded-full border-2 border-light-accent dark:border-dark-accent shadow-md"
-              style={{ background: selected.down }}
-              onClick={e => { e.preventDefault(); e.stopPropagation(); setShowPicker(showPicker === 'down' ? null : 'down'); setCustom(true); }}
-              aria-label="Выбрать цвет падения"
-            />
-            <span className="font-semibold text-[15px]">Падение</span>
+        <div className="px-6 pb-3">
+          <div className="bg-light-bg/50 dark:bg-dark-bg/50 rounded-lg p-3 border border-light-border/30 dark:border-dark-border/30">
+            <div className="text-sm font-medium text-light-fg-secondary dark:text-dark-nav-inactive mb-2">
+              Свои цвета
+            </div>
+            <div className="flex gap-3 items-center">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="w-8 h-8 rounded-full border-2 border-light-accent dark:border-dark-accent shadow-sm transition-all hover:scale-105"
+                  style={{ background: selected.up }}
+                  onClick={() => setShowPicker('up')}
+                  aria-label="Выбрать цвет роста"
+                />
+                <span className="font-medium text-xs text-light-fg dark:text-dark-fg">Рост</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="w-8 h-8 rounded-full border-2 border-light-accent dark:border-dark-accent shadow-sm transition-all hover:scale-105"
+                  style={{ background: selected.down }}
+                  onClick={() => setShowPicker('down')}
+                  aria-label="Выбрать цвет падения"
+                />
+                <span className="font-medium text-xs text-light-fg dark:text-dark-fg">Падение</span>
+              </div>
+            </div>
           </div>
         </div>
-        {/* Кнопки */}
-        <div className="flex gap-4 mt-8">
+
+        {/* Предпросмотр */}
+        <div className="px-6 pb-3">
+          <div className="bg-light-bg/50 dark:bg-dark-bg/50 rounded-lg p-3 border border-light-border/30 dark:border-dark-border/30">
+            <div className="text-sm font-medium text-light-fg-secondary dark:text-dark-nav-inactive mb-2">
+              Предпросмотр
+            </div>
+            <ChartPreview candles={randomCandles(selected.up, selected.down)} />
+          </div>
+        </div>
+
+        {/* Кнопки действий */}
+        <div className="flex gap-3 p-6 border-t border-light-border/20 dark:border-dark-border/20">
           <button
             onClick={onClose}
-            className="flex-1 bg-gradient-to-r from-white/80 to-light-card/80 dark:from-dark-card/70 dark:to-[#181926]/80 text-light-accent dark:text-dark-accent font-semibold rounded-xl px-7 py-3 shadow border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[120px] hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-white hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-light-accent/30 dark:focus:ring-dark-accent/30"
-          >Отмена</button>
+            className="flex-1 py-3 px-4 rounded-xl font-medium text-light-fg dark:text-dark-fg bg-light-bg dark:bg-dark-bg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors border border-light-border dark:border-dark-border"
+          >
+            Отмена
+          </button>
           <button
-            onClick={() => onConfirm(selected)}
-            className={`flex-1 bg-gradient-to-r from-light-accent/90 to-light-accent/70 dark:from-dark-accent/90 dark:to-dark-accent/70 text-white font-semibold rounded-xl px-7 py-3 shadow-xl border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[120px] hover:scale-[1.04] hover:shadow-2xl hover:ring-2 hover:ring-light-accent/30 dark:hover:ring-dark-accent/30 focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40 ${(selected.up === current.up && selected.down === current.down && !custom) ? 'opacity-60 cursor-not-allowed' : ''}`}
+            onClick={() => handleConfirm(selected)}
+            className={`flex-1 py-3 px-4 rounded-xl font-medium text-white bg-light-accent dark:bg-dark-accent hover:bg-light-accent/90 dark:hover:bg-dark-accent/90 shadow-lg hover:shadow-xl transition-all duration-200 ${
+              (selected.up === current.up && selected.down === current.down && !custom) 
+                ? 'opacity-60 cursor-not-allowed' 
+                : ''
+            }`}
             disabled={selected.up === current.up && selected.down === current.down && !custom}
-          >Сохранить</button>
+          >
+            Сохранить
+          </button>
         </div>
-        {/* Попап выбора цвета */}
-        {showPicker && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPicker(null)}>
-            <div
-              className="relative bg-white dark:bg-dark-card border-2 border-light-accent dark:border-dark-accent rounded-2xl shadow-2xl p-6 min-w-[220px] max-w-[95vw] max-w-[320px] text-light-fg dark:text-dark-fg z-10 animate-scalein"
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowPicker(null)}
-                className="absolute right-4 top-4 text-[22px] text-neutral-500 hover:text-light-accent dark:hover:text-dark-accent transition-colors bg-transparent border-none outline-none"
-                style={{ lineHeight: 1 }}
-                aria-label="Закрыть"
-              >×</button>
-              <div className="text-center mb-4 font-semibold text-[16px]">Выберите цвет</div>
-              <ModernColorPickerPopover
-                anchorRef={showPicker === 'up' ? upBtnRef : downBtnRef}
-                color={showPicker === 'up' ? selected.up : selected.down}
-                onChange={v => {
-                  if (showPicker === 'up') setSelected(s => ({ ...s, up: v }));
-                  if (showPicker === 'down') setSelected(s => ({ ...s, down: v }));
-                }}
-                onClose={() => setShowPicker(null)}
-              />
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
+    
+    {/* Отдельный модал для выбора цвета */}
+    {showPicker && (
+      <div className="fixed inset-0 z-[1202] flex items-center justify-center bg-black/60" onClick={() => setShowPicker(null)}>
+        <ModernColorPicker
+          color={showPicker === 'up' ? selected.up : selected.down}
+          onChange={color => {
+            if (showPicker === 'up') {
+              setSelected(s => ({ ...s, up: color }));
+            } else {
+              setSelected(s => ({ ...s, down: color }));
+            }
+            setCustom(true);
+          }}
+          onClose={() => setShowPicker(null)}
+        />
+      </div>
+    )}
+    </>
   );
 };
 
@@ -597,6 +772,7 @@ const ChartPreview = ({ candles }: { candles: { open: number; close: number; hig
   const min = Math.min(...candles.map(c => c.low));
   const max = Math.max(...candles.map(c => c.high));
   const scaleY = (v: number) => h - pad - ((v - min) / (max - min + 1e-6)) * (h - pad * 2);
+  
   return (
     <svg width={w} height={h} style={{ display: 'block', margin: '0 auto', background: 'none' }}>
       {candles.map((c, i) => {
@@ -604,9 +780,23 @@ const ChartPreview = ({ candles }: { candles: { open: number; close: number; hig
         return (
           <g key={i}>
             {/* Тень */}
-            <rect x={x - 1.1} y={scaleY(c.high)} width={2.2} height={scaleY(c.low) - scaleY(c.high)} rx={1} fill={c.color + '99'} />
+            <rect 
+              x={x - 1.1} 
+              y={scaleY(c.high)} 
+              width={2.2} 
+              height={scaleY(c.low) - scaleY(c.high)} 
+              rx={1} 
+              fill={c.color + '99'} 
+            />
             {/* Тело */}
-            <rect x={x - 4} y={scaleY(Math.max(c.open, c.close))} width={8} height={Math.max(2, Math.abs(scaleY(c.open) - scaleY(c.close)))} rx={2} fill={c.color} />
+            <rect 
+              x={x - 4} 
+              y={scaleY(Math.max(c.open, c.close))} 
+              width={8} 
+              height={Math.max(2, Math.abs(scaleY(c.open) - scaleY(c.close)))} 
+              rx={2} 
+              fill={c.color} 
+            />
           </g>
         );
       })}

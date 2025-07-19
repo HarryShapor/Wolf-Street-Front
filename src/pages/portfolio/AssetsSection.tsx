@@ -315,9 +315,27 @@ function AssetCard({ a, loadingImages, getFallbackIcon }: { a: Instrument, loadi
 
 export default function AssetsSection() {
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState("alpha-asc");
   const [instruments, setInstruments] = useState<Instrument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Опции для фильтров и сортировки
+  const TYPE_FILTERS = [
+    { label: "Все", value: "all" },
+    { label: "Криптовалюта", value: "crypto" },
+    { label: "Стейблкоин", value: "stablecoin" },
+  ];
+
+  const SORT_OPTIONS = [
+    { label: "По алфавиту (A-Z)", value: "alpha-asc" },
+    { label: "По алфавиту (Z-A)", value: "alpha-desc" },
+    { label: "По цене (сначала дешёвые)", value: "price-asc" },
+    { label: "По цене (сначала дорогие)", value: "price-desc" },
+    { label: "По доходности (сначала прибыльные)", value: "profit-asc" },
+    { label: "По доходности (сначала убыточные)", value: "profit-desc" },
+  ];
 
   // Загружаем стоимости инструментов
   const [values, setValues] = useState<InstrumentValue[]>([]);
@@ -582,13 +600,44 @@ export default function AssetsSection() {
     [instrumentsWithValue, midPrices, totalSpread]
   );
   const filtered = useMemo(
-    () =>
-      instrumentsWithValue.filter(
-        (a) =>
+    () => {
+      let result = instrumentsWithValue.filter((a) => {
+        // Фильтр по поиску
+        const matchesSearch =
           (a.symbol || "").toLowerCase().includes(search.toLowerCase()) ||
-          (a.name || "").toLowerCase().includes(search.toLowerCase())
-      ),
-    [search, instrumentsWithValue]
+          (a.name || "").toLowerCase().includes(search.toLowerCase());
+        
+        // Фильтр по типу (пока просто пропускаем все, можно добавить логику позже)
+        const matchesFilter = filter === "all" || true; // TODO: добавить логику фильтрации по типу
+        
+        return matchesSearch && matchesFilter;
+      });
+      
+      // Сортировка
+      result = result.slice().sort((a, b) => {
+        switch (sort) {
+          case "alpha-asc":
+            return (a.symbol || "").localeCompare(b.symbol || "");
+          case "alpha-desc":
+            return (b.symbol || "").localeCompare(a.symbol || "");
+          case "price-asc":
+            return (midPrices[a.instrumentId] || 0) - (midPrices[b.instrumentId] || 0);
+          case "price-desc":
+            return (midPrices[b.instrumentId] || 0) - (midPrices[a.instrumentId] || 0);
+          case "profit-asc":
+            // TODO: добавить сортировку по доходности когда будет доступна
+            return 0;
+          case "profit-desc":
+            // TODO: добавить сортировку по доходности когда будет доступна
+            return 0;
+          default:
+            return 0;
+        }
+      });
+      
+      return result;
+    },
+    [search, instrumentsWithValue, filter, sort, midPrices]
   );
 
   return (
@@ -822,6 +871,29 @@ export default function AssetsSection() {
                     >
                       Удалить инструмент
                     </button>
+                  </div>
+                </div>
+                {/* Фильтры и сортировка */}
+                <div className="flex flex-col md:flex-row gap-3 w-full mt-4">
+                  <div className="flex-shrink-0 w-full md:w-48">
+                    <CustomSelect
+                      id="type-filter"
+                      value={filter}
+                      onChange={setFilter}
+                      options={TYPE_FILTERS}
+                      placeholder="Тип инструмента"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="flex-shrink-0 w-full md:w-56">
+                    <CustomSelect
+                      id="sort-select"
+                      value={sort}
+                      onChange={setSort}
+                      options={SORT_OPTIONS}
+                      placeholder="Сортировка"
+                      className="text-sm"
+                    />
                   </div>
                 </div>
               </div>

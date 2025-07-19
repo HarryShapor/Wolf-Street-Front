@@ -8,88 +8,197 @@ interface ModalColorSettingsProps {
   onConfirm: (value: 'green-red' | 'red-green') => void;
 }
 
+// Ключи для localStorage (синхронизированы с ModalChartStyle.tsx)
+const STORAGE_KEYS = {
+  CHART_COLORS: 'chart_colors',
+  LAST_PRESET: 'chart_last_preset'
+};
+
+// Функция для получения текущих цветов свечей
+function getCurrentChartColors() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CHART_COLORS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.up === "string" && typeof parsed.down === "string") {
+        return parsed;
+      }
+    }
+  } catch {}
+  return { up: "#22d3a8", down: "#f43f5e" };
+}
+
+// Функция для сохранения цветов свечей
+function saveChartColors(colors: { up: string; down: string }) {
+  localStorage.setItem(STORAGE_KEYS.CHART_COLORS, JSON.stringify(colors));
+  // Уведомляем другие компоненты об изменении
+  window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEYS.CHART_COLORS }));
+}
+
+// Функция для определения текущей схемы по цветам
+function getCurrentScheme(colors: { up: string; down: string }): ColorSchemeKey {
+  const greenRed = { up: "#22d3a8", down: "#f43f5e" };
+  const redGreen = { up: "#f43f5e", down: "#22d3a8" };
+  
+  if (colors.up === greenRed.up && colors.down === greenRed.down) {
+    return 'green-red';
+  } else if (colors.up === redGreen.up && colors.down === redGreen.down) {
+    return 'red-green';
+  }
+  // Если цвета не соответствуют стандартным схемам, возвращаем green-red как дефолт
+  return 'green-red';
+}
+
 const colorSchemes = [
   {
     key: 'green-red',
-    label: <><span style={{ color: '#4ADE80', fontWeight: 600 }}>🡅 Зелёный</span> — рост/<span style={{ color: '#F87171', fontWeight: 600 }}>красный</span> — падение</>,
+    label: 'Зелёный рост / Красный падение',
     preview: [
       { up: true, value: '+4.15%' },
       { up: false, value: '-3.21%' },
     ],
+    colors: { up: "#22d3a8", down: "#f43f5e" }
   },
   {
     key: 'red-green',
-    label: <><span style={{ color: '#F87171', fontWeight: 600 }}>🡅 Красный</span> — рост/<span style={{ color: '#4ADE80', fontWeight: 600 }}>зелёный</span> — падение</>,
+    label: 'Красный рост / Зелёный падение',
     preview: [
       { up: true, value: '+4.15%' },
       { up: false, value: '-3.21%' },
     ],
+    colors: { up: "#f43f5e", down: "#22d3a8" }
   },
 ] as const;
 
 type ColorSchemeKey = typeof colorSchemes[number]['key'];
 
 const ModalColorSettings: React.FC<ModalColorSettingsProps> = ({ open, onClose, palette, current, onConfirm }) => {
-  const [selected, setSelected] = useState<ColorSchemeKey>(current);
+  const [selected, setSelected] = useState<ColorSchemeKey>('green-red');
+  const [currentColors, setCurrentColors] = useState(getCurrentChartColors());
 
   React.useEffect(() => {
-    if (open) setSelected(current);
+    if (open) {
+      const colors = getCurrentChartColors();
+      setCurrentColors(colors);
+      setSelected(getCurrentScheme(colors));
+    }
   }, [open, current]);
 
+  // Слушаем изменения в localStorage для обновления состояния
+  React.useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.CHART_COLORS && open) {
+        const colors = getCurrentChartColors();
+        setCurrentColors(colors);
+        setSelected(getCurrentScheme(colors));
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [open]);
+
+  const handleConfirm = () => {
+    const scheme = colorSchemes.find(s => s.key === selected);
+    if (scheme) {
+      saveChartColors(scheme.colors);
+      // Также сохраняем информацию о том, что выбран пресет
+      localStorage.setItem(STORAGE_KEYS.LAST_PRESET, 'preset');
+    }
+    onConfirm(selected);
+  };
+
   if (!open) return null;
+  
   return (
-    <div style={{
-      position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 1000,
-      background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div className="relative bg-white dark:bg-dark-card border-2 border-light-accent dark:border-dark-accent rounded-2xl shadow-2xl p-8 min-w-[320px] max-w-[95vw] max-w-[420px] text-light-fg dark:text-dark-fg z-10 transition-all duration-300 animate-scalein">
-        <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 18 }}>Настройки цвета</div>
-        {/* Кнопка закрытия */}
-        <button onClick={onClose} style={{ position: 'absolute', right: 18, top: 18, background: 'none', border: 'none', color: palette.navInactive, fontSize: 22, cursor: 'pointer' }}>×</button>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 28 }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="relative w-full max-w-md mx-4 bg-light-card dark:bg-dark-card rounded-2xl shadow-2xl border border-light-border dark:border-dark-border overflow-hidden">
+        {/* Заголовок */}
+        <div className="flex items-center justify-between p-6 border-b border-light-border/20 dark:border-dark-border/20">
+          <div>
+            <h3 className="text-xl font-bold text-light-fg dark:text-dark-fg">
+              Настройка стиля графика
+            </h3>
+            <p className="text-sm text-light-fg-secondary dark:text-dark-nav-inactive mt-1">
+              Выберите цветовую схему для свечей
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors"
+          >
+            <svg className="w-5 h-5 text-light-nav-inactive dark:text-dark-nav-inactive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Схемы цветов */}
+        <div className="p-6 space-y-4">
           {colorSchemes.map(scheme => (
             <div
               key={scheme.key}
               onClick={() => setSelected(scheme.key)}
-              style={{
-                border: selected === scheme.key ? `1.5px solid ${palette.accent}` : `1.5px solid ${palette.navInactive}33`,
-                borderRadius: 12,
-                background: selected === scheme.key ? palette.bg : palette.card,
-                padding: 18,
-                cursor: 'pointer',
-                boxShadow: selected === scheme.key ? `0 0 0 2px ${palette.accent}22` : 'none',
-                transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
-              }}
+              className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                selected === scheme.key
+                  ? 'border-light-accent dark:border-dark-accent bg-light-accent/10 dark:bg-dark-accent/10 shadow-lg'
+                  : 'border-light-border dark:border-dark-border hover:border-light-accent/40 dark:hover:border-dark-accent/40 hover:bg-light-bg dark:hover:bg-dark-bg'
+              }`}
             >
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>{scheme.label}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-semibold text-light-fg dark:text-dark-fg">
+                  {scheme.label}
+                </span>
+                {selected === scheme.key && (
+                  <div className="w-6 h-6 bg-light-accent dark:bg-dark-accent rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
                 {scheme.preview.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ width: 18, height: 18, borderRadius: '50%', background: palette.navInactive + '33', display: 'inline-block' }} />
-                    <span style={{ width: 80, height: 12, background: palette.navInactive + '22', borderRadius: 6, display: 'inline-block' }} />
-                    <span style={{ fontWeight: 600, color: scheme.key === 'green-red'
-                      ? (item.up ? '#4ADE80' : '#F87171')
-                      : (item.up ? '#F87171' : '#4ADE80'), marginLeft: 'auto' }}>{item.value}</span>
+                  <div key={idx} className="flex items-center gap-3">
+                    <div 
+                      className="w-4 h-4 rounded-full border border-light-border dark:border-dark-border"
+                      style={{ backgroundColor: scheme.colors[item.up ? 'up' : 'down'] }}
+                    />
+                    <div className="flex-1 h-3 bg-light-border/30 dark:bg-dark-border/30 rounded-full" />
+                    <span 
+                      className="font-semibold text-sm"
+                      style={{ color: scheme.colors[item.up ? 'up' : 'down'] }}
+                    >
+                      {item.value}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 18 }}>
+
+
+
+        {/* Кнопки действий */}
+        <div className="flex gap-3 p-6 border-t border-light-border/20 dark:border-dark-border/20">
           <button
             onClick={onClose}
-            className="flex-1 bg-gradient-to-r from-white/80 to-light-card/80 dark:from-dark-card/70 dark:to-[#181926]/80 text-light-accent dark:text-dark-accent font-semibold rounded-xl px-7 py-3 shadow border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[120px] hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-white hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-light-accent/30 dark:focus:ring-dark-accent/30"
-          >Отмена</button>
+            className="flex-1 py-3 px-4 rounded-xl font-medium text-light-fg dark:text-dark-fg bg-light-bg dark:bg-dark-bg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors border border-light-border dark:border-dark-border"
+          >
+            Отмена
+          </button>
           <button
-            onClick={() => onConfirm(selected)}
-            disabled={selected === current}
-            className={`flex-1 bg-gradient-to-r from-light-accent/90 to-light-accent/70 dark:from-dark-accent/90 dark:to-dark-accent/70 text-white font-semibold rounded-xl px-7 py-3 shadow-xl border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[120px] hover:scale-[1.04] hover:shadow-2xl hover:ring-2 hover:ring-light-accent/30 dark:hover:ring-dark-accent/30 focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40 ${selected === current ? 'opacity-60 cursor-not-allowed' : ''}`}
-          >Подтвердить</button>
+            onClick={handleConfirm}
+            className="flex-1 py-3 px-4 rounded-xl font-medium text-white bg-light-accent dark:bg-dark-accent hover:bg-light-accent/90 dark:hover:bg-dark-accent/90 shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            Сохранить
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default ModalColorSettings; 
+export default ModalColorSettings;
