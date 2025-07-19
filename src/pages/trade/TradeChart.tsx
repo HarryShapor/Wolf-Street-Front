@@ -65,7 +65,7 @@ const TradeChart: React.FC<TradeChartProps> = ({
     disableHover={true}
   >
     <div
-      className="w-full h-full overflow-hidden"
+      className="flex-1 w-full h-full overflow-hidden"
       style={{
         width: "100%",
         height: "100%",

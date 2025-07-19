@@ -599,9 +599,9 @@ function TradePage() {
           </div>
         )}
 
-        <div className="pt-24 flex flex-col w-full max-w-[1800px] mx-auto gap-2 px-2 md:px-4 lg:px-0">
+        <div className="pt-24 w-full max-w-[1800px] mx-auto px-2 md:px-4 lg:px-0">
           {/* Верхняя часть: три колонки */}
-          <div className="flex flex-row gap-4 items-stretch w-full">
+          <div className="flex flex-row gap-4 items-stretch w-full mb-2">
             {/* Левая колонка: стакан и выбор инструмента */}
             <div className="flex flex-col gap-1 w-[280px] min-w-[220px] max-w-[320px] h-[700px] justify-start">
               <InstrumentSelector
@@ -731,12 +731,12 @@ function TradePage() {
               </div>
             </div>
             {/* Правая колонка: форма и история сделок */}
-            <div className="flex flex-col gap-2 w-[320px] min-w-[280px] max-w-[420px] ml-2">
-              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 mb-2">
+            <div className="flex flex-col gap-2 w-[320px] min-w-[280px] max-w-[420px]">
+              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40">
                 <TradeFormWithTabs />
               </div>
               <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 flex-1">
-                <div className="h-[320px]">
+                <div className="h-[500px]">
                   {" "}
                   {/* Увеличиваем высоту блока рыночных сделок */}
                   <TradesList />
@@ -745,11 +745,14 @@ function TradePage() {
             </div>
           </div>
           {/* Нижняя часть: заявки пользователя */}
-          <div className="w-[800px] mx-auto mt-0 mb-4 min-w-0">
-            <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
-              <div className="h-[150px]">
+          <div
+            className="w-[1464px] min-w-[280px] max-w-[1800px] relative"
+            style={{ top: "-300px" }}
+          >
+            <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40">
+              <div className="h-[290px]">
                 {" "}
-                {/* Уменьшаем высоту с 200px до 150px */}
+                {/* Увеличиваем высоту блока заявок */}
                 <UserOrdersSection />
               </div>
             </div>
