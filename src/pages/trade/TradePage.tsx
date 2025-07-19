@@ -5,7 +5,7 @@ import Card from "../../components/ui/Card";
 import Header from "../../components/header/Header";
 import CustomSelect from "../../components/ui/CustomSelect";
 import OrderBook from "./OrderBook";
-import TradeChart from "./TradeChart";
+// import TradeChart from "./TradeChart";
 import TradesList from "./TradesList";
 import InstrumentSelector from "./InstrumentSelector";
 import TradeFormWithTabs from "./TradeFormWithTabs";
@@ -603,7 +603,7 @@ function TradePage() {
           {/* Верхняя часть: три колонки */}
           <div className="flex flex-row gap-4 items-stretch w-full">
             {/* Левая колонка: стакан и выбор инструмента */}
-            <div className="flex flex-col gap-1 w-[280px] min-w-[220px] max-w-[320px] h-[600px] justify-start">
+            <div className="flex flex-col gap-1 w-[280px] min-w-[220px] max-w-[320px] h-[700px] justify-start">
               <InstrumentSelector
                 value={selected?.ticker || ""}
                 onChange={(ticker) => {
@@ -630,9 +630,9 @@ function TradePage() {
             </div>
             {/* Центральная колонка: график */}
             <div className="flex-1 min-w-[700px] max-w-[1400px]">
-              <div className="rounded-2xl shadow-2xl bg-transparent border border-light-border/40 dark:border-dark-border/40 p-2 h-[600px]">
+              <div className="rounded-2xl shadow-2xl bg-transparent border border-light-border/40 dark:border-dark-border/40 p-2 h-[700px] flex flex-col">
                 {/* --- Верхняя панель: название, доходность, периоды --- */}
-                <div className="flex flex-wrap items-center gap-4 mb-2 justify-between">
+                <div className="flex flex-wrap items-center gap-4 mb-2 justify-between flex-shrink-0">
                   {/* Левая часть: название, доходность, периоды доходности */}
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-2xl font-bold text-light-accent dark:text-dark-accent truncate">
@@ -714,20 +714,20 @@ function TradePage() {
                     ))}
                   </div>
                 </div>
-                <TradeChart
-                  data={
-                    Array.isArray(candles)
-                      ? candles.filter((c) => c && c.time)
-                      : []
-                  }
-                  loading={false}
-                  error={null}
-                  selected={selected}
-                  price={0}
-                  change={0}
-                  timeframe={timeframe}
-                  setTimeframe={setTimeframe}
-                />
+                <div className="flex-1 w-full overflow-hidden">
+                  <CandlestickChart
+                    data={
+                      Array.isArray(candles)
+                        ? candles
+                            .filter((c) => c && c.time)
+                            .map((c) => ({
+                              ...c,
+                              time: c.time as any,
+                            }))
+                        : []
+                    }
+                  />
+                </div>
               </div>
             </div>
             {/* Правая колонка: форма и история сделок */}
