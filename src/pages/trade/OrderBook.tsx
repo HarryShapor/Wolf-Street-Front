@@ -104,9 +104,12 @@ export default function OrderBook({
   return (
     <div
       ref={containerRef}
-      className="flex-1 h-full max-w-[220px] w-full overflow-hidden rounded-2xl group border border-light-border/40 dark:border-dark-border/40 shadow-2xl transition-all duration-300 bg-white/30 dark:bg-dark-card/40 backdrop-blur-md hover:shadow-[0_0_32px_0_theme('colors.light-accent')] dark:hover:shadow-[0_0_32px_0_#81c784] hover:scale-[1.03] animate-fadein mt-2"
+      className="flex-1 h-full max-w-[220px] w-full overflow-hidden rounded-2xl group border border-light-border/40 dark:border-dark-border/40 shadow-2xl bg-white/30 dark:bg-dark-card/40 backdrop-blur-md animate-fadein mt-2"
     >
-      <Card className="p-4 flex flex-col bg-transparent rounded-2xl h-full">
+      <Card
+        className="p-4 flex flex-col bg-transparent rounded-2xl h-full"
+        disableHover={true}
+      >
         <div className="relative z-10">
           <div className="flex flex-col gap-0 mb-0">
             <h3 className="font-extrabold text-light-fg dark:text-dark-fg text-base tracking-wide text-center flex-1 mb-0 mt-0 leading-tight">

@@ -60,10 +60,12 @@ const TradeChart: React.FC<TradeChartProps> = ({
   timeframe,
   setTimeframe,
 }) => (
-  <Card className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl h-full [&:hover]:shadow-xl [&:hover]:scale-100">
-    {/* Убрали всю верхнюю панель с названием, ценой и кнопками таймфреймов */}
+  <Card
+    className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl h-full"
+    disableHover={true}
+  >
     <div
-      className="flex-1 w-full mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-white/60 via-light-accent/10 to-light-bg/40 dark:from-dark-card/60 dark:via-dark-accent/10 dark:to-dark-bg/40 backdrop-blur-md shadow-2xl transition-all duration-300 animate-fadein"
+      className="flex-1 w-full mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-white/60 via-light-accent/10 to-light-bg/40 dark:from-dark-card/60 dark:via-dark-accent/10 dark:to-dark-bg/40 backdrop-blur-md shadow-2xl animate-fadein"
       style={{
         width: "100%",
         maxWidth: "100%",

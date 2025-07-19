@@ -635,7 +635,7 @@ function TradePage() {
                             ${
                               profitPeriod === p
                                 ? "bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent"
-                                : "bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-light-accent/10 dark:hover:bg-dark-accent/10"
+                                : "bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border"
                             }
                           `}
                           onClick={() =>
@@ -656,7 +656,7 @@ function TradePage() {
                           ${
                             timeframe === tf
                               ? "bg-green-500 text-white dark:bg-green-400 dark:text-dark-bg border-green-500 dark:border-green-400"
-                              : "bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-green-400/10 dark:hover:bg-green-600/10"
+                              : "bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border"
                           }
                         `}
                         onClick={() => setTimeframe(tf)}
