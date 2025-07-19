@@ -34,7 +34,7 @@ const mockTrades: Trade[] = [
 ];
 
 const ROW_HEIGHT = 20;
-const VISIBLE_ROWS = 10;
+const VISIBLE_ROWS = 15; // Увеличиваем количество видимых строк
 const GRAPH_POINTS = 32;
 const GRAPH_HEIGHT = ROW_HEIGHT * (VISIBLE_ROWS + 3); // график чуть выше
 
@@ -188,7 +188,7 @@ const TradesList: React.FC = () => {
       : userTrades.slice(0, VISIBLE_ROWS);
 
   return (
-    <div className="relative w-full h-[450px] bg-white/30 dark:bg-dark-card/40 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl animate-fadein flex flex-col">
+    <div className="relative w-full h-full bg-white/30 dark:bg-dark-card/40 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl animate-fadein flex flex-col">
       {/* Вкладки */}
       <div className="flex items-center px-4 pt-2 pb-1 border-b border-light-border/40 dark:border-dark-border/40 bg-light-bg/80 dark:bg-dark-bg/80 rounded-t-2xl gap-2">
         {TABS.map((t) => (

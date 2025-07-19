@@ -62,7 +62,9 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
     setLoading(true);
     setError(null);
     // WebSocket подписка на aggregated orderbook
-    const socket = new SockJS('http://wolf-street.ru/market-data-service/ws-market-data');
+    const socket = new SockJS(
+      "http://wolf-street.ru/market-data-service/ws-market-data"
+    );
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 0,
@@ -76,7 +78,7 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
         (message) => {
           if (ignore) return;
           try {
-            console.log('[useOrderBook] onMessage:', message.body);
+            console.log("[useOrderBook] onMessage:", message.body);
             const data = JSON.parse(message.body);
             // Фильтруем и преобразуем только валидные числа
             const asks = Array.isArray(data.asks)
@@ -85,9 +87,7 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
                     price: Number(o.price),
                     amount: Number(o.count),
                   }))
-                  .filter((o) =>
-                    !isNaN(o.price) && !isNaN(o.amount)
-                  )
+                  .filter((o) => !isNaN(o.price) && !isNaN(o.amount))
               : [];
             const bids = Array.isArray(data.bids)
               ? data.bids
@@ -95,22 +95,20 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
                     price: Number(o.price),
                     amount: Number(o.count),
                   }))
-                  .filter((o) =>
-                    !isNaN(o.price) && !isNaN(o.amount)
-                  )
+                  .filter((o) => !isNaN(o.price) && !isNaN(o.amount))
               : [];
             setSell(asks);
             setBuy(bids);
             setLoading(false);
           } catch (e) {
-            console.error('[useOrderBook] parse error:', e, message.body);
-            setError('Ошибка парсинга стакана');
+            console.error("[useOrderBook] parse error:", e, message.body);
+            setError("Ошибка парсинга стакана");
           }
         }
       );
     };
     stompClient.onStompError = (frame) => {
-      setError('Ошибка WebSocket стакана');
+      setError("Ошибка WebSocket стакана");
       stompClient.forceDisconnect();
     };
     stompClient.activate();
@@ -605,14 +603,19 @@ function TradePage() {
           {/* Верхняя часть: три колонки */}
           <div className="flex flex-row gap-4 items-stretch w-full">
             {/* Левая колонка: стакан и выбор инструмента */}
-            <div className="flex flex-col gap-2 w-[300px] min-w-[220px] max-w-[340px] h-[600px] justify-start">
+            <div className="flex flex-col gap-1 w-[280px] min-w-[220px] max-w-[320px] h-[600px] justify-start">
               <InstrumentSelector
                 value={selected?.ticker || ""}
                 onChange={(ticker) => {
-                  const found = instruments.find((inst) => inst.ticker === ticker);
+                  const found = instruments.find(
+                    (inst) => inst.ticker === ticker
+                  );
                   if (found) setSelected(found);
                 }}
-                options={filtered.map((inst) => ({ ticker: inst.ticker, title: inst.title }))}
+                options={filtered.map((inst) => ({
+                  ticker: inst.ticker,
+                  title: inst.title,
+                }))}
               />
               <div className="flex-1 flex flex-col justify-start">
                 <OrderBook
@@ -626,8 +629,8 @@ function TradePage() {
               </div>
             </div>
             {/* Центральная колонка: график */}
-            <div className="flex-1 min-w-[800px] max-w-[1350px] flex flex-col">
-              <div className="flex-1 rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2 min-h-[600px]">
+            <div className="flex-1 min-w-[700px] max-w-[1400px]">
+              <div className="rounded-2xl shadow-2xl bg-transparent border border-light-border/40 dark:border-dark-border/40 p-2 h-[600px]">
                 {/* --- Верхняя панель: название, доходность, периоды --- */}
                 <div className="flex flex-wrap items-center gap-4 mb-2 justify-between">
                   {/* Левая часть: название, доходность, периоды доходности */}
@@ -699,7 +702,11 @@ function TradePage() {
                               : "border-transparent text-light-fg dark:text-dark-fg hover:text-light-accent dark:hover:text-dark-accent hover:border-light-accent dark:hover:border-dark-accent"
                           }
                         `}
-                        style={{ borderRadius: 0, background: 'none', boxShadow: 'none' }}
+                        style={{
+                          borderRadius: 0,
+                          background: "none",
+                          boxShadow: "none",
+                        }}
                         onClick={() => setTimeframe(tf)}
                       >
                         {tf}
@@ -708,7 +715,11 @@ function TradePage() {
                   </div>
                 </div>
                 <TradeChart
-                  data={Array.isArray(candles) ? candles.filter((c) => c && c.time) : []}
+                  data={
+                    Array.isArray(candles)
+                      ? candles.filter((c) => c && c.time)
+                      : []
+                  }
                   loading={false}
                   error={null}
                   selected={selected}
@@ -720,19 +731,27 @@ function TradePage() {
               </div>
             </div>
             {/* Правая колонка: форма и история сделок */}
-            <div className="flex flex-col gap-2 w-[300px] min-w-[260px] max-w-[320px] h-[600px] ml-2">
-              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2 mb-2">
+            <div className="flex flex-col gap-2 w-[320px] min-w-[280px] max-w-[420px] ml-2">
+              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 mb-2">
                 <TradeFormWithTabs />
               </div>
-              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2 flex-1">
-                <TradesList />
+              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 flex-1">
+                <div className="h-[320px]">
+                  {" "}
+                  {/* Увеличиваем высоту блока рыночных сделок */}
+                  <TradesList />
+                </div>
               </div>
             </div>
           </div>
-          {/* Нижняя часть: заявки пользователя на всю ширину */}
-          <div className="w-full mt-2 mb-4 min-w-0 max-w-full">
+          {/* Нижняя часть: заявки пользователя */}
+          <div className="w-[800px] mx-auto mt-0 mb-4 min-w-0">
             <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
-              <UserOrdersSection />
+              <div className="h-[150px]">
+                {" "}
+                {/* Уменьшаем высоту с 200px до 150px */}
+                <UserOrdersSection />
+              </div>
             </div>
           </div>
         </div>
