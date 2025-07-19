@@ -43,7 +43,14 @@ export default function CustomSelect({ value, onChange, options, label, placehol
   // Закрывать dropdown при скролле страницы
   useEffect(() => {
     if (!open) return;
-    const handleScroll = () => setOpen(false);
+    const handleScroll = (e: Event) => {
+      // Не закрываем dropdown если скролл происходит внутри самого dropdown
+      if (listRef.current && listRef.current.contains(e.target as Node)) {
+        e.stopPropagation();
+        return;
+      }
+      setOpen(false);
+    };
     window.addEventListener('scroll', handleScroll, true);
     return () => window.removeEventListener('scroll', handleScroll, true);
   }, [open]);
@@ -121,7 +128,7 @@ export default function CustomSelect({ value, onChange, options, label, placehol
         <ul
           ref={listRef}
           style={dropdownStyle}
-          className="bg-white dark:bg-dark-card bg-opacity-100 dark:bg-opacity-100 border border-white dark:border-dark-card rounded-xl shadow-2xl max-h-96 overflow-auto text-sm py-1 font-sans"
+          className="bg-white dark:bg-dark-card bg-opacity-100 dark:bg-opacity-100 border border-white dark:border-dark-card rounded-xl shadow-2xl max-h-[200px] overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] text-sm py-1 font-sans"
           role="listbox"
         >
           {options.map((opt, i) => (

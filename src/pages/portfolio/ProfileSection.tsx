@@ -27,6 +27,7 @@ import { FaWallet, FaChartLine, FaCreditCard } from 'react-icons/fa';
 import { BiAnalyse } from 'react-icons/bi';
 import { useInstruments } from '../../hooks/useInstruments';
 import { useInstrumentProfitability } from '../../hooks/useInstrumentProfitability';
+import { useInstrumentsProfitability } from '../../hooks/useInstrumentProfitability';
 // Локальное определение типа Instrument для аналитики
 type InstrumentBase = {
   instrumentId: number;
@@ -787,7 +788,7 @@ export function PortfolioMiniAnalytics({ instruments, loading, error }: { instru
         <BiAnalyse className="inline-block align-middle text-[22px] mr-1 text-light-accent dark:text-dark-accent" />
       </span>
       <div className="text-[13px] text-light-fg/80 dark:text-dark-brown">Суммарная стоимость</div>
-      <div className="text-[18px] font-extrabold text-light-accent dark:text-dark-accent mb-1">₽ {total.toLocaleString('ru-RU')}</div>
+      <div className="text-[18px] font-extrabold text-light-accent dark:text-dark-accent mb-1">₽ {total.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
       <div className="w-full flex flex-col gap-1">
         {topAssets.map(a => (
           <div key={a.symbol} className="flex items-center gap-1 w-full">
@@ -815,6 +816,31 @@ export function PortfolioInstrumentsList({ instruments, loading, error, noMargin
   function getTicker(a: InstrumentBase) {
     return a.ticker || a.symbol || String(a.instrumentId);
   }
+  const midPrices = useAllOrderbookSpreads(instruments.map(a => a.instrumentId));
+  const instrumentIds = instruments.map(a => a.instrumentId);
+  // --- Автообновление profitability ---
+  const [period] = React.useState<'1d'>('1d');
+  const [profitability, setProfitability] = React.useState<Record<number, number>>({});
+  const [loadingProfit, setLoadingProfit] = React.useState(false);
+  const [errorProfit, setErrorProfit] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    const fetchProfit = () => {
+      setLoadingProfit(true);
+      setErrorProfit(null);
+      fetch(`http://wolf-street.ru/analytic-service/api/v1/profitability?instrumentIds=${instrumentIds.join(",")}&period=${period}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Ошибка загрузки доходности');
+          return res.json();
+        })
+        .then((data) => { if (!cancelled) setProfitability(data); })
+        .catch(e => { if (!cancelled) setErrorProfit(e.message); })
+        .finally(() => { if (!cancelled) setLoadingProfit(false); });
+    };
+    fetchProfit();
+    const interval = setInterval(fetchProfit, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [instrumentIds.join(","), period]);
   if (loading) return <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>;
   if (error) return <div className="text-red-500 dark:text-red-400">{error}</div>;
   if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
@@ -826,26 +852,28 @@ export function PortfolioInstrumentsList({ instruments, loading, error, noMargin
           <thead>
             <tr className="text-light-fg/80 dark:text-dark-brown font-semibold">
               <th className="py-2 px-3">Символ</th>
-              <th className="py-2 px-3">Название</th>
+              <th className="py-2 px-3">Цена на рынке</th>
               <th className="py-2 px-3">Количество</th>
-              {/* <th className="py-2 px-3">Стоимость</th> */}
               <th className="py-2 px-3">Доходность</th>
             </tr>
           </thead>
           <tbody>
             {instruments.map(inst => {
-              const { data, loading, error } = useInstrumentProfitability(inst.instrumentId);
+              const price = midPrices[inst.instrumentId] || 0;
+              const profit = profitability?.[inst.instrumentId];
               return (
                 <tr key={inst.instrumentId} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all">
                   <td className="py-2 px-3 font-mono font-bold text-light-accent dark:text-dark-accent">{getTicker(inst)}</td>
-                  <td className="py-2 px-3">{inst.name || '-'}</td>
+                  <td className="py-2 px-3 font-mono">{price > 0 ? `₽ ${price.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
                   <td className="py-2 px-3 font-mono">{inst.totalAmount}</td>
-                  {/* <td className="py-2 px-3 font-mono">₽ {(inst.price && inst.totalAmount) ? (inst.price * inst.totalAmount).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) : '—'}</td> */}
                   <td className="py-2 px-3 font-mono">
-                    {loading ? <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
-                      : error ? <span className="text-xs text-red-500 dark:text-red-400">!</span>
-                      : data && data.profitability !== undefined ? <span className="text-xs text-light-accent dark:text-dark-accent font-semibold">{data.profitability}%</span>
-                      : <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Нет аналитики</span>}
+                    {loadingProfit
+                      ? <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
+                      : errorProfit
+                        ? <span className="text-xs text-red-500 dark:text-red-400">!</span>
+                        : profit !== undefined
+                          ? <span className="text-xs text-light-accent dark:text-dark-accent font-semibold">{(Number(profit) * 100).toFixed(2)}%</span>
+                          : <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Нет аналитики</span>}
                   </td>
                 </tr>
               );
@@ -879,7 +907,8 @@ function useAllOrderbookSpreads(instrumentIds: (number | string)[]) {
       if (!cancelled) setMidPrices(results);
     };
     fetchAll();
-    return () => { cancelled = true; };
+    const interval = setInterval(fetchAll, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, [instrumentIds.join(",")]);
   return midPrices;
 } 

@@ -75,7 +75,7 @@ export default function TradeSection({ instruments, balance }: { instruments: an
 
   return (
     <div className="bg-light-card dark:bg-dark-card rounded-2xl p-5 min-h-[180px] flex flex-col items-center justify-center shadow-lg w-full max-w-[260px] mx-auto">
-      <div className="font-bold text-[18px] text-light-accent dark:text-dark-accent mb-2 text-center w-full">Оставьте заявку на сделку</div>
+      <div className="font-bold text-[18px] text-light-accent dark:text-dark-accent mb-2 text-center w-full">Оставьте заявку на покупку</div>
       <form className="flex flex-col gap-2 w-full items-center" onSubmit={handleSubmit}>
         <div className="w-full flex flex-col items-center">
           <label className="block text-[11px] font-semibold mb-0.5 text-light-fg-secondary dark:text-dark-brown">Инструмент</label>
