@@ -31,8 +31,18 @@ export default function OrderBook({
       </div>
     );
   }
-  const { midPrice, bestBid, bestAsk, loading } =
-    useOrderbookSpread(instrumentId);
+  // Безопасная деструктуризация spread-данных
+  const spreadData = useOrderbookSpread(instrumentId) || {};
+  const {
+    midPrice = null,
+    bestBid = null,
+    bestAsk = null,
+    spread = null,
+    loading: spreadLoading,
+    error: spreadError,
+  } = spreadData;
+  // Лог только spread-данных
+  console.log('[OrderBook] spreadData:', spreadData);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleRows, setVisibleRows] = useState(10);
 
@@ -100,6 +110,20 @@ export default function OrderBook({
     }, 50);
     return () => clearTimeout(timeoutId);
   }, [bidsChanges]);
+
+  // Для анимации/цвета spread
+  const [prevSpread, setPrevSpread] = useState<number | null>(null);
+  const [spreadColor, setSpreadColor] = useState<string>('text-light-fg dark:text-dark-fg');
+  useEffect(() => {
+    if (typeof spread === 'number' && !isNaN(spread)) {
+      if (prevSpread !== null) {
+        if (spread > prevSpread) setSpreadColor('text-green-600 dark:text-green-400');
+        else if (spread < prevSpread) setSpreadColor('text-red-500 dark:text-red-400');
+        else setSpreadColor('text-light-fg dark:text-dark-fg');
+      }
+      setPrevSpread(spread);
+    }
+  }, [spread]);
 
   return (
     <div
@@ -171,16 +195,25 @@ export default function OrderBook({
               ))}
             </div>
             {/* SPREAD (mid price) — по центру */}
-            <div className="flex flex-row items-center justify-between px-2 py-1 min-h-[28px] bg-light-bg/80 dark:bg-dark-bg/80 rounded font-extrabold text-[16px] text-light-accent dark:text-dark-accent border-y border-light-border/30 dark:border-dark-border/30 my-1">
-              <span className="w-20 text-right">
-                {midPrice
-                  ? midPrice.toLocaleString("ru-RU", {
-                      maximumFractionDigits: 2,
-                    })
+            <div className="flex flex-row items-center justify-between px-2 py-1 min-h-[28px] bg-light-bg/80 dark:bg-dark-bg/80 rounded font-extrabold text-[16px] border-y border-light-border/30 dark:border-dark-border/30 my-1">
+              <span className={`w-20 text-right font-bold transition-colors duration-300 ${spreadColor}`}>
+                {typeof midPrice === 'number' && !isNaN(midPrice)
+                  ? midPrice.toLocaleString("ru-RU", { maximumFractionDigits: 2 })
                   : "—"}
               </span>
-              <span className="w-20 text-right text-light-fg/70 dark:text-dark-fg/70 text-xs"></span>
-              <span className="w-24" />
+              <span className="w-20 text-center text-xs font-bold text-light-fg/70 dark:text-dark-fg/70">
+                {typeof spread === 'number' && !isNaN(spread)
+                  ? spread.toLocaleString("ru-RU", { maximumFractionDigits: 2 })
+                  : ''}
+              </span>
+              <span className="w-24 text-right text-xs text-light-fg/70 dark:text-dark-fg/70 flex flex-col items-end">
+                {typeof bestBid === 'number' && !isNaN(bestBid) && (
+                  <span className="text-green-600 dark:text-green-400 font-semibold">bid: {bestBid.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}</span>
+                )}
+                {typeof bestAsk === 'number' && !isNaN(bestAsk) && (
+                  <span className="text-red-500 dark:text-red-400 font-semibold">ask: {bestAsk.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}</span>
+                )}
+              </span>
             </div>
             {/* BID (buy) — снизу */}
             <div className="flex-1 flex flex-col gap-0.5 relative">

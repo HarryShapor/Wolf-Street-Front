@@ -61,22 +61,64 @@ function useOrderBook(instrumentId: number, limit: number = 8) {
     let ignore = false;
     setLoading(true);
     setError(null);
-    fetch(
-      `${API_HOST}/market-data-service/api/v1/orderbook/${instrumentId}?limitOrders=${limit}`
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Ошибка загрузки стакана");
-        return res.json();
-      })
-      .then((data) => {
-        if (ignore) return;
-        setSell(Array.isArray(data.asks) ? data.asks : []);
-        setBuy(Array.isArray(data.bids) ? data.bids : []);
-      })
-      .catch((e) => setError(e.message || "Ошибка загрузки стакана"))
-      .finally(() => setLoading(false));
+    // WebSocket подписка на aggregated orderbook
+    const socket = new SockJS('http://wolf-street.ru/market-data-service/ws-market-data');
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 0,
+      heartbeatIncoming: 0,
+      heartbeatOutgoing: 0,
+    });
+    let subscription: any = null;
+    stompClient.onConnect = () => {
+      subscription = stompClient.subscribe(
+        `/topic/aggregated/${instrumentId}`,
+        (message) => {
+          if (ignore) return;
+          try {
+            console.log('[useOrderBook] onMessage:', message.body);
+            const data = JSON.parse(message.body);
+            // Фильтруем и преобразуем только валидные числа
+            const asks = Array.isArray(data.asks)
+              ? data.asks
+                  .map((o: any) => ({
+                    price: Number(o.price),
+                    amount: Number(o.count),
+                  }))
+                  .filter((o) =>
+                    !isNaN(o.price) && !isNaN(o.amount)
+                  )
+              : [];
+            const bids = Array.isArray(data.bids)
+              ? data.bids
+                  .map((o: any) => ({
+                    price: Number(o.price),
+                    amount: Number(o.count),
+                  }))
+                  .filter((o) =>
+                    !isNaN(o.price) && !isNaN(o.amount)
+                  )
+              : [];
+            setSell(asks);
+            setBuy(bids);
+            setLoading(false);
+          } catch (e) {
+            console.error('[useOrderBook] parse error:', e, message.body);
+            setError('Ошибка парсинга стакана');
+          }
+        }
+      );
+    };
+    stompClient.onStompError = (frame) => {
+      setError('Ошибка WebSocket стакана');
+      stompClient.forceDisconnect();
+    };
+    stompClient.activate();
     return () => {
       ignore = true;
+      if (subscription) subscription.unsubscribe();
+      stompClient.forceDisconnect && stompClient.forceDisconnect();
+      socket.close && socket.close();
     };
   }, [instrumentId, limit]);
 
@@ -335,30 +377,36 @@ function TradePage() {
   // Загрузка аналитики
   useEffect(() => {
     if (!selected?.instrumentId) return;
-    setProfitability({ loading: true, error: null, data: null });
-    fetch(
-      `${API_HOST}/analytic-service/api/v1/profitability?instrumentIds=${selected.instrumentId}&period=${profitPeriod}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      }
-    )
-      .then((res) => {
-        if (!res.ok) {
-          if (res.status === 404)
-            throw new Error("Нет аналитики для этого инструмента");
-          if (res.status === 401 || res.status === 403)
-            throw new Error("Не авторизован");
-          if (res.status === 400) throw new Error("Некорректный запрос");
-          throw new Error("Нет аналитики для этого инструмента");
+    let timer: number;
+    const fetchProfitability = () => {
+      setProfitability({ loading: true, error: null, data: null });
+      fetch(
+        `${API_HOST}/analytic-service/api/v1/profitability?instrumentIds=${selected.instrumentId}&period=${profitPeriod}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
-        return res.json();
-      })
-      .then((data) => setProfitability({ loading: false, error: null, data }))
-      .catch((e) =>
-        setProfitability({ loading: false, error: e.message, data: null })
-      );
+      )
+        .then((res) => {
+          if (!res.ok) {
+            if (res.status === 404)
+              throw new Error("Нет аналитики для этого инструмента");
+            if (res.status === 401 || res.status === 403)
+              throw new Error("Не авторизован");
+            if (res.status === 400) throw new Error("Некорректный запрос");
+            throw new Error("Нет аналитики для этого инструмента");
+          }
+          return res.json();
+        })
+        .then((data) => setProfitability({ loading: false, error: null, data }))
+        .catch((e) =>
+          setProfitability({ loading: false, error: e.message, data: null })
+        );
+    };
+    fetchProfitability();
+    timer = setInterval(fetchProfitability, 10000);
+    return () => clearInterval(timer);
   }, [selected?.instrumentId, profitPeriod]);
 
   const filtered = instruments.filter(
@@ -525,56 +573,48 @@ function TradePage() {
   console.log("CandlestickChart data:", candles);
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-4">
-      <Header {...headerProps} />
+    <>
+      <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-4">
+        <Header {...headerProps} />
 
-      {/* Добавляем SearchModal если нужен */}
-      {searchOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black bg-opacity-50"
-          onClick={() => setSearchOpen(false)}
-        >
+        {/* Добавляем SearchModal если нужен */}
+        {searchOpen && (
           <div
-            className="absolute bg-white dark:bg-dark-card rounded-lg shadow-lg p-4 w-80"
-            style={{
-              top: searchPos?.top || 60,
-              left: searchPos?.left || 20,
-            }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 bg-black bg-opacity-50"
+            onClick={() => setSearchOpen(false)}
           >
-            <input
-              type="text"
-              placeholder="Поиск..."
-              className="w-full px-3 py-2 border rounded"
-              autoFocus
-            />
+            <div
+              className="absolute bg-white dark:bg-dark-card rounded-lg shadow-lg p-4 w-80"
+              style={{
+                top: searchPos?.top || 60,
+                left: searchPos?.left || 20,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="text"
+                placeholder="Поиск..."
+                className="w-full px-3 py-2 border rounded"
+                autoFocus
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="pt-14">
-        {" "}
-        {/* отступ сверху под фиксированный header (56px) */}
-        <div className="pt-20 flex flex-col w-full max-w-[1800px] mx-auto gap-4 items-stretch px-2 md:px-4 lg:px-0">
-          {/* Верхняя часть: две колонки */}
-          <div className="flex flex-row gap-10 justify-center items-stretch">
-            {/* Левая колонка */}
-            <div className="flex flex-col gap-4 w-[260px] min-w-[180px] h-full justify-end">
+        <div className="pt-24 flex flex-col w-full max-w-[1800px] mx-auto gap-2 px-2 md:px-4 lg:px-0">
+          {/* Верхняя часть: три колонки */}
+          <div className="flex flex-row gap-4 items-stretch w-full">
+            {/* Левая колонка: стакан и выбор инструмента */}
+            <div className="flex flex-col gap-2 w-[300px] min-w-[220px] max-w-[340px] h-[600px] justify-start">
               <InstrumentSelector
                 value={selected?.ticker || ""}
                 onChange={(ticker) => {
-                  const found = instruments.find(
-                    (inst) => inst.ticker === ticker
-                  );
+                  const found = instruments.find((inst) => inst.ticker === ticker);
                   if (found) setSelected(found);
                 }}
-                options={filtered.map((inst) => ({
-                  ticker: inst.ticker,
-                  title: inst.title,
-                }))}
+                options={filtered.map((inst) => ({ ticker: inst.ticker, title: inst.title }))}
               />
-              {/* Стакан выравниваем по нижней границе графика */}
-              <div className="h-[600px] self-end flex flex-col justify-end">
+              <div className="flex-1 flex flex-col justify-start">
                 <OrderBook
                   price={0}
                   orderBookSell={orderBookSell}
@@ -585,9 +625,9 @@ function TradePage() {
                 />
               </div>
             </div>
-            {/* Правая колонка: график и аналитика сбоку */}
-            <div className="w-[1040px] flex flex-row gap-6 items-start">
-              <div className="flex-1 rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
+            {/* Центральная колонка: график */}
+            <div className="flex-1 min-w-[800px] max-w-[1350px] flex flex-col">
+              <div className="flex-1 rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2 min-h-[600px]">
                 {/* --- Верхняя панель: название, доходность, периоды --- */}
                 <div className="flex flex-wrap items-center gap-4 mb-2 justify-between">
                   {/* Левая часть: название, доходность, периоды доходности */}
@@ -620,7 +660,7 @@ function TradePage() {
                                 : "")
                             }
                           >
-                            {val.toFixed(2)}%{isUp && <span>↑</span>}
+                            {(val * 100).toFixed(2)}%{isUp && <span>↑</span>}
                             {isDown && <span>↓</span>}
                           </span>
                         );
@@ -652,13 +692,14 @@ function TradePage() {
                     {["1m", "5m", "15m", "1h", "1d"].map((tf) => (
                       <button
                         key={tf}
-                        className={`px-2 py-0.5 rounded text-xs font-bold border transition-colors duration-150
+                        className={`px-3 pb-1 pt-0.5 border-b-2 text-base font-medium tracking-wide transition-colors duration-200
                           ${
                             timeframe === tf
-                              ? "bg-green-500 text-white dark:bg-green-400 dark:text-dark-bg border-green-500 dark:border-green-400"
-                              : "bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border"
+                              ? "border-light-accent text-light-accent dark:border-dark-accent dark:text-dark-accent"
+                              : "border-transparent text-light-fg dark:text-dark-fg hover:text-light-accent dark:hover:text-dark-accent hover:border-light-accent dark:hover:border-dark-accent"
                           }
                         `}
+                        style={{ borderRadius: 0, background: 'none', boxShadow: 'none' }}
                         onClick={() => setTimeframe(tf)}
                       >
                         {tf}
@@ -667,11 +708,7 @@ function TradePage() {
                   </div>
                 </div>
                 <TradeChart
-                  data={
-                    Array.isArray(candles)
-                      ? candles.filter((c) => c && c.time)
-                      : []
-                  }
+                  data={Array.isArray(candles) ? candles.filter((c) => c && c.time) : []}
                   loading={false}
                   error={null}
                   selected={selected}
@@ -682,28 +719,25 @@ function TradePage() {
                 />
               </div>
             </div>
-          </div>
-          {/* Нижняя часть: форма, заявки и сделки в одну линию */}
-          <div className="flex flex-row gap-4 items-start w-[1392px] mx-auto mt-4">
-            <div className="w-[320px] min-w-[320px] max-w-[320px] h-full overflow-visible flex-shrink-0">
-              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
+            {/* Правая колонка: форма и история сделок */}
+            <div className="flex flex-col gap-2 w-[300px] min-w-[260px] max-w-[320px] h-[600px] ml-2">
+              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2 mb-2">
                 <TradeFormWithTabs />
               </div>
-            </div>
-            <div className="w-[650px] min-w-[650px] max-w-[650px] h-full flex flex-col justify-start">
-              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
-                <UserOrdersSection />
-              </div>
-            </div>
-            <div className="w-[360px] min-w-[360px] max-w-[360px] h-full overflow-visible flex flex-col justify-start">
-              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
+              <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2 flex-1">
                 <TradesList />
               </div>
             </div>
           </div>
+          {/* Нижняя часть: заявки пользователя на всю ширину */}
+          <div className="w-full mt-2 mb-4 min-w-0 max-w-full">
+            <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 p-2">
+              <UserOrdersSection />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
