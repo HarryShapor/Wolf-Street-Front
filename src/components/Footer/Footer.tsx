@@ -12,13 +12,6 @@ export default function Footer() {
       {/* Упрощенный декоративный фон без полосок */}
       <div className="absolute inset-0 bg-gradient-to-br from-light-card via-light-bg to-light-card dark:from-dark-card dark:via-dark-bg dark:to-dark-card"></div>
 
-      {/* Убираем дополнительные overlay и центральный элемент */}
-
-      {/* Только один декоративный элемент в правом нижнем углу */}
-      <div className="absolute bottom-20 right-20 w-48 h-48 bg-light-accent/5 dark:bg-dark-accent/8 rounded-full blur-3xl"></div>
-
-      {/* Остальной контент... */}
-
       {/* Основной контент футера */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-8 pt-32 flex-1 flex flex-col">
         {/* Главная секция с логотипом без свечения */}

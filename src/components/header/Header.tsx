@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
-import { getUserAvatarUrl } from '../../services/AvatarService';
+import { getUserAvatarUrl } from "../../services/AvatarService";
+import { isAuthenticated } from "../../services/auth/Login";
 
 interface HeaderProps {
   scrolled: boolean;
@@ -48,6 +49,24 @@ export default function Header({
     }
   };
 
+  // Функция для обработки клика на кнопку "Торговля"
+  const handleTradeClick = () => {
+    if (isAuthenticated()) {
+      navigate("/trade");
+    } else {
+      navigate("/login");
+    }
+  };
+
+  // Функция для обработки клика на кнопку "Инструменты"
+  const handleInstrumentsClick = () => {
+    if (isAuthenticated()) {
+      navigate("/instruments");
+    } else {
+      navigate("/login");
+    }
+  };
+
   // --- AUTH LOGIC ---
   const [isAuth, setIsAuth] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -55,9 +74,9 @@ export default function Header({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsAuth(!!localStorage.getItem("accessToken"));
+    setIsAuth(isAuthenticated()); // Используем isAuthenticated() для консистентности
     // Получаем аватарку через сервис, как в ProfileSection/SettingsPanel
-    if (localStorage.getItem("accessToken")) {
+    if (isAuthenticated()) {
       getUserAvatarUrl().then(setAvatarUrl);
     } else {
       setAvatarUrl(null);
@@ -143,7 +162,7 @@ export default function Header({
                   key={section.id}
                   onClick={() => handleNavClick(section.id)}
                   className={
-                    (isMain && activeSection === section.id)
+                    isMain && activeSection === section.id
                       ? mainButtonClass
                       : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
                   }
@@ -156,14 +175,22 @@ export default function Header({
           {/* Кнопки Торговля/Инструменты */}
           <div className="flex gap-2">
             <button
-              onClick={() => navigate("/trade")}
-              className={location.pathname.startsWith('/trade') ? mainButtonClass : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"}
+              onClick={handleTradeClick}
+              className={
+                location.pathname.startsWith("/trade")
+                  ? mainButtonClass
+                  : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
+              }
             >
               Торговля
             </button>
             <button
-              onClick={() => navigate("/instruments")}
-              className={location.pathname.startsWith('/instruments') ? mainButtonClass : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"}
+              onClick={handleInstrumentsClick}
+              className={
+                location.pathname.startsWith("/instruments")
+                  ? mainButtonClass
+                  : "text-base font-semibold px-4 py-1.5 rounded-full transition-colors duration-200 bg-transparent text-light-fg/80 dark:text-dark-nav-inactive hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 hover:text-light-accent dark:hover:text-dark-accent"
+              }
             >
               Инструменты
             </button>

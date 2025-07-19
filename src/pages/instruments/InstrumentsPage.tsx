@@ -3,14 +3,14 @@ import Header from "../../components/header/Header";
 import Footer from "../../components/footer/Footer";
 import InstrumentFilters from "./InstrumentFilters";
 import InstrumentsList from "./InstrumentsList";
-import { useInstruments } from '../../hooks/useInstruments';
-import type { Instrument } from '../../hooks/useInstruments';
+import { useInstruments } from "../../hooks/useInstruments";
+import type { Instrument } from "../../hooks/useInstruments";
 import btcIcon from "../../image/crypto/bitcoin.svg";
 import ethIcon from "../../image/crypto/ethereum.svg";
 import usdtIcon from "../../image/crypto/usdt.svg";
 import tonIcon from "../../image/crypto/ton.svg";
-import { useInstrumentImages } from '../../hooks/useInstrumentImages';
-import { useInstrumentMarketData } from '../../hooks/useInstrumentMarketData';
+import { useInstrumentImages } from "../../hooks/useInstrumentImages";
+import { useInstrumentMarketData } from "../../hooks/useInstrumentMarketData";
 import { useNavigate } from "react-router-dom";
 
 const TYPE_FILTERS = [
@@ -26,53 +26,123 @@ const SORT_OPTIONS = [
   { label: "По цене (сначала дорогие)", value: "price-desc" },
 ];
 
-function FloatingCurrenciesBackground() {
-  // Массив иконок и их параметров (позиция, размер, задержка, скорость)
-  const icons = [
-    { src: btcIcon, size: 64, top: '10%', left: '8%', duration: 18, delay: 0, opacity: 0.18 },
-    { src: ethIcon, size: 48, top: '30%', left: '80%', duration: 22, delay: 2, opacity: 0.15 },
-    { src: usdtIcon, size: 54, top: '65%', left: '15%', duration: 20, delay: 1, opacity: 0.13 },
-    { src: tonIcon, size: 60, top: '75%', left: '70%', duration: 25, delay: 3, opacity: 0.16 },
-    { src: btcIcon, size: 38, top: '55%', left: '55%', duration: 19, delay: 2.5, opacity: 0.11 },
-    { src: ethIcon, size: 36, top: '20%', left: '60%', duration: 21, delay: 1.5, opacity: 0.10 },
-  ];
+interface FloatingCurrenciesBackgroundProps {
+  instruments: Instrument[];
+  images: Record<number, string>;
+  loadingImages: boolean;
+}
+
+function FloatingCurrenciesBackground({
+  instruments,
+  images,
+  loadingImages,
+}: FloatingCurrenciesBackgroundProps) {
+  // Статичные иконки как fallback
+  const fallbackIcons = [btcIcon, ethIcon, usdtIcon, tonIcon];
+
+  // Создаем массив иконок для анимации
+  const icons = useMemo(() => {
+    let iconsToUse: string[] = [];
+
+    if (!loadingImages && instruments.length > 0) {
+      // Используем реальные логотипы инструментов
+      iconsToUse = instruments
+        .map((instrument) => images[instrument.instrumentId])
+        .filter((image) => image) // фильтруем только те, у которых есть изображения
+        .slice(0, 12); // ограничиваем количество плавающих элементов
+
+      // Если реальных логотипов мало, добавляем fallback иконки
+      while (iconsToUse.length < 6 && iconsToUse.length < instruments.length) {
+        iconsToUse.push(
+          fallbackIcons[iconsToUse.length % fallbackIcons.length]
+        );
+      }
+    }
+
+    // Если реальных данных нет, используем fallback иконки
+    if (iconsToUse.length === 0) {
+      iconsToUse = [...fallbackIcons];
+    }
+
+    // Создаем случайные позиции и параметры анимации для каждой иконки
+    return iconsToUse.map((src, index) => {
+      const positions = [
+        { top: "10%", left: "8%" },
+        { top: "30%", left: "80%" },
+        { top: "65%", left: "15%" },
+        { top: "75%", left: "70%" },
+        { top: "55%", left: "55%" },
+        { top: "20%", left: "60%" },
+        { top: "45%", left: "25%" },
+        { top: "80%", left: "40%" },
+        { top: "15%", left: "90%" },
+        { top: "90%", left: "10%" },
+        { top: "35%", left: "85%" },
+        { top: "60%", left: "5%" },
+      ];
+
+      const position = positions[index % positions.length];
+
+      return {
+        src,
+        size: 36 + (index % 3) * 12, // размеры от 36 до 60
+        top: position.top,
+        left: position.left,
+        duration: 18 + (index % 8), // длительность от 18 до 25 секунд
+        delay: index * 0.5, // задержка для разнообразия
+        opacity: 0.1 + (index % 4) * 0.02, // прозрачность от 0.10 до 0.16
+      };
+    });
+  }, [instruments, images, loadingImages]);
+
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         inset: 0,
         zIndex: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
+        pointerEvents: "none",
+        overflow: "hidden",
       }}
       aria-hidden="true"
     >
       {icons.map((icon, i) => (
         <img
-          key={i}
+          key={`${icon.src}-${i}`}
           src={icon.src}
           alt="currency"
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: icon.top,
             left: icon.left,
             width: icon.size,
             height: icon.size,
             opacity: icon.opacity,
-            filter: 'blur(0.5px) drop-shadow(0 2px 8px rgba(0,0,0,0.08))',
+            filter: "blur(0.5px) drop-shadow(0 2px 8px rgba(0,0,0,0.08))",
             animation: `floatY${i} ${icon.duration}s ease-in-out infinite alternate`,
             animationDelay: `${icon.delay}s`,
-            transition: 'opacity 0.5s',
+            transition: "opacity 0.5s, transform 0.3s",
+            objectFit: "contain",
           }}
         />
       ))}
       <style>{`
-        ${icons.map((icon, i) => `
+        ${icons
+          .map(
+            (icon, i) => `
           @keyframes floatY${i} {
-            0% { transform: translateY(0px) scale(1) rotate(0deg); }
-            100% { transform: translateY(-40px) scale(1.08) rotate(${i % 2 === 0 ? 8 : -8}deg); }
+            0% { 
+              transform: translateY(0px) scale(1) rotate(0deg); 
+            }
+            100% { 
+              transform: translateY(-40px) scale(1.08) rotate(${
+                i % 2 === 0 ? 8 : -8
+              }deg); 
+            }
           }
-        `).join('')}
+        `
+          )
+          .join("")}
       `}</style>
     </div>
   );
@@ -81,7 +151,10 @@ function FloatingCurrenciesBackground() {
 export default function InstrumentsPage() {
   const { instruments, loading, error } = useInstruments();
   const ids = useMemo(
-    () => [...new Set(instruments.map(inst => inst.instrumentId))].sort((a, b) => a - b),
+    () =>
+      [...new Set(instruments.map((inst) => inst.instrumentId))].sort(
+        (a, b) => a - b
+      ),
     [instruments]
   );
   const { images, loading: loadingImages } = useInstrumentImages(ids);
@@ -94,8 +167,8 @@ export default function InstrumentsPage() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (!localStorage.getItem('accessToken')) {
-      navigate('/login', { replace: true });
+    if (!localStorage.getItem("accessToken")) {
+      navigate("/login", { replace: true });
     }
   }, [navigate]);
 
@@ -125,14 +198,21 @@ export default function InstrumentsPage() {
     if (filtered.length > 0) {
       setCardsVisible(0);
       filtered.forEach((_, i) => {
-        setTimeout(() => setCardsVisible(v => Math.max(v, i + 1)), 50 + i * 30);
+        setTimeout(
+          () => setCardsVisible((v) => Math.max(v, i + 1)),
+          50 + i * 30
+        );
       });
     }
   }, [filter, sort, search, instruments, filtered]);
 
   return (
     <div className="min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg font-sans">
-      <FloatingCurrenciesBackground />
+      <FloatingCurrenciesBackground
+        instruments={instruments}
+        images={images}
+        loadingImages={loadingImages}
+      />
       <Header
         scrolled={false}
         NAV={[]}
@@ -142,7 +222,11 @@ export default function InstrumentsPage() {
         setSearchOpen={() => {}}
         searchOpen={false}
       />
-      <main className={`flex-1 w-full max-w-3xl mx-auto px-4 py-16 transition-all duration-700 ease-in-out ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} transform`}>
+      <main
+        className={`flex-1 w-full max-w-3xl mx-auto px-4 py-16 transition-all duration-700 ease-in-out ${
+          show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        } transform`}
+      >
         <h1 className="text-4xl font-extrabold text-light-accent dark:text-dark-accent mb-10 text-center tracking-wide">
           Доступные инструменты
         </h1>
@@ -163,15 +247,30 @@ export default function InstrumentsPage() {
           <div className="text-center text-red-500 py-8">
             <div>Ошибка загрузки инструментов!</div>
             <div className="mt-2 text-sm text-red-400 break-all">{error}</div>
-            <div className="mt-2 text-xs text-light-fg/60 dark:text-dark-fg/60">Проверьте, что вы авторизованы и backend доступен.<br/>Если ошибка 401 — попробуйте перелогиниться.<br/>Если ошибка 500 — проверьте backend.</div>
+            <div className="mt-2 text-xs text-light-fg/60 dark:text-dark-fg/60">
+              Проверьте, что вы авторизованы и backend доступен.
+              <br />
+              Если ошибка 401 — попробуйте перелогиниться.
+              <br />
+              Если ошибка 500 — проверьте backend.
+            </div>
           </div>
         ) : instruments.length === 0 ? (
-          <div className="text-center text-lg opacity-60 py-12">Нет доступных инструментов. Проверьте соединение с сервером или обратитесь к администратору.</div>
+          <div className="text-center text-lg opacity-60 py-12">
+            Нет доступных инструментов. Проверьте соединение с сервером или
+            обратитесь к администратору.
+          </div>
         ) : (
-          <InstrumentsList instruments={filtered} cardsVisible={cardsVisible} images={images} loadingImages={loadingImages || loadingPrices} prices={prices} />
+          <InstrumentsList
+            instruments={filtered}
+            cardsVisible={cardsVisible}
+            images={images}
+            loadingImages={loadingImages || loadingPrices}
+            prices={prices}
+          />
         )}
       </main>
       <Footer />
     </div>
   );
-} 
+}

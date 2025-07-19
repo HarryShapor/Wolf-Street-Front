@@ -1,9 +1,9 @@
-import React from 'react';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import CandlestickChart from '../../components/ui/CandlestickChart';
+import React from "react";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import CandlestickChart from "../../components/ui/CandlestickChart";
 
-import type { Instrument } from '../../hooks/useInstruments';
+import type { Instrument } from "../../hooks/useInstruments";
 
 interface TradeChartProps {
   data: any[];
@@ -16,7 +16,7 @@ interface TradeChartProps {
   setTimeframe: (tf: string) => void;
 }
 
-const timeframes = ['1m','5m','15m','1h','1d'];
+const timeframes = ["1m", "5m", "15m", "1h", "1d"];
 
 const mockCandles = [
   { time: 1722427200, open: 100, high: 110, low: 95, close: 105 }, // 2024-07-01T12:00:00Z
@@ -50,37 +50,38 @@ const mockCandles = [
   { time: 1724932800, open: 169, high: 173, low: 168, close: 172 }, // 2024-07-30T12:00:00Z
 ];
 
-const TradeChart: React.FC<TradeChartProps> = ({ data, loading, error, selected, price, change, timeframe, setTimeframe }) => (
-  <Card className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl transition-shadow hover:shadow-[0_0_24px_0_theme('colors.light-accent')] dark:hover:shadow-[0_0_24px_0_#81c784] h-full">
-    <div className="flex flex-row items-start justify-between px-6 pt-2 pb-0.5">
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-baseline gap-2">
-          <h2 className="font-semibold text-2xl text-light-fg dark:text-dark-fg leading-tight">{selected ? selected.ticker : ''} / USD</h2>
-          <span className="text-xl font-bold text-light-fg dark:text-dark-fg leading-tight">${price}</span>
-          <span className={`text-base font-semibold leading-tight ${change > 0 ? 'text-light-success dark:text-dark-accent' : change < 0 ? 'text-light-error dark:text-error' : 'text-light-fg-secondary dark:text-dark-brown'}`}>{change > 0 ? '+' : ''}{change}%</span>
-        </div>
-      </div>
-      <div className="flex gap-2 items-start mt-0.5 overflow-x-auto py-1">
-        {timeframes.map(tf => (
-          <button
-            key={tf}
-            onClick={() => setTimeframe(tf)}
-            className={`inline-flex items-center justify-center px-4 py-1.5 text-[13px] font-semibold rounded-full border transition-all duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40
-              ${tf === timeframe
-                ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent shadow-md'
-                : 'bg-light-bg/80 dark:bg-dark-bg/80 text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border hover:bg-light-accent/10 dark:hover:bg-dark-accent/10'}
-            `}
-            style={{ minWidth: 38, minHeight: 28, letterSpacing: 0.5 }}
-          >
-            {tf}
-          </button>
-        ))}
-      </div>
-    </div>
-    <div className="flex-1 w-full mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-white/60 via-light-accent/10 to-light-bg/40 dark:from-dark-card/60 dark:via-dark-accent/10 dark:to-dark-bg/40 backdrop-blur-md shadow-2xl transition-all duration-300 animate-fadein" style={{width: '100%', maxWidth: '100%', height: '60vh', minHeight: 400, minWidth: 320, margin: '0 auto', background: 'none', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+const TradeChart: React.FC<TradeChartProps> = ({
+  data,
+  loading,
+  error,
+  selected,
+  price,
+  change,
+  timeframe,
+  setTimeframe,
+}) => (
+  <Card className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl h-full [&:hover]:shadow-xl [&:hover]:scale-100">
+    {/* Убрали всю верхнюю панель с названием, ценой и кнопками таймфреймов */}
+    <div
+      className="flex-1 w-full mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-white/60 via-light-accent/10 to-light-bg/40 dark:from-dark-card/60 dark:via-dark-accent/10 dark:to-dark-bg/40 backdrop-blur-md shadow-2xl transition-all duration-300 animate-fadein"
+      style={{
+        width: "100%",
+        maxWidth: "100%",
+        height: "60vh",
+        minHeight: 400,
+        minWidth: 320,
+        margin: "0 auto",
+        background: "none",
+        padding: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+      }}
+    >
       <CandlestickChart data={data} />
     </div>
   </Card>
 );
 
-export default TradeChart; 
+export default TradeChart;

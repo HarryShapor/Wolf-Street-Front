@@ -7,13 +7,6 @@ import type {
   Time,
 } from "lightweight-charts";
 import { useTheme } from "../../context/ThemeContext";
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaPlus,
-  FaMinus,
-  FaUndo,
-} from "react-icons/fa";
 
 export type Candle = {
   time: UTCTimestamp | Time;
@@ -29,28 +22,27 @@ interface CandlestickChartProps {
 
 function getChartColors() {
   try {
-    const raw = localStorage.getItem('chartColors');
+    const raw = localStorage.getItem("chartColors");
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.up === 'string' && typeof parsed.down === 'string') {
+      if (
+        parsed &&
+        typeof parsed.up === "string" &&
+        typeof parsed.down === "string"
+      ) {
         return parsed;
       }
     }
   } catch {}
-  return { up: '#22d3a8', down: '#f43f5e' };
+  return { up: "#22d3a8", down: "#f43f5e" };
 }
-
 
 const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<any>(null);
   const { theme } = useTheme();
-  const [_, setRerender] = useState(0); // для форс-обновления
-  const [cursor, setCursor] = useState<"crosshair" | "pointer" | "grabbing">(
-    "crosshair"
-  );
-  const isMouseDown = useRef(false);
+  const [_, setRerender] = useState(0);
   const [chartColors, setChartColors] = useState(getChartColors());
   const [crosshair, setCrosshair] = useState<{
     x: number;
@@ -61,10 +53,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
 
   useEffect(() => {
     function onStorage(e: StorageEvent) {
-      if (e.key === 'chartColors') setChartColors(getChartColors());
+      if (e.key === "chartColors") setChartColors(getChartColors());
     }
-    window.addEventListener('storage', onStorage);
-    // Polling для обновления в этой же вкладке
+    window.addEventListener("storage", onStorage);
     const interval = setInterval(() => {
       const current = getChartColors();
       if (current.up !== chartColors.up || current.down !== chartColors.down) {
@@ -72,70 +63,10 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
       }
     }, 400);
     return () => {
-      window.removeEventListener('storage', onStorage);
+      window.removeEventListener("storage", onStorage);
       clearInterval(interval);
     };
   }, [chartColors.up, chartColors.down]);
-
-  // Управление графиком
-  const scrollChart = (delta: number) => {
-    if (chartRef.current) {
-      const ts = chartRef.current.timeScale();
-      ts.scrollToPosition(ts.getVisibleLogicalRange()?.from! - delta, false);
-    }
-  };
-  const zoomChart = (inOut: "in" | "out") => {
-    if (chartRef.current) {
-      const ts = chartRef.current.timeScale();
-      const range = ts.getVisibleLogicalRange();
-      if (range) {
-        const center = (range.from + range.to) / 2;
-        const size = range.to - range.from;
-        const newSize = inOut === "in" ? size * 0.7 : size * 1.3;
-        ts.setVisibleLogicalRange({
-          from: center - newSize / 2,
-          to: center + newSize / 2,
-        });
-      }
-    }
-  };
-  const resetChart = () => {
-    if (chartRef.current) {
-      chartRef.current.timeScale().fitContent();
-    }
-  };
-
-  // Обработчики для overlay
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!chartRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    // Получаем координаты времени
-    const series = seriesRef.current;
-    if (series) {
-      const time = chartRef.current.timeScale().coordinateToTime(x);
-      // Проверяем, есть ли свеча под курсором (по времени)
-      const candle = Array.isArray(series.data)
-        ? series.data.find((c: any) => c.time === time)
-        : null;
-      if (candle) {
-        setCursor("pointer");
-      } else {
-        setCursor(isMouseDown.current ? "grabbing" : "crosshair");
-      }
-    }
-  };
-  const handleMouseLeave = () => {
-    setCursor("crosshair");
-  };
-  const handleMouseDown = () => {
-    isMouseDown.current = true;
-    setCursor("grabbing");
-  };
-  const handleMouseUp = () => {
-    isMouseDown.current = false;
-    setCursor("crosshair");
-  };
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -143,15 +74,15 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
       chartRef.current.remove();
       chartRef.current = null;
     }
-    // Цвета для премиального стиля
-    const isDark = theme === 'dark';
-    const chartBg = isDark ? '#1c1b1b' : '#fff'; // Tailwind dark-bg
-    const textColor = isDark ? '#e5e7ef' : '#23263a';
-    const gridColor = isDark ? '#23263a' : '#e5e7ef';
+
+    const isDark = theme === "dark";
+    const chartBg = isDark ? "#1c1b1b" : "#fff";
+    const textColor = isDark ? "#e5e7ef" : "#23263a";
+    const gridColor = isDark ? "#23263a" : "#e5e7ef";
     const upColor = chartColors.up;
     const downColor = chartColors.down;
-    const wickColor = isDark ? '#e5e7ef' : '#23263a';
-    const borderColor = isDark ? '#222' : '#e5e7ef';
+    const wickColor = isDark ? "#e5e7ef" : "#23263a";
+    const borderColor = isDark ? "#222" : "#e5e7ef";
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -167,35 +98,34 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
       },
       timeScale: {
         timeVisible: true,
-        secondsVisible: true, // теперь показываем и время
+        secondsVisible: true,
         borderColor: gridColor,
         rightOffset: 2,
         barSpacing: 14,
-        // tickMarkLabelPadding: 16, // удалено, не поддерживается
       },
       rightPriceScale: {
         borderColor: gridColor,
-        scaleMargins: { top: 0.12, bottom: 0.18 }, // увеличил bottom
+        scaleMargins: { top: 0.12, bottom: 0.18 },
       },
       crosshair: {
         mode: 0,
         vertLine: {
-          color: "#888c", // заметный серый с alpha
+          color: "#888c",
           width: 2,
-          style: 2, // пунктир
+          style: 2,
           visible: true,
           labelVisible: false,
         },
         horzLine: {
-          color: "#888c", // заметный серый с alpha
+          color: "#888c",
           width: 2,
-          style: 2, // пунктир
+          style: 2,
           visible: true,
           labelVisible: true,
         },
       },
-      // watermark: { visible: false }, // watermark/лого TradingView полностью отключён и не появится
     });
+
     chartRef.current = chart;
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor,
@@ -210,85 +140,66 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
       borderColor,
       priceLineVisible: true,
     } as CandlestickSeriesOptions);
+
     seriesRef.current = candleSeries;
     candleSeries.setData(data);
-    chart.timeScale().fitContent(); // fitContent только при первом рендере
-    // setRerender(x => x + 1); // УБРАНО чтобы не было бесконечного рендера
-    setRerender((x) => x + 1); // чтобы панель кнопок не "отставала" при ресете
+    chart.timeScale().fitContent();
+    setRerender((x) => x + 1);
 
-    // --- Курсор ---
-    let isMouseDown = false;
     const container = chartContainerRef.current;
     if (container) container.style.cursor = "crosshair";
-    // crosshairMove: pointer если есть свеча, иначе crosshair
-    const handleCrosshairMove = (param: any) => {
-      if (!container) return;
-      if (isMouseDown) return; // если тянем — grabbing
-      if (param && param.seriesPrices && param.seriesPrices.size > 0) {
-        container.style.cursor = "pointer";
-      } else {
-        container.style.cursor = "crosshair";
-      }
-    };
-    chart.subscribeCrosshairMove(handleCrosshairMove);
-    // mouse down/up: grabbing
-    const handleMouseDown = () => {
-      isMouseDown = true;
-      if (container) container.style.cursor = "grabbing";
-    };
-    const handleMouseUp = () => {
-      isMouseDown = false;
-      if (container) container.style.cursor = "crosshair";
-    };
-    if (container) {
-      container.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mouseup", handleMouseUp);
-    }
 
-    // --- Кастомные label-ы ---
+    let crosshairTimeout: NodeJS.Timeout;
     const handleCrosshairMoveLabels = (param: any) => {
-      if (!param || !param.point) {
-        setCrosshair(null);
-        return;
-      }
-      const { x, y } = param.point;
-      let price = null;
-      let time = null;
-      if (param.seriesPrices && param.seriesPrices.size > 0) {
-        price = Number(Array.from(param.seriesPrices.values())[0]);
-      }
-      if (param.time) {
-        // param.time может быть number (timestamp) или string (YYYY-MM-DD)
-        if (typeof param.time === "number") {
-          const d = new Date(param.time * 1000);
-          const dateStr = d.toLocaleDateString("ru-RU");
-          const utcTime = d.toISOString().slice(11, 19); // HH:MM:SS UTC
-          const localTime = d.toLocaleTimeString("ru-RU", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          });
-          time = `${dateStr} ${utcTime} (UTC) / ${localTime} (по местному)`;
-        } else {
-          time = param.time;
+      clearTimeout(crosshairTimeout);
+      crosshairTimeout = setTimeout(() => {
+        let price = "";
+        let time = "";
+        let x = 0;
+        let y = 0;
+
+        if (param.point) {
+          x = param.point.x;
+          y = param.point.y;
         }
-      }
-      setCrosshair({ x, y, price, time });
+        if (param.seriesPrices && param.seriesPrices.size > 0) {
+          const candleData = Array.from(param.seriesPrices.values())[0];
+          if (
+            candleData &&
+            typeof candleData === "object" &&
+            "close" in candleData
+          ) {
+            price = candleData.close.toFixed(2);
+          }
+        }
+        if (param.time) {
+          if (typeof param.time === "number") {
+            const d = new Date(param.time * 1000);
+            const dateStr = d.toLocaleDateString("ru-RU");
+            const utcTime = d.toISOString().slice(11, 19);
+            const localTime = d.toLocaleTimeString("ru-RU", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+            time = `${dateStr} ${utcTime} (UTC) / ${localTime} (по местному)`;
+          } else {
+            time = param.time;
+          }
+        }
+        setCrosshair({ x, y, price, time });
+      }, 16);
     };
+
     chart.subscribeCrosshairMove(handleCrosshairMoveLabels);
     return () => {
+      clearTimeout(crosshairTimeout);
       chart.remove();
       chartRef.current = null;
-      chart.unsubscribeCrosshairMove(handleCrosshairMove);
       chart.unsubscribeCrosshairMove(handleCrosshairMoveLabels);
-      if (container) {
-        container.removeEventListener("mousedown", handleMouseDown);
-        window.removeEventListener("mouseup", handleMouseUp);
-      }
     };
   }, [theme, chartColors.up, chartColors.down]);
 
-  // Новый useEffect: обновление данных без сброса зума
   useEffect(() => {
     if (!chartRef.current || !seriesRef.current) return;
     const timeScale = chartRef.current.timeScale();
@@ -299,22 +210,6 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     }
   }, [data]);
 
-  // Стили для плавающей панели
-  const isDark = theme === "dark";
-  const upColor = isDark ? "#22e57a" : "#22c55e";
-  const downColor = isDark ? "#ff4b6b" : "#ef4444";
-  const panelBg = isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.95)";
-  const panelBorder = isDark ? "#333" : "#e5e7ef";
-  const iconColor = isDark ? "#e5e7ef" : "#23263a";
-  const btnHover = isDark ? "#444" : "#f3f4f6";
-
-  // --- Hover-появление панели ---
-  const [showPanel, setShowPanel] = useState(false);
-
-  // Определяем цвет последней цены
-  const lastPrice = data && data.length > 0 ? data[data.length - 1].close : null;
-  const lastPriceColor = lastPrice !== null && data && data.length > 1 ? (lastPrice > data[data.length - 2]?.close ? chartColors.up : chartColors.down) : '#888';
-
   return (
     <div style={{ width: "100%", position: "relative", height: "100%" }}>
       <div
@@ -322,23 +217,14 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
         style={{
           width: "100%",
           height: "100%",
-          boxShadow: "0 8px 32px 0 #0002",
           borderRadius: 24,
           background: theme === "dark" ? "#000" : "#fff",
-          transition: "background 0.3s",
           position: "relative",
           overflow: "visible",
         }}
         className="rounded-2xl"
-        onMouseMove={(e) => {
-          // Если курсор в нижней 80px области графика — показываем панель
-          const rect = e.currentTarget.getBoundingClientRect();
-          if (e.clientY > rect.bottom - 80) setShowPanel(true);
-          else setShowPanel(false);
-        }}
-        onMouseLeave={() => setShowPanel(false)}
       />
-      {/* Кастомные label-ы для кроссхайра (как на TradingView) */}
+
       {crosshair && crosshair.price !== null && (
         <div
           style={{
@@ -353,161 +239,32 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
             fontWeight: 700,
             pointerEvents: "none",
             zIndex: 20,
-            boxShadow: "0 2px 8px #0005",
           }}
         >
           {crosshair.price}
         </div>
       )}
+
       {crosshair && crosshair.time && (
         <div
           style={{
             position: "absolute",
-            left: Math.max(16, Math.min(984, crosshair.x - 60)),
+            left: Math.max(16, Math.min(584, crosshair.x - 50)),
             bottom: 8,
             background: "#222",
             color: "#fff",
             borderRadius: 6,
-            padding: "3px 14px",
+            padding: "3px 12px",
             fontSize: 15,
             fontWeight: 700,
             pointerEvents: "none",
             zIndex: 20,
-            boxShadow: "0 2px 8px #0005",
           }}
         >
           {crosshair.time}
         </div>
       )}
-      {/* Плавающая панель управления */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: 56, // поднято выше
-          transform: "translateX(-50%)",
-          background: panelBg,
-          borderRadius: 12,
-          boxShadow: "0 2px 12px 0 #0002",
-          border: `1.5px solid ${panelBorder}`,
-          display: "flex",
-          gap: 4,
-          padding: "4px 10px",
-          zIndex: 10,
-          opacity: showPanel ? 1 : 0,
-          pointerEvents: showPanel ? "auto" : "none",
-          transition: "opacity 0.25s",
-        }}
-        onMouseEnter={() => setShowPanel(true)}
-        onMouseLeave={() => setShowPanel(false)}
-      >
-        <button
-          onClick={() => zoomChart("out")}
-          style={{
-            background: "none",
-            border: "none",
-            borderRadius: "50%",
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background 0.2s",
-            color: iconColor,
-            fontSize: 18,
-            cursor: "pointer",
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.background = btnHover)}
-          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-        >
-          <FaMinus />
-        </button>
-        <button
-          onClick={() => zoomChart("in")}
-          style={{
-            background: "none",
-            border: "none",
-            borderRadius: "50%",
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background 0.2s",
-            color: iconColor,
-            fontSize: 18,
-            cursor: "pointer",
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.background = btnHover)}
-          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-        >
-          <FaPlus />
-        </button>
-        <button
-          onClick={() => scrollChart(20)}
-          style={{
-            background: "none",
-            border: "none",
-            borderRadius: "50%",
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background 0.2s",
-            color: iconColor,
-            fontSize: 18,
-            cursor: "pointer",
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.background = btnHover)}
-          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-        >
-          <FaChevronLeft />
-        </button>
-        <button
-          onClick={() => scrollChart(-20)}
-          style={{
-            background: "none",
-            border: "none",
-            borderRadius: "50%",
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background 0.2s",
-            color: iconColor,
-            fontSize: 18,
-            cursor: "pointer",
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.background = btnHover)}
-          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-        >
-          <FaChevronRight />
-        </button>
-        <button
-          onClick={resetChart}
-          style={{
-            background: "none",
-            border: "none",
-            borderRadius: "50%",
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background 0.2s",
-            color: iconColor,
-            fontSize: 18,
-            cursor: "pointer",
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.background = btnHover)}
-          onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-        >
-          <FaUndo />
-        </button>
-      </div>
-      {/* Если данных нет — показываем надпись поверх графика */}
+
       {(!data || data.length === 0) && (
         <div
           style={{

@@ -1,6 +1,8 @@
 import { useTypedEffect } from "../../../hooks/useTypedEffect";
 import { useState, useEffect } from "react";
 import { FaChartLine, FaUsers, FaExchangeAlt, FaGlobe } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { isAuthenticated } from "../../../services/auth/Login";
 
 interface HeroSectionProps {
   heroVisible: boolean;
@@ -9,6 +11,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ heroVisible }: HeroSectionProps) {
+  const navigate = useNavigate();
   const [greeting, setGreeting] = useState("");
   const [platformStats, setPlatformStats] = useState({
     tradingVolume: 2400000,
@@ -16,6 +19,17 @@ export default function HeroSection({ heroVisible }: HeroSectionProps) {
     todayTrades: 1247,
     totalUsers: 25600,
   });
+
+  // Функция для обработки клика на кнопку "Начать"
+  const handleStartClick = () => {
+    if (isAuthenticated()) {
+      // Если пользователь авторизован, перенаправляем на страницу торговли
+      navigate("/trade");
+    } else {
+      // Если не авторизован, перенаправляем на страницу входа
+      navigate("/login");
+    }
+  };
 
   // Функция для получения приветствия по времени суток
   const getTimeBasedGreeting = () => {
@@ -32,7 +46,65 @@ export default function HeroSection({ heroVisible }: HeroSectionProps) {
     }
   };
 
-  // Генерация mock данных для статистики (только нужные поля)
+  // Функция для получения реальных данных с API
+  const fetchRealStats = async () => {
+    const baseStats = {
+      tradingVolume: 2400000,
+      activeTraders: 15247,
+      todayTrades: 1247,
+      totalUsers: 25600,
+    };
+
+    try {
+      // Получаем объем торгов
+      const volumeResponse = await fetch(
+        "http://wolf-street.ru/analytic-service/api/v1/total-volume?period=1d"
+      );
+      let tradingVolume = baseStats.tradingVolume;
+      if (volumeResponse.ok) {
+        const volumeData = await volumeResponse.json();
+        // Преобразуем к числу, если API возвращает строку
+        tradingVolume =
+          typeof volumeData === "number"
+            ? volumeData
+            : parseFloat(volumeData) || baseStats.tradingVolume;
+      }
+
+      // Получаем количество сделок
+      const dealsResponse = await fetch(
+        "http://wolf-street.ru/analytic-service/api/v1/total-deals?period=1d"
+      );
+      let todayTrades = baseStats.todayTrades;
+      if (dealsResponse.ok) {
+        const dealsData = await dealsResponse.json();
+        // Преобразуем к числу, если API возвращает строку
+        todayTrades =
+          typeof dealsData === "number"
+            ? dealsData
+            : parseFloat(dealsData) || baseStats.todayTrades;
+      }
+
+      // Для активных трейдеров и всего пользователей используем mock данные с небольшими вариациями
+      const tradersVariation = 0.98 + Math.random() * 0.04; // ±2%
+      const usersVariation = 1.001 + Math.random() * 0.002; // Медленный рост
+
+      return {
+        tradingVolume: Math.floor(tradingVolume),
+        activeTraders: Math.floor(baseStats.activeTraders * tradersVariation),
+        todayTrades: Math.floor(todayTrades),
+        totalUsers: Math.floor(baseStats.totalUsers * usersVariation),
+      };
+    } catch (error) {
+      console.warn(
+        "Ошибка получения статистики, используем mock данные:",
+        error
+      );
+      // Fallback к mock данным при ошибке
+      return generateMockStats();
+    }
+  };
+
+  // Генерация mock данных для fallback (оставляем как запасной вариант)
   const generateMockStats = () => {
     const baseVolume = 2400000;
     const baseTraders = 15247;
@@ -56,10 +128,10 @@ export default function HeroSection({ heroVisible }: HeroSectionProps) {
   // Форматирование чисел для отображения
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(1)}M`;
+      return `₽${(num / 1000000).toFixed(1)}M`;
     }
     if (num >= 1000) {
-      return `${(num / 1000).toFixed(0)}K`;
+      return `₽${(num / 1000).toFixed(0)}K`;
     }
     return num.toString();
   };
@@ -80,8 +152,9 @@ export default function HeroSection({ heroVisible }: HeroSectionProps) {
       setGreeting(getTimeBasedGreeting());
     };
 
-    const updateStats = () => {
-      setPlatformStats(generateMockStats());
+    const updateStats = async () => {
+      const newStats = await fetchRealStats();
+      setPlatformStats(newStats);
     };
 
     // Устанавливаем сразу
@@ -185,13 +258,15 @@ export default function HeroSection({ heroVisible }: HeroSectionProps) {
                   {/* Широкая кнопка по центру */}
                   <div className="flex flex-col items-center">
                     <button
-                      onClick={() => (window.location.href = "/login")}
+                      onClick={handleStartClick}
                       className="py-2.5 px-24 bg-light-accent dark:bg-dark-accent text-white rounded-xl font-semibold text-lg hover:opacity-90 hover:scale-105 transition-all shadow-lg"
                     >
                       Начать
                     </button>
                     <p className="text-xs text-light-fg/50 dark:text-dark-fg/50 mt-2">
-                      Войти или создать аккаунт
+                      {isAuthenticated()
+                        ? "Перейти к торговле"
+                        : "Войти или создать аккаунт"}
                     </p>
                   </div>
                 </div>
