@@ -25,8 +25,10 @@ import { getUserAvatarUrl } from '../../services/AvatarService';
 import { useNavigate } from 'react-router-dom';
 import { FaWallet, FaChartLine, FaCreditCard } from 'react-icons/fa';
 import { BiAnalyse } from 'react-icons/bi';
+import { useInstruments } from '../../hooks/useInstruments';
+import { useInstrumentProfitability } from '../../hooks/useInstrumentProfitability';
 // Локальное определение типа Instrument для аналитики
-type Instrument = {
+type InstrumentBase = {
   instrumentId: number;
   availableAmount: number;
   blockedAmount: number;
@@ -36,6 +38,8 @@ type Instrument = {
   type?: string;
   price?: number;
   iconUrl?: string;
+  ticker?: string;
+  title?: string;
 };
 
 // Мок-история операций
@@ -378,9 +382,10 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   };
 
   // --- Состояние инструментов для всего портфеля ---
-  const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [instruments, setInstruments] = useState<InstrumentBase[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const [instrumentsError, setInstrumentsError] = useState('');
+  const midPrices = useAllOrderbookSpreads(instruments.map(a => a.instrumentId));
 
   useEffect(() => {
     setInstrumentsLoading(true);
@@ -422,6 +427,17 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
       .catch(() => setBalance(0));
   }, []);
 
+  const { instruments: allInstruments } = useInstruments();
+  // Обогащаю портфельные инструменты тикером и title из справочника
+  const enrichedInstruments: InstrumentBase[] = instruments.map(a => {
+    const meta = allInstruments.find((inst: any) => inst.instrumentId === a.instrumentId);
+    return {
+      ...a,
+      ticker: meta?.ticker || a.ticker || a.symbol || String(a.instrumentId),
+      title: meta?.title || a.name || '',
+    };
+  });
+
   if (loading) return <LoaderBlock text="Загружаем профиль..." />;
   if (error) return <ErrorBlock text={error} onRetry={handleRetry} />;
   if (!user) return null;
@@ -436,18 +452,19 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
       />
       {/* Остальной контент профиля */}
       <StepperPanel onDepositClick={onGoToDeposit} rates={rates} ratesLoading={ratesLoading} ratesError={ratesError} onRatesRefresh={fetchRates}
-        instruments={instruments}
+        instruments={enrichedInstruments}
+        enrichedInstruments={enrichedInstruments}
         instrumentsLoading={instrumentsLoading}
         instrumentsError={instrumentsError}
       />
       <div className="flex flex-row gap-6 items-stretch w-full">
         <div className="max-w-[280px] min-w-[220px] w-full flex-shrink-0 mr-2 min-h-[220px] max-h-[360px] h-full flex flex-col justify-center">
-          <TradeSection instruments={instruments} balance={balance} />
+          <TradeSection instruments={enrichedInstruments as InstrumentBase[]} balance={balance} />
         </div>
         <div className="flex-1 min-w-0 flex items-stretch min-h-[220px] max-h-[360px] h-full">
           <div className="w-full h-full overflow-y-auto">
             <div className="h-full">
-              <PortfolioInstrumentsList instruments={instruments} loading={instrumentsLoading} error={instrumentsError} noMargin />
+              <PortfolioInstrumentsList instruments={enrichedInstruments as InstrumentBase[]} loading={instrumentsLoading} error={instrumentsError} noMargin />
             </div>
           </div>
         </div>
@@ -456,16 +473,14 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   );
 }
 
-function StepperPanel({
-  onDepositClick, rates, ratesLoading, ratesError, onRatesRefresh,
-  instruments, instrumentsLoading, instrumentsError
-}: {
+function StepperPanel({ onDepositClick, rates, ratesLoading, ratesError, onRatesRefresh, instruments, enrichedInstruments, instrumentsLoading, instrumentsError }: {
   onDepositClick: () => void,
   rates: { [code: string]: number },
   ratesLoading: boolean,
   ratesError: boolean,
   onRatesRefresh: () => void,
-  instruments: Instrument[],
+  instruments: InstrumentBase[],
+  enrichedInstruments: InstrumentBase[],
   instrumentsLoading: boolean,
   instrumentsError: string
 }) {
@@ -534,7 +549,7 @@ function StepperPanel({
       key: 'empty',
       title: 'Анализ портфеля',
       icon: <BiAnalyse className="text-[38px] ml-4 flex-shrink-0 text-light-accent dark:text-dark-accent" />, // цвет в палитру сайта
-      content: <div className="w-full flex flex-col items-start"><PortfolioMiniAnalytics instruments={instruments} loading={instrumentsLoading} error={instrumentsError} /></div>,
+      content: <div className="w-full flex flex-col items-start"><PortfolioMiniAnalytics instruments={enrichedInstruments} loading={instrumentsLoading} error={instrumentsError} /></div>,
     },
   ];
   if (active === 'deposit') {
@@ -677,7 +692,7 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
               top: 'center',
               z: 100,
               style: {
-                text: `₽ ${total.toLocaleString('ru-RU')}`,
+                text: `₽ ${total.toLocaleString('ru-RU', { maximumFractionDigits: 2 })}`,
                 font: 'bold 32px \'Inter\', Arial',
                 fill: theme === 'dark' ? '#fff' : '#23243a',
                 textAlign: 'center',
@@ -687,6 +702,7 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
               },
             },
           ],
+          // убираем сумму из центра
           series: [
             {
               name: 'Портфель',
@@ -735,16 +751,21 @@ export function Portfolio3DPie({ assets }: { assets: { symbol: string; name: str
 }
 
 // Аналитика портфеля на основе реальных инструментов
-function PortfolioMiniAnalytics({ instruments, loading, error }: { instruments: Instrument[], loading: boolean, error: string }) {
+export function PortfolioMiniAnalytics({ instruments, loading, error }: { instruments: InstrumentBase[], loading: boolean, error: string }) {
+  const midPrices = useAllOrderbookSpreads(instruments.map(a => a.instrumentId));
+  // Получаем тикер для каждого инструмента (если нет symbol)
+  function getTicker(a: InstrumentBase) {
+    // enrichedInstruments всегда содержит a.ticker
+    return (a as any).ticker || a.symbol || String(a.instrumentId);
+  }
   if (loading) return <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>;
   if (error) return <div className="text-red-500 dark:text-red-400">{error}</div>;
   if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
-
-  // Считаем стоимость каждого актива
+  // Считаем стоимость каждого актива по актуальному spread
   const assets = instruments.map(a => ({
-    symbol: a.symbol || String(a.instrumentId),
+    symbol: getTicker(a),
     name: a.name || '',
-    value: (a.totalAmount || 0) * (a.price || 1),
+    value: (a.totalAmount || 0) * (midPrices[a.instrumentId] || 0),
   }));
   const total = assets.reduce((sum, a) => sum + a.value, 0);
   // Сортируем по стоимости
@@ -790,8 +811,10 @@ function PortfolioMiniAnalytics({ instruments, loading, error }: { instruments: 
 }
 
 // Простой компонент для отображения списка инструментов
-import { useInstrumentProfitability } from '../../hooks/useInstrumentProfitability';
-function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { instruments: Instrument[], loading: boolean, error: string, noMargin?: boolean }) {
+export function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { instruments: InstrumentBase[], loading: boolean, error: string, noMargin?: boolean }) {
+  function getTicker(a: InstrumentBase) {
+    return a.ticker || a.symbol || String(a.instrumentId);
+  }
   if (loading) return <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>;
   if (error) return <div className="text-red-500 dark:text-red-400">{error}</div>;
   if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
@@ -805,7 +828,7 @@ function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { i
               <th className="py-2 px-3">Символ</th>
               <th className="py-2 px-3">Название</th>
               <th className="py-2 px-3">Количество</th>
-              <th className="py-2 px-3">Стоимость</th>
+              {/* <th className="py-2 px-3">Стоимость</th> */}
               <th className="py-2 px-3">Доходность</th>
             </tr>
           </thead>
@@ -814,10 +837,10 @@ function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { i
               const { data, loading, error } = useInstrumentProfitability(inst.instrumentId);
               return (
                 <tr key={inst.instrumentId} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all">
-                  <td className="py-2 px-3 font-mono font-bold text-light-accent dark:text-dark-accent">{inst.symbol || inst.instrumentId}</td>
+                  <td className="py-2 px-3 font-mono font-bold text-light-accent dark:text-dark-accent">{getTicker(inst)}</td>
                   <td className="py-2 px-3">{inst.name || '-'}</td>
                   <td className="py-2 px-3 font-mono">{inst.totalAmount}</td>
-                  <td className="py-2 px-3 font-mono">₽ {(inst.price && inst.totalAmount) ? (inst.price * inst.totalAmount).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) : '—'}</td>
+                  {/* <td className="py-2 px-3 font-mono">₽ {(inst.price && inst.totalAmount) ? (inst.price * inst.totalAmount).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) : '—'}</td> */}
                   <td className="py-2 px-3 font-mono">
                     {loading ? <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
                       : error ? <span className="text-xs text-red-500 dark:text-red-400">!</span>
@@ -832,4 +855,31 @@ function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { i
       </div>
     </div>
   );
+}
+
+// Вынесу массовый хук для получения midPrices ДО всех его использований
+function useAllOrderbookSpreads(instrumentIds: (number | string)[]) {
+  const [midPrices, setMidPrices] = React.useState<{ [id: number]: number }>({});
+  React.useEffect(() => {
+    if (!instrumentIds.length) return;
+    let cancelled = false;
+    const fetchAll = async () => {
+      const results: { [id: number]: number } = {};
+      await Promise.all(
+        instrumentIds.map(async (id) => {
+          try {
+            const res = await fetch(`http://wolf-street.ru/market-data-service/api/v1/orderbook/${id}/spread`);
+            const data = await res.json();
+            results[id as number] = (data && typeof data.midPrice === 'number') ? data.midPrice : 0;
+          } catch {
+            results[id as number] = 0;
+          }
+        })
+      );
+      if (!cancelled) setMidPrices(results);
+    };
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [instrumentIds.join(",")]);
+  return midPrices;
 } 
