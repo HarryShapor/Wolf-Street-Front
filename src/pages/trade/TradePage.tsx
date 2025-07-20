@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import CandlestickChart from "../../components/ui/CandlestickChart";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
@@ -20,6 +20,11 @@ import type { OrderBookData, Candle } from "../../services/WebSocketService";
 import { USE_WS_MOCK } from "../../services/Api";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
+import { useInstrumentImages } from "../../hooks/useInstrumentImages";
+import btcIcon from "../../image/crypto/bitcoin.svg";
+import ethIcon from "../../image/crypto/ethereum.svg";
+import usdtIcon from "../../image/crypto/usdt.svg";
+import tonIcon from "../../image/crypto/ton.svg";
 
 // Добавлено для устранения ошибки типов sockjs-client
 // @ts-ignore
@@ -259,6 +264,31 @@ function TradePage() {
   const instrumentId =
     selected && symbolToId[selected.ticker] ? symbolToId[selected.ticker] : 0;
 
+  // Загружаем иконки инструментов
+  const { images: instrumentImages, loading: loadingImages } =
+    useInstrumentImages(instruments.map((inst) => inst.instrumentId));
+
+  // Функция для получения fallback иконки
+  const getFallbackIcon = (ticker?: string): string => {
+    if (!ticker) return btcIcon;
+
+    const iconMap: Record<string, string> = {
+      BTC: btcIcon,
+      ETH: ethIcon,
+      USDT: usdtIcon,
+      TON: tonIcon,
+    };
+    return iconMap[ticker.toUpperCase()] || btcIcon;
+  };
+
+  // Получаем иконку для выбранного инструмента
+  const selectedInstrumentIcon = useMemo(() => {
+    if (!selected) return btcIcon;
+
+    const iconUrl = instrumentImages[selected.instrumentId];
+    return iconUrl || getFallbackIcon(selected.ticker);
+  }, [selected, instrumentImages]);
+
   // 1. Загружаем историю через REST
   useEffect(() => {
     if (!instrumentId || !timeframe) return;
@@ -411,13 +441,7 @@ function TradePage() {
       inst.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Используем instrumentId для стакана и графика
-  const {
-    sell: orderBookSell,
-    buy: orderBookBuy,
-    loading: loadingOrderBook,
-    error: errorOrderBook,
-  } = useOrderBook(instrumentId, 10);
+  // Используем instrumentId для графика
 
   // Подписка на агрегированный стакан через SockJS/STOMP
   const [aggregatedOrderBook, setAggregatedOrderBook] = useState<any>(null);
@@ -616,14 +640,7 @@ function TradePage() {
                 }))}
               />
               <div className="flex-1 flex flex-col justify-start">
-                <OrderBook
-                  price={0}
-                  orderBookSell={orderBookSell}
-                  orderBookBuy={orderBookBuy}
-                  loadingOrderBook={loadingOrderBook}
-                  errorOrderBook={errorOrderBook}
-                  instrumentId={instrumentId}
-                />
+                <OrderBook instrumentId={instrumentId} />
               </div>
             </div>
             {/* Центральная колонка: график */}
@@ -633,6 +650,25 @@ function TradePage() {
                 <div className="flex flex-wrap items-center gap-4 mb-2 justify-between flex-shrink-0">
                   {/* Левая часть: название, доходность, периоды доходности */}
                   <div className="flex items-center gap-3 min-w-0">
+                    {/* Иконка инструмента */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/90 dark:bg-[#23243a]/90 border-2 border-light-accent dark:border-dark-accent shadow">
+                      {loadingImages ? (
+                        <div className="w-6 h-6 rounded-full bg-light-accent/20 dark:bg-dark-accent/20 animate-pulse flex items-center justify-center">
+                          <div className="w-3 h-3 rounded-full bg-light-accent/40 dark:bg-dark-accent/40"></div>
+                        </div>
+                      ) : (
+                        <img
+                          src={selectedInstrumentIcon}
+                          alt={selected?.ticker || "Инструмент"}
+                          className="w-6 h-6 object-contain"
+                          onError={(e) => {
+                            // При ошибке загрузки иконки используем fallback
+                            const target = e.target as HTMLImageElement;
+                            target.src = getFallbackIcon(selected?.ticker);
+                          }}
+                        />
+                      )}
+                    </div>
                     <span className="text-2xl font-bold text-light-accent dark:text-dark-accent truncate">
                       {selected?.title} ({selected?.ticker})
                     </span>
@@ -650,6 +686,7 @@ function TradePage() {
                         );
                         const isUp = val > 0;
                         const isDown = val < 0;
+                        const isZero = val === 0;
                         return (
                           <span
                             className={
@@ -658,6 +695,8 @@ function TradePage() {
                                 ? "text-green-600 dark:text-green-400"
                                 : isDown
                                 ? "text-red-500 dark:text-red-400"
+                                : isZero
+                                ? "text-light-fg dark:text-dark-fg"
                                 : "")
                             }
                           >
