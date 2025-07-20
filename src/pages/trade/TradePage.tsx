@@ -572,7 +572,7 @@ function TradePage() {
 
   return (
     <>
-      <div className="min-h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden pb-4">
+      <div className="h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden">
         <Header {...headerProps} />
 
         {/* Добавляем SearchModal если нужен */}
@@ -747,16 +747,16 @@ function TradePage() {
           {/* Нижняя часть: заявки пользователя */}
           <div
             className="w-[1464px] min-w-[280px] max-w-[1800px] relative"
-            style={{ top: "-300px" }}
+            style={{ marginTop: "-300px" }}
           >
             <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40">
               <div className="h-[290px]">
-                {" "}
                 {/* Увеличиваем высоту блока заявок */}
                 <UserOrdersSection />
               </div>
             </div>
           </div>
+          <div className="h-8"></div>
         </div>
       </div>
     </>
