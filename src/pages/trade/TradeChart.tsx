@@ -4,12 +4,10 @@ import CandlestickChart from "../../components/ui/CandlestickChart";
 
 interface TradeChartProps {
   data: any[];
-  timeframe?: string;
 }
 
 const TradeChart: React.FC<TradeChartProps> = ({
   data,
-  timeframe = "1m",
 }) => (
   <Card
     className="p-0 flex flex-col bg-transparent rounded-2xl h-full"
