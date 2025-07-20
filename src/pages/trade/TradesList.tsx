@@ -11,44 +11,8 @@ interface Trade {
   time: string;
 }
 
-const mockTrades: Trade[] = [
-  { price: 118247.3, amount: 0.00253, side: "sell", time: "17:10:27" },
-  { price: 118247.3, amount: 0.00423, side: "sell", time: "17:10:27" },
-  { price: 118247.3, amount: 0.003, side: "sell", time: "17:10:27" },
-  { price: 118247.3, amount: 0.005, side: "sell", time: "17:10:27" },
-  { price: 118247.31, amount: 0.00422, side: "buy", time: "17:10:27" },
-  { price: 118247.31, amount: 0.003, side: "buy", time: "17:10:27" },
-  { price: 118247.31, amount: 0.0005, side: "buy", time: "17:10:27" },
-  { price: 118247.31, amount: 0.01713, side: "buy", time: "17:10:27" },
-  { price: 118247.69, amount: 0.00005, side: "sell", time: "17:10:27" },
-  { price: 118247.79, amount: 0.00765, side: "sell", time: "17:10:27" },
-  { price: 118247.99, amount: 0.00298, side: "sell", time: "17:10:27" },
-  { price: 118248.05, amount: 0.00169, side: "sell", time: "17:10:27" },
-  { price: 118248.0, amount: 0.00215, side: "sell", time: "17:10:27" },
-  { price: 118248.06, amount: 0.00015, side: "sell", time: "17:10:27" },
-  { price: 118248.86, amount: 0.00009, side: "sell", time: "17:10:27" },
-  { price: 118249.0, amount: 0.001, side: "buy", time: "17:10:27" },
-  { price: 118249.1, amount: 0.002, side: "buy", time: "17:10:27" },
-  { price: 118249.2, amount: 0.003, side: "buy", time: "17:10:27" },
-  { price: 118249.3, amount: 0.004, side: "buy", time: "17:10:27" },
-  { price: 118249.4, amount: 0.005, side: "buy", time: "17:10:27" },
-];
-
 const ROW_HEIGHT = 20;
 const VISIBLE_ROWS = 15; // Увеличиваем количество видимых строк
-const GRAPH_POINTS = 32;
-const GRAPH_HEIGHT = ROW_HEIGHT * (VISIBLE_ROWS + 3); // график чуть выше
-
-function genGraphData(prev: number[]): number[] {
-  return prev.map((v, i) => {
-    const delta = (Math.random() - 0.5) * 7; // амплитуда изменений увеличена
-    let next = v + delta;
-    if (i === 0) next = 50 + Math.random() * 20; // стартовая точка чуть более случайная
-    if (next < 10) next = 10;
-    if (next > 90) next = 90;
-    return next;
-  });
-}
 
 const TABS = [
   { key: "market", label: "Рынок" },
@@ -79,20 +43,6 @@ const TradesList: React.FC<TradesListProps> = ({
     loading: loadingMarket,
     error: errorMarket,
   } = useMarketDeals(instrumentId);
-
-  // График (оставляем как есть)
-  const [graph, setGraph] = useState<number[]>(() =>
-    Array.from(
-      { length: GRAPH_POINTS },
-      (_, i) => 50 + Math.sin(i / 3) * 20 + Math.random() * 5
-    )
-  );
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setGraph((prev) => genGraphData(prev));
-    }, 1500);
-    return () => clearInterval(interval);
-  }, []);
 
   // Загрузка завершённых ордеров пользователя
   useEffect(() => {
@@ -142,24 +92,51 @@ const TradesList: React.FC<TradesListProps> = ({
       .finally(() => setLoadingUser(false));
   }, [tab, portfolioId]);
 
-  const width = 320;
-  const height = GRAPH_HEIGHT;
-  const step = width / (GRAPH_POINTS - 1);
-  const graphWithEdges = [
-    height,
-    ...graph.slice(1, -1).map((y) => height - (y / 100) * height),
-    height,
-  ];
-  const path = graphWithEdges
-    .map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${y}`)
-    .join(" ");
-  const area = `${path} L${width},${height} L0,${height} Z`;
-
   // Выбор данных для текущей вкладки
   const data =
     tab === "market"
       ? marketTrades.slice(0, VISIBLE_ROWS)
       : userTrades.slice(0, VISIBLE_ROWS);
+
+  // Функция для определения цвета цены на основе изменения
+  const getPriceColor = (
+    currentPrice: number,
+    index: number,
+    trades: Trade[]
+  ) => {
+    if (index === 0) return "text-light-fg dark:text-dark-fg"; // Первая сделка - нейтральный цвет
+
+    const previousPrice = trades[index - 1]?.price;
+    if (!previousPrice) return "text-light-fg dark:text-dark-fg";
+
+    if (currentPrice > previousPrice) {
+      return "text-green-600 dark:text-green-400"; // Цена выросла - зеленый
+    } else if (currentPrice < previousPrice) {
+      return "text-red-500 dark:text-red-400"; // Цена упала - красный
+    } else {
+      return "text-light-fg dark:text-dark-fg"; // Цена не изменилась - нейтральный
+    }
+  };
+
+  // Функция для получения индикатора направления цены
+  const getPriceIndicator = (
+    currentPrice: number,
+    index: number,
+    trades: Trade[]
+  ) => {
+    if (index === 0) return ""; // Первая сделка - без индикатора
+
+    const previousPrice = trades[index - 1]?.price;
+    if (!previousPrice) return "";
+
+    if (currentPrice > previousPrice) {
+      return "↑"; // Стрелка вверх
+    } else if (currentPrice < previousPrice) {
+      return "↓"; // Стрелка вниз
+    } else {
+      return ""; // Без стрелки
+    }
+  };
 
   return (
     <div className="relative w-full h-full bg-white/30 dark:bg-dark-card/40 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl animate-fadein flex flex-col">
@@ -209,13 +186,7 @@ const TradesList: React.FC<TradesListProps> = ({
         <span className="text-right">Время</span>
       </div>
       {/* Список сделок */}
-      <div
-        className="divide-y divide-light-border/20 dark:divide-dark-border/20"
-        style={{
-          height: `${ROW_HEIGHT * VISIBLE_ROWS}px`,
-          overflowY: "hidden",
-        }}
-      >
+      <div className="divide-y divide-light-border/20 dark:divide-dark-border/20 flex-1 overflow-y-auto">
         {tab === "market" && loadingMarket ? (
           <div className="flex items-center justify-center h-full text-xs text-light-fg-secondary dark:text-dark-brown">
             Загрузка...
@@ -241,20 +212,23 @@ const TradesList: React.FC<TradesListProps> = ({
             <div
               key={`${t.time}-${t.price}-${t.amount}-${i}`}
               style={{ height: `${ROW_HEIGHT}px` }}
-              className={`grid grid-cols-3 gap-0 px-4 py-0 text-xs leading-[1.1] items-center cursor-pointer tracking-tight transition-all duration-300 ${
+              className={`grid grid-cols-3 gap-0 px-4 py-0 text-xs leading-[1.1] items-center cursor-pointer tracking-tight transition-all duration-500 ${
                 i === 0 && tab === "market"
-                  ? "bg-green-50 dark:bg-green-900/20"
+                  ? "bg-green-50 dark:bg-green-900/20 animate-pulse"
                   : ""
               }`}
             >
               <span
-                className={`text-left font-bold ${
-                  t.side === "buy"
-                    ? "text-light-success dark:text-dark-accent"
-                    : "text-red-500 dark:text-red-400"
-                }`}
+                className={`text-left font-bold ${getPriceColor(
+                  t.price,
+                  i,
+                  data
+                )}`}
               >
                 {t.price?.toLocaleString("ru-RU", { minimumFractionDigits: 2 })}
+                <span className="ml-1 text-xs">
+                  {getPriceIndicator(t.price, i, data)}
+                </span>
               </span>
               <span className="text-center text-light-fg dark:text-dark-fg font-mono">
                 {t.amount}
@@ -266,28 +240,6 @@ const TradesList: React.FC<TradesListProps> = ({
           ))
         )}
       </div>
-      {/* SVG график под таблицей */}
-      <svg
-        className="w-full z-0 pointer-events-none select-none text-light-accent/20 dark:text-dark-accent/20"
-        style={{ display: "block", marginTop: 0 }}
-        width={width}
-        height={height + 40}
-      >
-        <defs>
-          <linearGradient id="trades-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.08" />
-          </linearGradient>
-        </defs>
-        <path d={area} fill="url(#trades-bg)" />
-        <path
-          d={path}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          opacity="0.35"
-        />
-      </svg>
     </div>
   );
 };
