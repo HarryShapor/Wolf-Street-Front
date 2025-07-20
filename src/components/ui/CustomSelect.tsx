@@ -128,7 +128,7 @@ export default function CustomSelect({ value, onChange, options, label, placehol
         <ul
           ref={listRef}
           style={dropdownStyle}
-          className="bg-white dark:bg-dark-card bg-opacity-100 dark:bg-opacity-100 border border-white dark:border-dark-card rounded-xl shadow-2xl max-h-[200px] overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] text-sm py-1 font-sans"
+          className="bg-white dark:bg-dark-card bg-opacity-100 dark:bg-opacity-100 border border-white dark:border-dark-card rounded-xl shadow-2xl text-sm py-1 font-sans max-h-[180px] overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]"
           role="listbox"
         >
           {options.map((opt, i) => (

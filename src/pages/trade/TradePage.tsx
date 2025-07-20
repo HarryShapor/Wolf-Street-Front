@@ -220,7 +220,14 @@ function TradePage() {
     loading: loadingInstruments,
     error: errorInstruments,
   } = useInstruments();
-  const [selected, setSelected] = useState<Instrument | null>(null);
+  const [selected, setSelected] = useState<Instrument | null>(() => {
+    const savedTicker = localStorage.getItem('selectedInstrumentTicker');
+    if (savedTicker && instruments && instruments.length > 0) {
+      const found = instruments.find(inst => inst.ticker === savedTicker);
+      if (found) return found;
+    }
+    return null;
+  });
   const [amount, setAmount] = useState("");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [search, setSearch] = useState("");
@@ -366,6 +373,14 @@ function TradePage() {
   // Выбор первого инструмента после загрузки
   useEffect(() => {
     if (instruments.length && !selected) {
+      const savedTicker = localStorage.getItem('selectedInstrumentTicker');
+      if (savedTicker) {
+        const found = instruments.find(inst => inst.ticker === savedTicker);
+        if (found) {
+          setSelected(found);
+          return;
+        }
+      }
       setSelected(instruments[0]);
     }
   }, [instruments, selected]);
@@ -608,7 +623,10 @@ function TradePage() {
                   const found = instruments.find(
                     (inst) => inst.ticker === ticker
                   );
-                  if (found) setSelected(found);
+                  if (found) {
+                    setSelected(found);
+                    localStorage.setItem('selectedInstrumentTicker', found.ticker);
+                  }
                 }}
                 options={filtered.map((inst) => ({
                   ticker: inst.ticker,
