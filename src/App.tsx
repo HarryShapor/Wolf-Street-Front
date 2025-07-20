@@ -2,7 +2,6 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
   useLocation,
 } from "react-router-dom";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -16,8 +15,7 @@ import useAutoRefreshToken from "./hooks/useAutoRefreshToken";
 import TradePage from "./pages/trade/TradePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import DepositSection from "./pages/portfolio/DepositSection";
-import { useTheme } from "./context/ThemeContext";
-import { useEffect } from "react";
+// import { useTheme } from "./context/ThemeContext";
 import React from "react";
 
 function AuthTokenRefresher() {
@@ -182,7 +180,7 @@ const NAV = [
 ];
 
 function AppContent() {
-  const { theme, setTheme } = useTheme();
+  // const { theme } = useTheme();
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
       <TradingLineChartBackground />
@@ -198,7 +196,7 @@ function AppContent() {
         <Route
           path="/portfolio"
           element={
-            <PortfolioPage theme={theme} setTheme={setTheme} NAV={NAV} />
+            <PortfolioPage NAV={NAV} />
           }
         />
         <Route path="/instruments" element={<InstrumentsPage />} />

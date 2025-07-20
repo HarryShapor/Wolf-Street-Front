@@ -1,9 +1,8 @@
 import FormField from "../../../components/ui/FormField";
 import LoadingButton from "../../../components/ui/LoadingButton";
-import ErrorAlert from "../../../components/ui/ErrorAlert";
 import RememberMeSection from "./RememberMeSection";
 import { useLoginForm } from "../../../hooks/useLoginForm";
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 interface LoginFormProps {
   onSuccess: () => void;

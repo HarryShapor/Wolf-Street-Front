@@ -18,7 +18,7 @@ export function useScrollAnimations(
     new Array(itemsCount).fill(false)
   );
   const containerRef = useRef<HTMLDivElement>(null);
-  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const timeoutsRef = useRef<number[]>([]);
 
   useEffect(() => {
     const container = containerRef.current;

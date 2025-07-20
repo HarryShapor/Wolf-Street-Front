@@ -1,6 +1,5 @@
-import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { FaLock, FaCreditCard, FaApple, FaGoogle, FaWallet, FaArrowRight } from 'react-icons/fa';
+import { FaLock, FaCreditCard, FaApple, FaGoogle, FaWallet } from 'react-icons/fa';
 import Button from '../../components/ui/Button';
 import { API_HOST } from '../../services/Api';
 import { usePortfolioId } from '../../hooks/usePortfolioId';

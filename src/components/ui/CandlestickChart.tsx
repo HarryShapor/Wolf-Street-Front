@@ -105,7 +105,6 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
         borderColor: gridColor,
         rightOffset: 0,
         barSpacing: 14,
-        leftOffset: 0,
       },
       rightPriceScale: {
         borderColor: gridColor,
@@ -153,7 +152,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     const container = chartContainerRef.current;
     if (container) container.style.cursor = "crosshair";
 
-    let crosshairTimeout: NodeJS.Timeout;
+    let crosshairTimeout: number;
     const handleCrosshairMoveLabels = (param: any) => {
       clearTimeout(crosshairTimeout);
       crosshairTimeout = setTimeout(() => {
@@ -173,7 +172,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
             typeof candleData === "object" &&
             "close" in candleData
           ) {
-            price = candleData.close.toFixed(2);
+            price = (candleData.close as number).toFixed(2);
           }
         }
         if (param.time) {
@@ -191,7 +190,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
             time = param.time;
           }
         }
-        setCrosshair({ x, y, price, time });
+        setCrosshair({ x, y, price: Number(price), time });
       }, 16);
     };
 
@@ -299,7 +298,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
         className="rounded-2xl"
       />
 
-      {crosshair && crosshair.price !== null && (
+      {crosshair && crosshair.price !== null && crosshair.price !== 0 && data && data.length > 0 && (
         <div
           style={{
             position: "absolute",

@@ -1,9 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import CandlestickChart from "../../components/ui/CandlestickChart";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
 import Header from "../../components/header/Header";
-import CustomSelect from "../../components/ui/CustomSelect";
 import OrderBook from "./OrderBook";
 // import TradeChart from "./TradeChart";
 import TradesList from "./TradesList";
@@ -13,217 +10,30 @@ import UserOrdersSection from "./UserOrdersSection";
 import { API_HOST } from "../../services/Api";
 import { useInstruments } from "../../hooks/useInstruments";
 import type { Instrument } from "../../hooks/useInstruments";
-import InstrumentsList from "../instruments/InstrumentsList";
-import { useNavigate } from "react-router-dom";
-import { createWS } from "../../services/WebSocketService";
-import type { OrderBookData, Candle } from "../../services/WebSocketService";
-import { USE_WS_MOCK } from "../../services/Api";
-import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
 import { useInstrumentImages } from "../../hooks/useInstrumentImages";
 import btcIcon from "../../image/crypto/bitcoin.svg";
 import ethIcon from "../../image/crypto/ethereum.svg";
 import usdtIcon from "../../image/crypto/usdt.svg";
 import tonIcon from "../../image/crypto/ton.svg";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
 
 // Добавлено для устранения ошибки типов sockjs-client
 // @ts-ignore
 // eslint-disable-next-line
 declare module "sockjs-client";
 
-const initialPositions = [
-  { symbol: "BTC", amount: 0.02, entry: 60000, pnl: 1000 },
-  { symbol: "ETH", amount: 1.5, entry: 3200, pnl: 450 },
-];
-
-const mockBalance = 10000;
-// Генерируем столько заявок, сколько помещается без скролла (например, по 8)
-const mockOrderBookSell = Array.from({ length: 8 }, (_, i) => ({
-  price: 65010 - i * 3,
-  amount: +(Math.random() * 0.7 + 0.1).toFixed(2),
-}));
-const mockOrderBookBuy = Array.from({ length: 8 }, (_, i) => ({
-  price: 64995 - i * 3,
-  amount: +(Math.random() * 0.7 + 0.1).toFixed(2),
-}));
-const mockTrades = [
-  { price: 65010, amount: 0.01, side: "buy", time: "12:01:10" },
-  { price: 65008, amount: 0.02, side: "sell", time: "12:01:09" },
-  { price: 65005, amount: 0.03, side: "buy", time: "12:01:08" },
-  { price: 65000, amount: 0.01, side: "sell", time: "12:01:07" },
-  { price: 64995, amount: 0.04, side: "buy", time: "12:01:06" },
-];
-
 // Хук для получения заявок ордербука с API (bids = buy, asks = sell)
-function useOrderBook(instrumentId: number, limit: number = 8) {
-  const [sell, setSell] = useState<{ price: number; amount: number }[]>([]);
-  const [buy, setBuy] = useState<{ price: number; amount: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!instrumentId) return;
-    let ignore = false;
-    setLoading(true);
-    setError(null);
-    // WebSocket подписка на aggregated orderbook
-    const socket = new SockJS(
-      "http://wolf-street.ru/market-data-service/ws-market-data"
-    );
-    const stompClient = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 0,
-      heartbeatIncoming: 0,
-      heartbeatOutgoing: 0,
-    });
-    let subscription: any = null;
-    stompClient.onConnect = () => {
-      subscription = stompClient.subscribe(
-        `/topic/aggregated/${instrumentId}`,
-        (message) => {
-          if (ignore) return;
-          try {
-            console.log("[useOrderBook] onMessage:", message.body);
-            const data = JSON.parse(message.body);
-            // Фильтруем и преобразуем только валидные числа
-            const asks = Array.isArray(data.asks)
-              ? data.asks
-                  .map((o: any) => ({
-                    price: Number(o.price),
-                    amount: Number(o.count),
-                  }))
-                  .filter((o) => !isNaN(o.price) && !isNaN(o.amount))
-              : [];
-            const bids = Array.isArray(data.bids)
-              ? data.bids
-                  .map((o: any) => ({
-                    price: Number(o.price),
-                    amount: Number(o.count),
-                  }))
-                  .filter((o) => !isNaN(o.price) && !isNaN(o.amount))
-              : [];
-            setSell(asks);
-            setBuy(bids);
-            setLoading(false);
-          } catch (e) {
-            console.error("[useOrderBook] parse error:", e, message.body);
-            setError("Ошибка парсинга стакана");
-          }
-        }
-      );
-    };
-    stompClient.onStompError = (frame) => {
-      setError("Ошибка WebSocket стакана");
-      stompClient.forceDisconnect();
-    };
-    stompClient.activate();
-    return () => {
-      ignore = true;
-      if (subscription) subscription.unsubscribe();
-      stompClient.forceDisconnect && stompClient.forceDisconnect();
-      socket.close && socket.close();
-    };
-  }, [instrumentId, limit]);
-
-  return { sell, buy, loading, error };
-}
-
-function getWsHost() {
-  // Можно вынести в env/config
-  const apiHost = API_HOST.replace(/^http/, "ws");
-  return apiHost;
-}
-
-// Хук для получения OHLC-данных
-function useOhlcData(
-  instrumentId: number,
-  interval: string,
-  hours: number = 12,
-  useWebSocket = false
-) {
-  const [data, setData] = useState<Candle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!instrumentId || !interval) return;
-    let ignore = false;
-
-    // Очистка предыдущего соединения
-    if (wsRef.current) {
-      if (wsRef.current.close) {
-        wsRef.current.close();
-      }
-      wsRef.current = null;
-    }
-
-    if (USE_WS_MOCK) {
-      setLoading(true);
-      setError(null);
-      const ws = createWS("ohlc", instrumentId);
-      wsRef.current = ws;
-      ws.on("message", (event: any) => {
-        if (ignore) return;
-        const candles: Candle[] = JSON.parse(event.data);
-        setData(candles);
-        setLoading(false);
-      });
-      ws.on("error", () => setError("Ошибка WebSocket"));
-    } else if (useWebSocket) {
-      setLoading(true);
-      setError(null);
-      // Используем SockJS вместо WebSocket
-      const wsUrl = "http://wolf-street.ru/market-data-service/ws-market-data";
-      const ws = new SockJS(wsUrl);
-      wsRef.current = ws;
-      ws.onopen = () => setLoading(false);
-      ws.onmessage = (event: MessageEvent) => {
-        if (ignore) return;
-        try {
-          const candles: Candle[] = JSON.parse(event.data);
-          setData(candles);
-        } catch (e) {
-          setError("Ошибка парсинга данных WebSocket");
-        }
-      };
-      ws.onerror = () => setError("Ошибка WebSocket");
-    } else {
-      const to = new Date();
-      const from = new Date(to.getTime() - hours * 60 * 60 * 1000);
-      const fromISO = from.toISOString();
-      const toISO = to.toISOString();
-      setLoading(true);
-      setError(null);
-      fetch(
-        `${API_HOST}/market-data-service/api/v1/ohlc/${instrumentId}?interval=${interval}&from=${fromISO}&to=${toISO}`
-      )
-        .then((res) => {
-          if (!res.ok) throw new Error("Ошибка получения данных для графика");
-          return res.json();
-        })
-        .then(setData)
-        .catch((e) => setError(e.message))
-        .finally(() => setLoading(false));
-    }
-
-    return () => {
-      ignore = true;
-      if (wsRef.current && wsRef.current.close) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-    };
-  }, [instrumentId, interval, hours, useWebSocket]);
-
-  return { data, loading, error };
-}
+// function getWsHost() {
+//   // Можно вынести в env/config
+//   const apiHost = API_HOST.replace(/^http/, "ws");
+//   return apiHost;
+// }
 
 function TradePage() {
   const {
-    instruments,
-    loading: loadingInstruments,
-    error: errorInstruments,
+    instruments
   } = useInstruments();
   const [selected, setSelected] = useState<Instrument | null>(() => {
     const savedTicker = localStorage.getItem('selectedInstrumentTicker');
@@ -233,20 +43,13 @@ function TradePage() {
     }
     return null;
   });
-  const [amount, setAmount] = useState("");
-  const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [search, setSearch] = useState("");
   const [timeframe, setTimeframe] = useState("1h");
-  const [positions, setPositions] = useState(initialPositions);
-  const [balance] = useState(mockBalance);
-  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
-  const navigate = useNavigate();
   const [profitability, setProfitability] = useState<{
     loading: boolean;
     error: string | null;
     data: any;
   }>({ loading: false, error: null, data: null });
-  const [candles, setCandles] = useState<Candle[]>([]);
+  const [candles, setCandles] = useState<any[]>([]); // Changed type to any[]
   const [profitPeriod, setProfitPeriod] = useState<"1d" | "1w" | "1m">("1d");
 
   // Добавляем состояние для Header
@@ -260,9 +63,6 @@ function TradePage() {
   const ohlcStompClientRef = useRef<Client | null>(null);
   const ohlcSubscriptionRef = useRef<any>(null);
   const ohlcSocketRef = useRef<any>(null); // Добавляем ref для SockJS
-  const orderBookStompClientRef = useRef<Client | null>(null);
-  const orderBookSubscriptionRef = useRef<any>(null);
-  const orderBookSocketRef = useRef<any>(null); // Добавляем ref для SockJS
 
   // Для примера: сопоставим ticker -> instrumentId
   const symbolToId = Object.fromEntries(
@@ -351,7 +151,7 @@ function TradePage() {
 
       ohlcSubscriptionRef.current = stompClient.subscribe(
         `/topic/ohlc/${instrumentId}/${timeframe}`,
-        (message) => {
+        (message: any) => {
           try {
             const raw = JSON.parse(message.body);
             const newCandle = Array.isArray(raw) ? raw[raw.length - 1] : raw;
@@ -374,7 +174,7 @@ function TradePage() {
     };
 
     // Добавляем обработчик ошибок, чтобы не было висящих соединений
-    stompClient.onStompError = (frame) => {
+    stompClient.onStompError = (frame: any) => {
       console.error("[STOMP] OHLC Error:", frame);
       // Принудительно закрываем при ошибке
       if (ohlcStompClientRef.current) {
@@ -450,122 +250,6 @@ function TradePage() {
     return () => clearInterval(timer);
   }, [selected?.instrumentId, profitPeriod]);
 
-  const filtered = instruments.filter(
-    (inst) =>
-      inst.ticker.toLowerCase().includes(search.toLowerCase()) ||
-      inst.title.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Используем instrumentId для графика
-
-  // Подписка на агрегированный стакан через SockJS/STOMP
-  const [aggregatedOrderBook, setAggregatedOrderBook] = useState<any>(null);
-  useEffect(() => {
-    if (!instrumentId) return;
-
-    // Очистка предыдущего соединения
-    if (orderBookSubscriptionRef.current) {
-      orderBookSubscriptionRef.current.unsubscribe();
-      orderBookSubscriptionRef.current = null;
-    }
-    if (orderBookStompClientRef.current) {
-      orderBookStompClientRef.current.deactivate();
-      orderBookStompClientRef.current = null;
-    }
-    if (orderBookSocketRef.current) {
-      orderBookSocketRef.current.close();
-      orderBookSocketRef.current = null;
-    }
-
-    console.log(
-      `[STOMP] Opening SockJS WebSocket for AGGREGATED ORDERBOOK: instrumentId=${instrumentId}`
-    );
-    const socket = new SockJS(
-      "http://wolf-street.ru/market-data-service/ws-market-data"
-    );
-    orderBookSocketRef.current = socket;
-
-    const stompClient = new Client({
-      webSocketFactory: () => socket,
-      debug: (str) => {},
-      reconnectDelay: 0, // Отключаем автоматическое переподключение
-      heartbeatIncoming: 0,
-      heartbeatOutgoing: 0,
-    });
-
-    orderBookStompClientRef.current = stompClient;
-
-    stompClient.onConnect = () => {
-      if (orderBookStompClientRef.current !== stompClient) return;
-
-      orderBookSubscriptionRef.current = stompClient.subscribe(
-        `/topic/aggregated/${instrumentId}`,
-        (message) => {
-          try {
-            const data = JSON.parse(message.body);
-            setAggregatedOrderBook(data);
-            console.log("[STOMP] AGGREGATED ORDERBOOK update:", data);
-          } catch {}
-        }
-      );
-    };
-
-    stompClient.onStompError = (frame) => {
-      console.error(
-        "[STOMP] Error (aggregated):",
-        frame.headers["message"],
-        frame.body
-      );
-      // Принудительно закрываем при ошибке
-      if (orderBookStompClientRef.current) {
-        orderBookStompClientRef.current.forceDisconnect();
-      }
-    };
-
-    stompClient.activate();
-
-    return () => {
-      if (orderBookSubscriptionRef.current) {
-        orderBookSubscriptionRef.current.unsubscribe();
-        orderBookSubscriptionRef.current = null;
-      }
-      if (orderBookStompClientRef.current) {
-        orderBookStompClientRef.current.forceDisconnect(); // Используем forceDisconnect
-        orderBookStompClientRef.current = null;
-      }
-      if (orderBookSocketRef.current) {
-        orderBookSocketRef.current.close();
-        orderBookSocketRef.current = null;
-      }
-    };
-  }, [instrumentId]);
-
-  // Очистка всех соединений при размонтировании компонента
-  useEffect(() => {
-    return () => {
-      // Агрессивная очистка всех соединений
-      if (ohlcSubscriptionRef.current) {
-        ohlcSubscriptionRef.current.unsubscribe();
-      }
-      if (ohlcStompClientRef.current) {
-        ohlcStompClientRef.current.forceDisconnect();
-      }
-      if (ohlcSocketRef.current) {
-        ohlcSocketRef.current.close();
-      }
-
-      if (orderBookSubscriptionRef.current) {
-        orderBookSubscriptionRef.current.unsubscribe();
-      }
-      if (orderBookStompClientRef.current) {
-        orderBookStompClientRef.current.forceDisconnect();
-      }
-      if (orderBookSocketRef.current) {
-        orderBookSocketRef.current.close();
-      }
-    };
-  }, []);
-
   // Исправляем headerProps с реальными функциями
   const headerProps = {
     scrolled: false,
@@ -577,32 +261,16 @@ function TradePage() {
     searchOpen: searchOpen,
   };
 
-  function handleAllClick() {
-    setAmount((balance / 1).toFixed(6)); // price неизвестен, ставим 1
-  }
-
-  function handleTrade(e: React.FormEvent) {
-    e.preventDefault();
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0 || !selected)
-      return;
-    setPositions((prev) => [
-      ...prev,
-      {
-        symbol: selected.ticker,
-        amount: Number(amount),
-        entry: 0, // price неизвестен
-        pnl: 0,
-      },
-    ]);
-    setAmount("");
-  }
+  // function handleAllClick() {
+  //   setAmount((balance / 1).toFixed(6)); // price неизвестен, ставим 1
+  // }
 
   // Фильтры для правой колонки
-  const [marketFilter, setMarketFilter] = useState("USDT");
-  const marketTabs = ["USDT", "FDUSD", "BNB"];
-  const filteredInstruments = instruments.filter((inst) =>
-    inst.ticker.endsWith(marketFilter)
-  );
+  // const [marketFilter, setMarketFilter] = useState("USDT");
+  // const marketTabs = ["USDT", "FDUSD", "BNB"];
+  // const filteredInstruments = instruments.filter((inst) =>
+  //   inst.ticker.endsWith(marketFilter)
+  // );
 
   // Перед рендером графика логируем итоговые данные
   console.log("CandlestickChart data:", candles);
@@ -652,7 +320,7 @@ function TradePage() {
                     localStorage.setItem('selectedInstrumentTicker', found.ticker);
                   }
                 }}
-                options={filtered.map((inst) => ({
+                options={instruments.map((inst) => ({
                   ticker: inst.ticker,
                   title: inst.title,
                 }))}

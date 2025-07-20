@@ -24,7 +24,7 @@ export function useTypedEffect({
   const [isTyping, setIsTyping] = useState(true);
   const [showCursorState, setShowCursorState] = useState(showCursor);
   const currentIndexRef = useRef(0);
-  const timeoutRef = useRef<number>();
+  const timeoutRef = useRef<number | null>(null);
   const hasStarted = useRef(false);
 
   useEffect(() => {

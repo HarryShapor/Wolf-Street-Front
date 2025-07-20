@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthFormHeader from "./components/AuthFormHeader";
 import AuthFormFooter from "./components/AuthFormFooter";
 import RegisterForm from "./components/RegisterForm";
-import AuthSuccessMessage from "../../components/ui/AuthSuccessMessage";
 import ToastModal from '../trade/ToastModal';
 
 const RegisterPage: React.FC = () => {

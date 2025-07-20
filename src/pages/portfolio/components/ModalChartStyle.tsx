@@ -530,7 +530,7 @@ function ModernColorPicker({ color, onChange, onClose }: {
   );
 }
 
-const ModalChartStyle: React.FC<ModalChartStyleProps> = ({ open, onClose, palette, current, onConfirm }) => {
+const ModalChartStyle: React.FC<ModalChartStyleProps> = ({ open, onClose, current, onConfirm }) => {
   const [selected, setSelected] = useState(current);
   const [custom, setCustom] = useState(false);
   const [showPicker, setShowPicker] = useState<'up' | 'down' | null>(null);

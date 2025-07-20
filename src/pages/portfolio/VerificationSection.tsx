@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { FaShieldAlt, FaExclamationTriangle, FaUserCheck, FaKey, FaListUl, FaLock, FaUserSecret, FaUserFriends, FaLink, FaCode, FaMobileAlt, FaPowerOff, FaTrashAlt, FaChevronRight } from 'react-icons/fa';
 import { LoaderBlock } from '../../components/ui/LoadingButton';
-import { API_HOST } from '../../services/Api';
 
 const steps = [
   { label: 'Двухфакторная аутентификация (2FA)', icon: <FaKey />, enabled: false },
@@ -9,54 +8,6 @@ const steps = [
   { label: 'Антифишинговый код', icon: <FaUserSecret />, enabled: false },
   { label: 'Белый список для вывода средств', icon: <FaListUl />, enabled: false },
 ];
-
-// Получение инструментов пользователя
-function UserInstrumentsBlock() {
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState('');
-  const [instruments, setInstruments] = React.useState<any[]>([]);
-
-  React.useEffect(() => {
-    setLoading(true);
-    setError('');
-    // fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
-    fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-    })
-      .then(async res => {
-        if (res.status === 401) throw new Error('Пользователь не авторизован!');
-        if (res.status === 404) throw new Error('Портфель пользователя не найден!');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setInstruments(data);
-        else setInstruments([]);
-      })
-      .catch(err => setError(err.message || 'Ошибка загрузки инструментов'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div className="mt-10 p-3 rounded-2xl bg-light-card/80 dark:bg-dark-card/80 border border-light-border/30 dark:border-dark-border/30 shadow">
-      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-2 pl-4">Ваши инструменты</div>
-      {loading ? (
-        <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>
-      ) : error ? (
-        <div className="text-red-500 dark:text-red-400">{error}</div>
-      ) : instruments.length === 0 ? (
-        <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>
-      ) : (
-        <ul className="flex flex-wrap gap-3">
-          {instruments.map(inst => (
-            <li key={inst.instrumentId} className="px-3 py-1 rounded-lg bg-light-accent/10 dark:bg-dark-accent/10 text-light-accent dark:text-dark-accent text-[15px] font-mono border border-light-accent/20 dark:border-dark-accent/20">
-              {inst.instrumentId}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 export default function VerificationSection() {
   // Заглушка для будущей загрузки

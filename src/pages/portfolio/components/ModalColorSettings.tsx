@@ -72,14 +72,12 @@ const colorSchemes = [
 
 type ColorSchemeKey = typeof colorSchemes[number]['key'];
 
-const ModalColorSettings: React.FC<ModalColorSettingsProps> = ({ open, onClose, palette, current, onConfirm }) => {
+const ModalColorSettings: React.FC<ModalColorSettingsProps> = ({ open, onClose, current, onConfirm }) => {
   const [selected, setSelected] = useState<ColorSchemeKey>('green-red');
-  const [currentColors, setCurrentColors] = useState(getCurrentChartColors());
 
   React.useEffect(() => {
     if (open) {
       const colors = getCurrentChartColors();
-      setCurrentColors(colors);
       setSelected(getCurrentScheme(colors));
     }
   }, [open, current]);
@@ -89,7 +87,6 @@ const ModalColorSettings: React.FC<ModalColorSettingsProps> = ({ open, onClose, 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === STORAGE_KEYS.CHART_COLORS && open) {
         const colors = getCurrentChartColors();
-        setCurrentColors(colors);
         setSelected(getCurrentScheme(colors));
       }
     };

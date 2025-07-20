@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_HOST } from '../../services/Api';
 
@@ -18,7 +18,7 @@ export default function BalanceSection() {
       },
     })
       .then(res => setBalance(res.data))
-      .catch(err => setError('Не удалось загрузить баланс'))
+      .catch(() => setError('Не удалось загрузить баланс'))
       .finally(() => setLoading(false));
   }, []);
 

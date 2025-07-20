@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { useTheme } from '../../../context/ThemeContext';
 
 const TIMEZONES = [
   { value: 'last24', label: 'Последние 24 часа' },
@@ -29,7 +28,6 @@ const MODAL_HEIGHT = 320;
 
 const ModalTimezonePicker: React.FC<ModalTimezonePickerProps> = ({ open, anchorRef, current, onSelect, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
   const [pos, setPos] = useState<{ left: number; top: number; width: number }>({ left: 0, top: 0, width: MIN_WIDTH });
   const [openUp, setOpenUp] = useState(false);
 

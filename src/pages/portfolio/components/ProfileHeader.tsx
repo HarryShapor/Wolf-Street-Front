@@ -1,5 +1,4 @@
 import React from 'react';
-import clsx from 'clsx';
 import DEFAULT_AVATAR_SVG from '../../../components/ui/defaultAvatar';
 
 interface ProfileHeaderProps {

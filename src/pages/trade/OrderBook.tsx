@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import Card from "../../components/ui/Card";
@@ -7,7 +7,6 @@ interface OrderBookProps {
   instrumentId: number;
 }
 
-const ROW_HEIGHT = 28;
 const LEVELS = 10;
 
 export default function OrderBook({ instrumentId }: OrderBookProps) {
@@ -17,7 +16,7 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
   const [error, setError] = useState<string | null>(null);
   const wsClientRef = useRef<Client | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleRows, setVisibleRows] = useState(LEVELS);
+  const [visibleRows] = useState(LEVELS);
 
   // REST-запрос для инициализации стакана
   useEffect(() => {
@@ -268,10 +267,10 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
                 {typeof midPrice === "number" && !isNaN(midPrice)
                   ? <>
                       {format(midPrice)}
-                      {prevSpread !== null && spread > prevSpread && (
+                      {prevSpread !== null && spread !== null && spread > prevSpread && (
                         <span className="ml-1 text-green-500">▲</span>
                       )}
-                      {prevSpread !== null && spread < prevSpread && (
+                      {prevSpread !== null && spread !== null && spread < prevSpread && (
                         <span className="ml-1 text-red-500">▼</span>
                       )}
                     </>

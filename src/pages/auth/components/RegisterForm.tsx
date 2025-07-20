@@ -1,4 +1,3 @@
-import ErrorAlert from "../../../components/ui/ErrorAlert";
 import StepIndicator from "../../../components/ui/StepIndicator";
 import RegisterStep1 from "./RegisterStep1";
 import RegisterStep2 from "./RegisterStep2";

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { API_HOST } from "../../services/Api";
-import { usePortfolioId } from "../../hooks/usePortfolioId";
+// import { API_HOST } from "../../services/Api";
+// import { usePortfolioId } from "../../hooks/usePortfolioId";
 import { useInstruments } from "../../hooks/useInstruments";
 import { useMarketDeals } from "../../hooks/useMarketDeals";
 
@@ -30,7 +30,7 @@ const TradesList: React.FC<TradesListProps> = ({
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [loadingUser, setLoadingUser] = useState(false);
   const [errorUser, setErrorUser] = useState<string | null>(null);
-  const portfolioId = usePortfolioId();
+  // const portfolioId = usePortfolioId();
   const { instruments } = useInstruments();
   // Используем переданный instrumentId или первый доступный инструмент
   const instrumentId =

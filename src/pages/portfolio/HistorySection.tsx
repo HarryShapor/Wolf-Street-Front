@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useState, useMemo, useEffect } from 'react';
-import axios from 'axios';
 
 import { Listbox } from '@headlessui/react';
 import { API_HOST } from '../../services/Api';

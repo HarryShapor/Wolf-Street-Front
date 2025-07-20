@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect, createContext } from 'react';
 import ModalEditProfile from './components/ModalEditProfile';
 import ModalColorSettings from './components/ModalColorSettings';
 import ModalTimezonePicker from './components/ModalTimezonePicker';
 import ModalChartStyle from './components/ModalChartStyle';
-import EditButton from './components/EditButton';
 import ProfileFieldBlock from './components/ProfileFieldBlock';
-import ProfileAvatarBlock from './components/ProfileAvatarBlock';
 import CustomSwitch from './components/CustomSwitch';
 import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
@@ -44,10 +42,6 @@ export default function SettingsPanel() {
     localStorage.setItem('timezone', tz);
   };
   const [chartColors, setChartColors] = useState({ up: '#22d3a8', down: '#f43f5e' });
-  const [emailNotif, setEmailNotif] = useState(true);
-  const [smsNotif, setSmsNotif] = useState(false);
-  const [browserNotif, setBrowserNotif] = useState(true);
-  const [customTheme, setCustomTheme] = useState(false);
   const tzBtnRef = useRef<HTMLButtonElement | null>(null);
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
@@ -151,7 +145,6 @@ export default function SettingsPanel() {
   }, [editingField]);
 
   const handleProfileSave = async (data: { nickname: string; avatar: string; avatarFile: File | null }) => {
-    let nicknameChanged = false;
     try {
       const res = await axios.get(`${API_BASE}/user/me`, {
         headers: {
@@ -159,7 +152,7 @@ export default function SettingsPanel() {
         },
       });
       if (res.data.username && res.data.username !== nickname) {
-        nicknameChanged = true;
+        // nicknameChanged = true; // УДАЛЕНО!
       }
       setNickname(res.data.username || '');
       setEmail(res.data.email || '');
@@ -242,38 +235,6 @@ export default function SettingsPanel() {
       }
       setModalTitle('Ошибка');
       setModalMessage(msg);
-      setModalOpen(true);
-    }
-  };
-
-  // Универсальный обработчик сохранения поля профиля
-  const handleProfileFieldSave = async (field: string, value: string) => {
-    // Формируем новое состояние
-    const updated = {
-      username: field === 'username' ? value : nickname,
-      email: field === 'email' ? value : email,
-      phone: field === 'phone' ? value : phone,
-      firstname: field === 'firstname' ? value : firstname,
-      lastname: field === 'lastname' ? value : lastname,
-    };
-    try {
-      await axios.put(`${API_BASE}/user/me`, updated, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-      setNickname(updated.username);
-      setEmail(updated.email);
-      setPhone(updated.phone);
-      setFirstname(updated.firstname);
-      setLastname(updated.lastname);
-      setModalTitle('Профиль обновлён');
-      setModalMessage('Данные успешно сохранены.');
-      setModalOpen(true);
-      setEditingField(null);
-    } catch (err) {
-      setModalTitle('Ошибка');
-      setModalMessage('Не удалось сохранить изменения.');
       setModalOpen(true);
     }
   };
@@ -599,7 +560,7 @@ export default function SettingsPanel() {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="text-[16px] font-semibold text-light-fg dark:text-dark-fg">Настройка стиля</div>
-              <div className="text-[14px] text-light-fg/80 dark:text-dark-nav-inactive">{customTheme ? <span className="text-light-accent font-semibold">Пользовательская</span> : 'Стандартная'}</div>
+              <div className="text-[14px] text-light-fg/80 dark:text-dark-nav-inactive">Стандартная</div>
             </div>
             <button
               className="bg-gradient-to-r from-light-accent/90 to-light-accent/70 dark:from-dark-accent/90 dark:to-dark-accent/70 text-white font-semibold rounded-xl px-7 py-2.5 shadow-xl border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[130px] text-center hover:scale-[1.04] hover:shadow-2xl hover:ring-2 hover:ring-light-accent/30 dark:hover:ring-dark-accent/30 focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40"

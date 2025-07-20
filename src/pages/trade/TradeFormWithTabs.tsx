@@ -68,9 +68,6 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
   const portfolioId = usePortfolioId();
   const [balance, setBalance] = useState<number>(0);
 
-  // --- курс USDT→RUB ---
-  const usdToRub = 92; // TODO: заменить на актуальный курс, если появится API
-
   // При выборе инструмента выставлять цену по умолчанию
   useEffect(() => {
     if ((instruments as InstrumentWithPrice[]).length && instrument) {
@@ -130,10 +127,6 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
   const totalRub = amount ? Number(amount) * priceRub : 0;
   const maxBuy = priceRub > 0 ? balance / priceRub : 0;
   const feeRub = totalRub ? (totalRub * 0.001).toFixed(2) : "0.00";
-
-  function handleAllClick() {
-    setAmount((10000 / priceRub).toFixed(6));
-  }
 
   function handleInstrumentChange(val: string) {
     setInstrument(val);
@@ -385,7 +378,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
           )}
           {/* Быстрые кнопки для выбора количества */}
           <div className="flex gap-1 mt-0 mb-0">
-            {[0.25, 0.5, 0.75, 1].map((percent, idx) => (
+            {[0.25, 0.5, 0.75, 1].map((percent) => (
               <button
                 key={percent}
                 type="button"

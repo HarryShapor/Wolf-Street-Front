@@ -1,7 +1,4 @@
-import React from "react";
 import InstrumentCard from "./InstrumentCard";
-import { useInstrumentImages } from '../../hooks/useInstrumentImages';
-import { useInstrumentMarketData } from '../../hooks/useInstrumentMarketData';
 import { useInstrumentsProfitability } from '../../hooks/useInstrumentProfitability';
 import type { Instrument } from '../../hooks/useInstruments';
 

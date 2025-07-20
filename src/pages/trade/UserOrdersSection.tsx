@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { API_HOST } from "../../services/Api";
 import Modal from "../../components/ui/Modal";
 import { usePortfolioId } from "../../hooks/usePortfolioId";

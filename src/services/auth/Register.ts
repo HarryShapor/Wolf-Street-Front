@@ -11,7 +11,7 @@ export const registerUser = async (
   userData: RegisterRequest
 ): Promise<void> => {
   try {
-    const response = await api.post("/auth/register", userData);
+    await api.post("/auth/register", userData);
   } catch (error: unknown) {
     handleApiError(error);
   }

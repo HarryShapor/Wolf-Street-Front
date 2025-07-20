@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import {
   FaPlus,
   FaArrowRight,
-  FaChartLine,
   FaExchangeAlt,
   FaSearch,
 } from "react-icons/fa";
@@ -11,7 +10,6 @@ import ethIcon from "../../image/crypto/ethereum.svg";
 import usdtIcon from "../../image/crypto/usdt.svg";
 import tonIcon from "../../image/crypto/ton.svg";
 import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
 import { Portfolio3DPie } from "./ProfileSection";
 import { API_HOST } from "../../services/Api";
 import { useInstruments } from "../../hooks/useInstruments";
@@ -67,123 +65,6 @@ const PIE_COLORS = [
   "from-[#10b981] to-[#059669]", // USDT — зелёный
   "from-[#38bdf8] to-[#0ea5e9]", // TON — голубой
 ];
-
-function formatNumber(n: number, max = 8) {
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: max });
-}
-
-function PieChart({
-  pie,
-  colors,
-  size = 220,
-}: {
-  pie: number[];
-  colors: string[];
-  size?: number;
-}) {
-  let startAngle = 0;
-  const r = size / 2 - 10; // padding 10px
-  const center = size / 2;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <g filter="url(#pieShadow)">
-        {pie.map((p, i) => {
-          const angle = p * 360;
-          const endAngle = startAngle + angle;
-          const x1 = center + r * Math.cos(((startAngle - 90) * Math.PI) / 180);
-          const y1 = center + r * Math.sin(((startAngle - 90) * Math.PI) / 180);
-          const x2 = center + r * Math.cos(((endAngle - 90) * Math.PI) / 180);
-          const y2 = center + r * Math.sin(((endAngle - 90) * Math.PI) / 180);
-          const large = angle > 180 ? 1 : 0;
-          const path = `M${center},${center} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`;
-          const gradId = `pie${i}`;
-          const el = (
-            <path
-              key={i}
-              d={path}
-              fill={`url(#${gradId})`}
-              stroke="#181926"
-              strokeWidth="2"
-              className="transition-all duration-300"
-            />
-          );
-          startAngle += angle;
-          return el;
-        })}
-      </g>
-      <defs>
-        {colors.map((c, i) => (
-          <linearGradient key={i} id={`pie${i}`} x1="0" y1="0" x2="1" y2="1">
-            <stop
-              offset="0%"
-              stopColor={c.split(" ")[0].replace("from-[", "").replace("]", "")}
-            />
-            <stop
-              offset="100%"
-              stopColor={c.split(" ")[1].replace("to-[", "").replace("]", "")}
-            />
-          </linearGradient>
-        ))}
-        <filter id="pieShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow
-            dx="0"
-            dy="2"
-            stdDeviation="4"
-            floodColor="#000"
-            floodOpacity="0.25"
-          />
-        </filter>
-      </defs>
-    </svg>
-  );
-}
-
-// --- Добавление и удаление инструмента (тестовые кнопки) ---
-async function addInstrument(
-  instrumentId: number,
-  onResult: (err?: string) => void
-) {
-  try {
-    const res = await fetch(
-      `${API_HOST}/portfolio-service/api/v1/portfolio/instruments`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ instrumentId }),
-      }
-    );
-    if (!res.ok) throw new Error(await res.text());
-    onResult();
-  } catch (err: any) {
-    onResult(err.message || "Ошибка добавления инструмента");
-  }
-}
-
-async function deleteInstrument(
-  instrumentId: number,
-  onResult: (err?: string) => void
-) {
-  try {
-    const res = await fetch(
-      `${API_HOST}/portfolio-service/api/v1/portfolio/instruments`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ instrumentId }),
-      }
-    );
-    if (!res.ok) throw new Error(await res.text());
-    onResult();
-  } catch (err: any) {
-    onResult(err.message || "Ошибка удаления инструмента");
-  }
-}
 
 // Функция для перевода ошибок на русский
 function getErrorMessage(err: string) {
@@ -316,6 +197,53 @@ function AssetCard({ a, loadingImages, getFallbackIcon }: { a: Instrument, loadi
   );
 }
 
+// --- Добавление и удаление инструмента (тестовые кнопки) ---
+async function addInstrument(
+  instrumentId: number,
+  onResult: (err?: string) => void
+) {
+  try {
+    const res = await fetch(
+      `${API_HOST}/portfolio-service/api/v1/portfolio/instruments`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({ instrumentId }),
+      }
+    );
+    if (!res.ok) throw new Error(await res.text());
+    onResult();
+  } catch (err: any) {
+    onResult(err.message || "Ошибка добавления инструмента");
+  }
+}
+
+async function deleteInstrument(
+  instrumentId: number,
+  onResult: (err?: string) => void
+) {
+  try {
+    const res = await fetch(
+      `${API_HOST}/portfolio-service/api/v1/portfolio/instruments`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({ instrumentId }),
+      }
+    );
+    if (!res.ok) throw new Error(await res.text());
+    onResult();
+  } catch (err: any) {
+    onResult(err.message || "Ошибка удаления инструмента");
+  }
+}
+
 export default function AssetsSection() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -342,9 +270,6 @@ export default function AssetsSection() {
 
   // Загружаем стоимости инструментов
   const [values, setValues] = useState<InstrumentValue[]>([]);
-  const [loadingValues, setLoadingValues] = useState(true);
-  const [errorValues, setErrorValues] = useState("");
-
   const { instruments: allInstruments, loading: loadingAllInstruments } =
     useInstruments();
 
@@ -443,8 +368,6 @@ export default function AssetsSection() {
       setValues([]);
       return;
     }
-    setLoadingValues(true);
-    setErrorValues("");
     fetch(`${API_HOST}/api/v1/portfolio/value`, { credentials: "include" })
       .then(async (res) => {
         if (res.status === 401) throw new Error("Пользователь не авторизован!");
@@ -455,10 +378,8 @@ export default function AssetsSection() {
       .then((data: InstrumentValue[]) => {
         setValues(Array.isArray(data) ? data : []);
       })
-      .catch((err) =>
-        setErrorValues(err.message || "Ошибка загрузки стоимости инструментов")
-      )
-      .finally(() => setLoadingValues(false));
+      .catch(() => {})
+      .finally(() => {});
   }, [instruments.map((i) => i.instrumentId).join(",")]);
 
   // Объединяем инструменты с их стоимостью
@@ -484,92 +405,10 @@ export default function AssetsSection() {
 
   // Добавление/удаление инструментов (UI)
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState("");
   const [selectedToDelete, setSelectedToDelete] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
-
-  const handleAdd = () => {
-    const testInstrumentId = Object.keys(instrumentMeta)[0]
-      ? Number(Object.keys(instrumentMeta)[0])
-      : 9007199254740991;
-    setActionLoading(true);
-    setActionError("");
-    addInstrument(testInstrumentId, (err) => {
-      if (err) {
-        setModalTitle("Ошибка");
-        let msg = err;
-        try {
-          const parsed = JSON.parse(err);
-          msg = parsed.message || parsed.error || err;
-        } catch {}
-        setModalMessage(getErrorMessage(msg));
-        setModalOpen(true);
-      }
-      setActionLoading(false);
-      // Обновить список инструментов
-      setLoading(true);
-      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      })
-        .then(async (res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setInstruments(
-              data.map((item: Instrument) => ({
-                ...item,
-                ...(instrumentMeta[item.instrumentId] || {}),
-              }))
-            );
-          }
-        })
-        .finally(() => setLoading(false));
-    });
-  };
-
-  const handleDelete = () => {
-    if (!selectedToDelete) return;
-    setActionLoading(true);
-    setActionError("");
-    deleteInstrument(selectedToDelete, (err) => {
-      if (err) {
-        setModalTitle("Ошибка");
-        let msg = err;
-        try {
-          const parsed = JSON.parse(err);
-          msg = parsed.message || parsed.error || err;
-        } catch {}
-        setModalMessage(getErrorMessage(msg));
-        setModalOpen(true);
-      }
-      setActionLoading(false);
-      // Обновить список инструментов
-      setLoading(true);
-      fetch(`${API_HOST}/portfolio-service/api/v1/portfolio/instruments`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      })
-        .then(async (res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setInstruments(
-              data.map((item: Instrument) => ({
-                ...item,
-                ...(instrumentMeta[item.instrumentId] || {}),
-              }))
-            );
-          }
-        })
-        .finally(() => setLoading(false));
-    });
-  };
-
-  // --- state for custom dropdown ---
-  const [showDropdown, setShowDropdown] = useState(false);
 
   // Автоматическое закрытие модалки через 2 секунды
   useEffect(() => {
@@ -936,7 +775,7 @@ export default function AssetsSection() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {filtered.map((a, i) => (
+                {filtered.map((a) => (
                   <AssetCard
                     key={a.instrumentId}
                     a={a}

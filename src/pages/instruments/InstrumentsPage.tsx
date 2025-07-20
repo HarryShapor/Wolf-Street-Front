@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Header from "../../components/header/Header";
-import Footer from "../../components/footer/Footer";
+import Footer from "../../components/Footer/Footer";
 import InstrumentFilters from "./InstrumentFilters";
 import InstrumentsList from "./InstrumentsList";
 import { useInstruments } from "../../hooks/useInstruments";
@@ -132,7 +132,7 @@ function FloatingCurrenciesBackground({
       <style>{`
         ${icons
           .map(
-            (icon, i) => `
+            (_, i) => `
           @keyframes floatY${i} {
             0% { 
               transform: translateY(0px) scale(1) rotate(0deg); 
@@ -162,7 +162,7 @@ export default function InstrumentsPage() {
   );
   const { images, loading: loadingImages } = useInstrumentImages(ids);
   const { prices, loading: loadingPrices } = useInstrumentMarketData(ids);
-  const { data: profitability, loading: loadingProfit } = useInstrumentsProfitability(ids, '1d');
+  const { data: profitability } = useInstrumentsProfitability(ids, '1d');
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("alpha-asc");

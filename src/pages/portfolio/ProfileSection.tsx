@@ -1,33 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
-import VerificationSection from './VerificationSection';
+import React, { useState, useEffect } from 'react';
 import DepositSection from './DepositSection';
 import TradeSection from './TradeSection';
-import BalanceSection from './BalanceSection';
 // import AssetsSection from './AssetsSection';
-import HistorySection from './HistorySection';
-import { getCurrencyRates, API_HOST } from '../../services/Api';
-import clsx from 'clsx';
 import ProfileHeader from './components/ProfileHeader';
-import Card from '../../components/ui/Card';
-import Stepper from './components/Stepper';
 import type { Step } from './components/StepTypes';
-import Button from '../../components/ui/Button';
-import axios from "axios";
-import { LoaderBlock, ErrorBlock } from '../../components/ui/LoadingButton';
-import fx from "money";
-import currencyCodes from "currency-codes";
-import { createPortal } from "react-dom";
-import ReactDOM from 'react-dom';
-import ReactECharts from 'echarts-for-react';
-import { useTheme } from '../../context/ThemeContext';
-import DEFAULT_AVATAR_SVG from '../../components/ui/defaultAvatar';
-import { getUserAvatarUrl } from '../../services/AvatarService';
-import { useNavigate } from 'react-router-dom';
-import { FaWallet, FaChartLine, FaCreditCard } from 'react-icons/fa';
+// import { useNavigate } from 'react-router-dom';
+import { FaWallet, FaCreditCard } from 'react-icons/fa';
 import { BiAnalyse } from 'react-icons/bi';
 import { useInstruments } from '../../hooks/useInstruments';
-import { useInstrumentProfitability } from '../../hooks/useInstrumentProfitability';
-import { useInstrumentsProfitability } from '../../hooks/useInstrumentProfitability';
+import { API_HOST } from '../../services/Api';
+// import currencyCodes from 'currency-codes';
+// import ReactDOM from 'react-dom';
+import DEFAULT_AVATAR_SVG from '../../components/ui/defaultAvatar';
+import axios from 'axios';
+import { getUserAvatarUrl } from '../../services/AvatarService';
+import { LoaderBlock, ErrorBlock } from '../../components/ui/LoadingButton';
+import { useTheme } from '../../context/ThemeContext';
+import ReactECharts from 'echarts-for-react';
 // Локальное определение типа Instrument для аналитики
 type InstrumentBase = {
   instrumentId: number;
@@ -44,240 +33,233 @@ type InstrumentBase = {
 };
 
 // Мок-история операций
-const mockHistory = [
-  { date: '2024-06-01', asset: 'BTC', action: 'Покупка', amount: '+0.05 BTC', value: '+325 000 ₽', status: 'Успешно' },
-  { date: '2024-05-28', asset: 'ETH', action: 'Продажа', amount: '-1.2 ETH', value: '-384 000 ₽', status: 'Успешно' },
-  { date: '2024-05-20', asset: 'USDT', action: 'Пополнение', amount: '+500 USDT', value: '+46 000 ₽', status: 'Успешно' },
-  { date: '2024-05-15', asset: 'TON', action: 'Вывод', amount: '-50 TON', value: '-10 500 ₽', status: 'В обработке' },
-];
+// const mockHistory = [
+//   { date: '2024-06-01', asset: 'BTC', action: 'Покупка', amount: '+0.05 BTC', value: '+325 000 ₽', status: 'Успешно' },
+//   { date: '2024-05-28', asset: 'ETH', action: 'Продажа', amount: '-1.2 ETH', value: '-384 000 ₽', status: 'Успешно' },
+//   { date: '2024-05-20', asset: 'USDT', action: 'Пополнение', amount: '+500 USDT', value: '+46 000 ₽', status: 'Успешно' },
+//   { date: '2024-05-15', asset: 'TON', action: 'Вывод', amount: '-50 TON', value: '-10 500 ₽', status: 'В обработке' },
+// ];
 
 const STEPS: Step[] = [
   { key: 'wallet', label: 'Актуальный кошелёк' },
   { key: 'empty', label: 'Анализ' },
 ];
 
-function OperationHistoryBlock({ compact = false, maxRows }: { compact?: boolean, maxRows?: number }) {
-  const rows = maxRows ? mockHistory.slice(0, maxRows) : (compact ? mockHistory.slice(0, 3) : mockHistory);
-  return (
-    <div className="flex flex-col min-w-0">
-      <table className="min-w-full text-left">
-        <thead>
-          <tr className="text-[15px] text-light-fg/80 dark:text-dark-brown font-semibold">
-            <th className="py-2 px-3">Дата</th>
-            <th className="py-2 px-3">Актив</th>
-            <th className="py-2 px-3">Действие</th>
-            <th className="py-2 px-3">Сумма</th>
-            <th className="py-2 px-3">Статус</th>
-            <th className="py-2 px-3">В рублях</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((op, i) => (
-            <tr key={i} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all group">
-              <td className="py-2 px-3 whitespace-nowrap font-mono">{op.date}</td>
-              <td className="py-2 px-3 font-semibold">{op.asset}</td>
-              <td className="py-2 px-3">{op.action}</td>
-              <td className="py-2 px-3 font-mono">{op.amount}</td>
-              <td className={`py-2 px-3 font-semibold ${op.status === 'Успешно' ? 'text-green-500' : 'text-yellow-500'}`}>{op.status}</td>
-              <td className="py-2 px-3 font-mono">{op.value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+// function OperationHistoryBlock({ compact = false, maxRows }: { compact?: boolean, maxRows?: number }) {
+//   const rows = maxRows ? mockHistory.slice(0, maxRows) : (compact ? mockHistory.slice(0, 3) : mockHistory);
+//   return (
+//     <div className="flex flex-col min-w-0">
+//       <table className="min-w-full text-left">
+//         <thead>
+//           <tr className="text-[15px] text-light-fg/80 dark:text-dark-brown font-semibold">
+//             <th className="py-2 px-3">Дата</th>
+//             <th className="py-2 px-3">Актив</th>
+//             <th className="py-2 px-3">Действие</th>
+//             <th className="py-2 px-3">Сумма</th>
+//             <th className="py-2 px-3">Статус</th>
+//             <th className="py-2 px-3">В рублях</th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           {rows.map((op, i) => (
+//             <tr key={i} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all group">
+//               <td className="py-2 px-3 whitespace-nowrap font-mono">{op.date}</td>
+//               <td className="py-2 px-3 font-semibold">{op.asset}</td>
+//               <td className="py-2 px-3">{op.action}</td>
+//               <td className="py-2 px-3 font-mono">{op.amount}</td>
+//               <td className={`py-2 px-3 font-semibold ${op.status === 'Успешно' ? 'text-green-500' : 'text-yellow-500'}`}>{op.status}</td>
+//               <td className="py-2 px-3 font-mono">{op.value}</td>
+//             </tr>
+//           ))}
+//         </tbody>
+//       </table>
+//     </div>
+//   );
+// }
 
-type CurrencyRatesCardProps = {
-  rates: { [code: string]: number };
-  loading: boolean;
-  error: boolean;
-  onRefresh: () => void;
-  compact?: boolean;
-};
+// type CurrencyRatesCardProps = {
+//   rates: { [code: string]: number };
+//   loading: boolean;
+//   error: boolean;
+//   onRefresh: () => void;
+//   compact?: boolean;
+// };
 
-function CurrencyRatesCard({ rates, loading, error, onRefresh, compact = false }: CurrencyRatesCardProps) {
-  const [search, setSearch] = React.useState("");
-  const [allCodes, setAllCodes] = React.useState<string[]>([]);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-  const [showDropdown, setShowDropdown] = React.useState(false);
-  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0, width: 0 });
+// function CurrencyRatesCard({ rates, loading, error, onRefresh, compact = false }: CurrencyRatesCardProps) {
+//   const [search, setSearch] = React.useState("");
+//   const [allCodes, setAllCodes] = React.useState<string[]>([]);
+//   const inputRef = React.useRef<HTMLInputElement>(null);
+//   const dropdownRef = React.useRef<HTMLDivElement>(null);
+//   const [showDropdown, setShowDropdown] = React.useState(false);
+//   const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0, width: 0 });
 
-  // Топ-5 популярных валют
-  const popular = ["USD", "EUR", "CNY", "GBP", "JPY"];
+//   // Топ-5 популярных валют
+//   const popular = ["USD", "EUR", "CNY", "GBP", "JPY"];
 
-  // Получить название валюты по коду
-  const getCurrencyName = (code: string) => {
-    const entry = currencyCodes.code(code);
-    return entry ? entry.currency : code;
-  };
+//   // Получить название валюты по коду
+//   const getCurrencyName = (code: string) => {
+//     const entry = currencyCodes.code(code);
+//     return entry ? entry.currency : code;
+//   };
 
-  React.useEffect(() => {
-    setAllCodes(rates ? Object.keys(rates) : []);
-  }, [rates]);
+//   React.useEffect(() => {
+//     setAllCodes(rates ? Object.keys(rates) : []);
+//   }, [rates]);
 
-  // Функция для обновления позиции dropdown
-  const updateDropdownPos = React.useCallback(() => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, []);
+//   // Функция для обновления позиции dropdown
+//   const updateDropdownPos = React.useCallback(() => {
+//     if (inputRef.current) {
+//       const rect = inputRef.current.getBoundingClientRect();
+//       setDropdownPos({
+//         top: rect.bottom + window.scrollY,
+//         left: rect.left + window.scrollX,
+//         width: rect.width,
+//       });
+//     }
+//   }, []);
 
-  // Открытие dropdown и обновление позиции
-  const openDropdown = () => {
-    setShowDropdown(true);
-    setTimeout(updateDropdownPos, 0);
-  };
+//   // Открытие dropdown и обновление позиции
+//   const openDropdown = () => {
+//     setShowDropdown(true);
+//     setTimeout(updateDropdownPos, 0);
+//   };
 
-  // Обновлять позицию при ресайзе/скролле
-  React.useEffect(() => {
-    if (!showDropdown) return;
-    updateDropdownPos();
-    const handle = () => updateDropdownPos();
-    window.addEventListener('resize', handle);
-    window.addEventListener('scroll', handle, true);
-    return () => {
-      window.removeEventListener('resize', handle);
-      window.removeEventListener('scroll', handle, true);
-    };
-  }, [showDropdown, updateDropdownPos]);
+//   // Обновлять позицию при ресайзе/скролле
+//   React.useEffect(() => {
+//     if (!showDropdown) return;
+//     updateDropdownPos();
+//     const handle = () => updateDropdownPos();
+//     window.addEventListener('resize', handle);
+//     window.addEventListener('scroll', handle, true);
+//     return () => {
+//       window.removeEventListener('resize', handle);
+//       window.removeEventListener('scroll', handle, true);
+//     };
+//   }, [showDropdown, updateDropdownPos]);
 
-  // Закрытие по клику вне и по Esc
-  React.useEffect(() => {
-    if (!showDropdown) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        inputRef.current && !inputRef.current.contains(event.target as Node) &&
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-      }
-    }
-    function handleEsc(event: KeyboardEvent) {
-      if (event.key === 'Escape') setShowDropdown(false);
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEsc);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [showDropdown]);
+//   // Закрытие по клику вне и по Esc
+//   React.useEffect(() => {
+//     if (!showDropdown) return;
+//     function handleClickOutside(event: MouseEvent) {
+//       if (
+//         inputRef.current && !inputRef.current.contains(event.target as Node) &&
+//         dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
+//       ) {
+//         setShowDropdown(false);
+//       }
+//     }
+//     function handleEsc(event: KeyboardEvent) {
+//       if (event.key === 'Escape') setShowDropdown(false);
+//     }
+//     document.addEventListener('mousedown', handleClickOutside);
+//     document.addEventListener('keydown', handleEsc);
+//     return () => {
+//       document.removeEventListener('mousedown', handleClickOutside);
+//       document.removeEventListener('keydown', handleEsc);
+//     };
+//   }, [showDropdown]);
 
-  // Фильтрация по поиску (по коду и названию)
-  const filtered = React.useMemo(() => {
-    if (!search) return [];
-    const s = search.trim().toUpperCase();
-    return allCodes.filter(code => {
-      const name = getCurrencyName(code).toUpperCase();
-      return code.includes(s) || name.includes(s);
-    });
-  }, [search, allCodes]);
+//   // Фильтрация по поиску (по коду и названию)
+//   const filtered = React.useMemo(() => {
+//     if (!search) return [];
+//     const s = search.trim().toUpperCase();
+//     return allCodes.filter(code => {
+//       const name = getCurrencyName(code).toUpperCase();
+//       return code.includes(s) || name.includes(s);
+//     });
+//   }, [search, allCodes]);
 
-  // Функция для получения курса X/RUB
-  const getRateToRUB = (code: string) => {
-    if (!rates[code] || !rates["RUB"]) return "-";
-    return (rates["RUB"] / rates[code]).toFixed(4);
-  };
+//   // Функция для получения курса X/RUB
+//   const getRateToRUB = (code: string) => {
+//     if (!rates[code] || !rates["RUB"]) return "-";
+//     return (rates["RUB"] / rates[code]).toFixed(4);
+//   };
 
-  // Полный режим
-  return (
-    <div className="flex flex-col min-w-[260px] max-w-sm w-full p-2.5 bg-white dark:bg-dark-card rounded-xl shadow-lg border border-light-border dark:border-dark-border">
-      {/* <div className="text-[20px] font-bold mb-3 text-light-accent dark:text-dark-accent">Курс валют</div> */}
-      {loading ? (
-        <div className="text-light-fg/80 dark:text-dark-brown text-[15px] my-3">Загрузка...</div>
-      ) : error ? (
-        <div className="text-red-500 text-[15px] my-3 flex items-center gap-2">Ошибка загрузки <button onClick={onRefresh} className="ml-2 text-xs underline">Повторить</button></div>
-      ) : (
-        <div className="flex flex-col md:flex-row gap-4 w-full">
-          {/* Левая колонка: топ-5 валют */}
-          <div className="flex-1 flex flex-col gap-1 justify-start">
-            {popular.map(code => (
-              <div key={code} className="flex items-center gap-2 text-[15px] font-semibold text-light-fg dark:text-dark-fg">
-                <span className="min-w-[60px]">{code}</span>
-                <span className="text-light-accent dark:text-dark-accent font-bold">{getRateToRUB(code)}</span>
-                <span className="text-light-fg/60 dark:text-dark-brown text-xs ml-2">{getCurrencyName(code)}</span>
-              </div>
-            ))}
-          </div>
-          {/* Правая колонка: поиск и результаты */}
-          <div className="flex-1 flex flex-col gap-1 justify-start">
-            <div className="w-full">
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Поиск по коду или названию валюты (например, USD, евро)"
-                value={search}
-                onFocus={openDropdown}
-                onChange={e => {
-                  setSearch(e.target.value);
-                  openDropdown();
-                }}
-                className="w-full px-2 py-1 rounded border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:outline-none focus:ring-2 focus:ring-light-accent/30 dark:focus:ring-dark-accent/30 text-[14px]"
-              />
-              {search && showDropdown && ReactDOM.createPortal(
-                <div
-                  ref={dropdownRef}
-                  style={{
-                    position: 'absolute',
-                    top: dropdownPos.top,
-                    left: dropdownPos.left,
-                    width: dropdownPos.width,
-                    minWidth: 260,
-                    zIndex: 9999,
-                  }}
-                  className="currency-dropdown-scrollbar bg-white dark:bg-dark-bg border border-light-border dark:border-dark-border rounded shadow-lg max-h-72 overflow-y-auto transition-all duration-150 overflow-x-hidden"
-                >
-                  {filtered.length === 0 ? (
-                    <div className="text-light-fg/60 dark:text-dark-brown text-[13px] px-3 py-2">Валюта не найдена</div>
-                  ) : (
-                    filtered.slice(0, 20).map(code => (
-                      <div
-                        key={code}
-                        className="flex items-center gap-1 text-[14px] text-light-fg dark:text-dark-fg px-2.5 py-1.5 hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition cursor-pointer"
-                      >
-                        <span className="min-w-[48px] mr-1">{code}</span>
-                        <span className="text-light-accent dark:text-dark-accent font-bold mr-1">{getRateToRUB(code)}</span>
-                        <span className="block w-full text-light-fg/60 dark:text-dark-brown text-xs leading-tight truncate" style={{maxWidth: '90px'}} title={getCurrencyName(code)}>
-                          {getCurrencyName(code)}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>,
-                document.body
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="text-light-fg/80 dark:text-dark-brown text-[13px] mt-2">Курс за 1 единицу валюты</div>
-    </div>
-  );
-}
+//   // Полный режим
+//   return (
+//     <div className="flex flex-col min-w-[260px] max-w-sm w-full p-2.5 bg-white dark:bg-dark-card rounded-xl shadow-lg border border-light-border dark:border-dark-border">
+//       {/* <div className="text-[20px] font-bold mb-3 text-light-accent dark:text-dark-accent">Курс валют</div> */}
+//       {loading ? (
+//         <div className="text-light-fg/80 dark:text-dark-brown text-[15px] my-3">Загрузка...</div>
+//       ) : error ? (
+//         <div className="text-red-500 text-[15px] my-3 flex items-center gap-2">Ошибка загрузки <button onClick={onRefresh} className="ml-2 text-xs underline">Повторить</button></div>
+//       ) : (
+//         <div className="flex flex-col md:flex-row gap-4 w-full">
+//           {/* Левая колонка: топ-5 валют */}
+//           <div className="flex-1 flex flex-col gap-1 justify-start">
+//             {popular.map(code => (
+//               <div key={code} className="flex items-center gap-2 text-[15px] font-semibold text-light-fg dark:text-dark-fg">
+//                 <span className="min-w-[60px]">{code}</span>
+//                 <span className="text-light-accent dark:text-dark-accent font-bold">{getRateToRUB(code)}</span>
+//                 <span className="text-light-fg/60 dark:text-dark-brown text-xs ml-2">{getCurrencyName(code)}</span>
+//               </div>
+//             ))}
+//           </div>
+//           {/* Правая колонка: поиск и результаты */}
+//           <div className="flex-1 flex flex-col gap-1 justify-start">
+//             <div className="w-full">
+//               <input
+//                 ref={inputRef}
+//                 type="text"
+//                 placeholder="Поиск по коду или названию валюты (например, USD, евро)"
+//                 value={search}
+//                 onFocus={openDropdown}
+//                 onChange={e => {
+//                   setSearch(e.target.value);
+//                   openDropdown();
+//                 }}
+//                 className="w-full px-2 py-1 rounded border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:outline-none focus:ring-2 focus:ring-light-accent/30 dark:focus:ring-dark-accent/30 text-[14px]"
+//               />
+//               {search && showDropdown && ReactDOM.createPortal(
+//                 <div
+//                   ref={dropdownRef}
+//                   style={{
+//                     position: 'absolute',
+//                     top: dropdownPos.top,
+//                     left: dropdownPos.left,
+//                     width: dropdownPos.width,
+//                     minWidth: 260,
+//                     zIndex: 9999,
+//                   }}
+//                   className="currency-dropdown-scrollbar bg-white dark:bg-dark-bg border border-light-border dark:border-dark-border rounded shadow-lg max-h-72 overflow-y-auto transition-all duration-150 overflow-x-hidden"
+//                 >
+//                   {filtered.length === 0 ? (
+//                     <div className="text-light-fg/60 dark:text-dark-brown text-[13px] px-3 py-2">Валюта не найдена</div>
+//                   ) : (
+//                     filtered.slice(0, 20).map(code => (
+//                       <div
+//                         key={code}
+//                         className="flex items-center gap-1 text-[14px] text-light-fg dark:text-dark-fg px-2.5 py-1.5 hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition cursor-pointer"
+//                       >
+//                         <span className="min-w-[48px] mr-1">{code}</span>
+//                         <span className="text-light-accent dark:text-dark-accent font-bold mr-1">{getRateToRUB(code)}</span>
+//                         <span className="block w-full text-light-fg/60 dark:text-dark-brown text-xs leading-tight truncate" style={{maxWidth: '90px'}} title={getCurrencyName(code)}>
+//                           {getCurrencyName(code)}
+//                         </span>
+//                       </div>
+//                     ))
+//                   )}
+//                 </div>,
+//                 document.body
+//               )}
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//       <div className="text-light-fg/80 dark:text-dark-brown text-[13px] mt-2">Курс за 1 единицу валюты</div>
+//     </div>
+//   );
+// }
 
 const API_BASE = `${API_HOST}/user-service/api/v1`;
 
 export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () => void }) {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   // Все хуки должны быть до любых return/if!
-  const [user, setUser] = useState<{ email: string; phone: string; username: string } | null>(null);
-  const [status, setStatus] = useState<'Обычный' | 'VIP'>('Обычный');
+  const [user, setUser] = useState<{ email: string; phone: string; username: string; status: 'VIP' | 'Обычный' } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(DEFAULT_AVATAR_SVG);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    phone: '',
-  });
 
 
 
@@ -310,7 +292,12 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         });
-        setUser(res.data);
+        setUser({
+          email: res.data.email,
+          phone: res.data.phone,
+          username: res.data.username,
+          status: res.data.status === 'VIP' ? 'VIP' : 'Обычный',
+        });
       } catch (err) {
         setError("Не удалось загрузить данные пользователя");
       } finally {
@@ -322,11 +309,11 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
 
   useEffect(() => {
     if (user) {
-      setForm({
-        username: user.username || '',
-        email: user.email || '',
-        phone: user.phone || '',
-      });
+      // setForm({
+      //   username: user.username || '',
+      //   email: user.email || '',
+      //   phone: user.phone || '',
+      // });
     }
   }, [user]);
 
@@ -349,7 +336,12 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         });
-        setUser(res.data);
+        setUser({
+          email: res.data.email,
+          phone: res.data.phone,
+          username: res.data.username,
+          status: res.data.status === 'VIP' ? 'VIP' : 'Обычный',
+        });
         // ---
         // Фейковые данные:
         // setUser({
@@ -366,23 +358,21 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   };
 
   // Функции для массового редактирования
-  const handleFieldChange = (field: keyof typeof form, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-  const handleSave = async () => {
-    // TODO: добавить валидацию и отправку запроса
-    setEditing(false);
-  };
-  const handleCancel = () => {
-    if (user) {
-      setForm({
-        username: user.username || '',
-        email: user.email || '',
-        phone: user.phone || '',
-      });
-    }
-    setEditing(false);
-  };
+  // const handleFieldChange = (field: keyof typeof form, value: string) => {
+  //   setForm(prev => ({ ...prev, [field]: value }));
+  // };
+  // const handleSave = async () => {
+  //   // TODO: добавить валидацию и отправку запроса
+  // };
+  // const handleCancel = () => {
+  //   if (user) {
+  //     setForm({
+  //       username: user.username || '',
+  //       email: user.email || '',
+  //       phone: user.phone || '',
+  //     });
+  //   }
+  // };
 
 
 
@@ -390,7 +380,7 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   const [instruments, setInstruments] = useState<InstrumentBase[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const [instrumentsError, setInstrumentsError] = useState('');
-  const midPrices = useAllOrderbookSpreads(instruments.map(a => a.instrumentId));
+  // const midPrices = useAllOrderbookSpreads(instruments.map(a => a.instrumentId));
 
   useEffect(() => {
     setInstrumentsLoading(true);
@@ -453,7 +443,7 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
       <ProfileHeader
         avatar={avatarUrl}
         nickname={user.username}
-        status={status}
+        status={user.status}
       />
       {/* Остальной контент профиля */}
       <StepperPanel onDepositClick={onGoToDeposit} rates={rates} ratesLoading={ratesLoading} ratesError={ratesError} onRatesRefresh={fetchRates}
@@ -485,7 +475,7 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
   );
 }
 
-function StepperPanel({ onDepositClick, rates, ratesLoading, ratesError, onRatesRefresh, instruments, enrichedInstruments, instrumentsLoading, instrumentsError }: {
+function StepperPanel({ onDepositClick, enrichedInstruments, instrumentsLoading, instrumentsError }: {
   onDepositClick: () => void,
   rates: { [code: string]: number },
   ratesLoading: boolean,

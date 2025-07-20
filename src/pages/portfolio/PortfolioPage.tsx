@@ -6,7 +6,6 @@ import SettingsPanel from './SettingsPanel';
 import VerificationSection from './VerificationSection';
 import DepositSection from './DepositSection';
 import TradeSection from './TradeSection';
-import BalanceSection from './BalanceSection';
 import AssetsSection from './AssetsSection';
 import HistorySection from './HistorySection';
 import { useNavigate } from "react-router-dom";
@@ -32,7 +31,7 @@ const MENU_LABELS = [
   'Настройки',
 ];
 
-export default function PortfolioPage({ theme, setTheme, NAV }: { theme: "dark" | "light", setTheme: (t: "dark" | "light") => void, NAV: { id: string, label: string}[] }) {
+export default function PortfolioPage({ NAV }: { NAV: { id: string, label: string}[] }) {
   const [activeMenu, setActiveMenu] = useState('Портфель');
   const SectionComponent = SECTIONS[activeMenu] || ProfileSection;
   const navigate = useNavigate();

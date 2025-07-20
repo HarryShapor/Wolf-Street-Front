@@ -7,7 +7,7 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
-const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ open, title, children }) => {
   if (!open) return null;
   return (
     <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none" style={{minWidth:220, maxWidth:380}}>

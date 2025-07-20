@@ -63,7 +63,7 @@ export function useOrderbookSpread(instrumentId: number | string | undefined) {
           }
         );
       };
-      stompClient.onStompError = (frame) => {
+      stompClient.onStompError = () => {
         setError('Ошибка WebSocket spread');
         if (stompClient) stompClient.forceDisconnect();
       };

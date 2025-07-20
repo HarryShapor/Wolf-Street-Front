@@ -95,7 +95,7 @@ export function useMarketDeals(instrumentId: number | null) {
 
     const stompClient = new Client({
       webSocketFactory: () => socket,
-      debug: (str) => {},
+      debug: () => {},
       reconnectDelay: 0,
       heartbeatIncoming: 0,
       heartbeatOutgoing: 0,

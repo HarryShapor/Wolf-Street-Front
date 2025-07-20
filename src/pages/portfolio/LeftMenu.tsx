@@ -1,5 +1,3 @@
-import React, { useState } from 'react';
-
 function LeftMenuButton({ label, onClick, active }: { label: string; onClick: () => void; active: boolean }) {
   return (
     <div

@@ -1,6 +1,5 @@
 import React from 'react';
 import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
 
 interface TradeFormProps {
   selected: { symbol: string; name: string };
@@ -26,7 +25,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ selected, amount, setAmount, side
           <div className="relative">
             <select
               value={selected.symbol}
-              onChange={e => {}}
+              onChange={() => {}}
               className="w-full appearance-none px-3 py-1.5 pr-8 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-fg dark:text-dark-fg focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent outline-none text-sm transition-all duration-150 hover:bg-light-accent/5 dark:hover:bg-dark-accent/10 cursor-pointer"
               disabled
             >
