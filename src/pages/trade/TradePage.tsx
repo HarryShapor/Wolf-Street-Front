@@ -43,7 +43,7 @@ function TradePage() {
     }
     return null;
   });
-  const [timeframe, setTimeframe] = useState("1h");
+  const [timeframe, setTimeframe] = useState("1m");
   const [profitability, setProfitability] = useState<{
     loading: boolean;
     error: string | null;
@@ -277,7 +277,7 @@ function TradePage() {
 
   return (
     <>
-      <div className="h-screen bg-light-bg dark:bg-dark-bg overflow-x-hidden">
+      <div className="h-screen bg-light-bg dark:bg-dark-bg overflow-hidden">
         <Header {...headerProps} />
 
         {/* Добавляем SearchModal если нужен */}

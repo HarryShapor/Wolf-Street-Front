@@ -175,8 +175,8 @@ function TradingLineChartBackground() {
 const NAV = [
   { id: "main", label: "Главная" },
   { id: "about", label: "О проекте" },
-  { id: "chart", label: "График" },
-  { id: "faq", label: "FAQ" },
+  { id: "chart", label: "FAQ" },
+  { id: "faq", label: "Контакты" },
 ];
 
 function AppContent() {
