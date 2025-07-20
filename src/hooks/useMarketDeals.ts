@@ -49,7 +49,7 @@ export function useMarketDeals(instrumentId: number | null) {
 
     // Сначала загружаем исторические данные через REST
     fetch(
-      `${API_HOST}/market-data-service/api/v1/trades/${instrumentId}?limit=20`
+      `${API_HOST}/market-data-service/api/v1/trades/${instrumentId}?limit=21`
     )
       .then(async (res) => {
         if (!res.ok) throw new Error("Ошибка загрузки исторических сделок");
@@ -57,20 +57,25 @@ export function useMarketDeals(instrumentId: number | null) {
       })
       .then((data) => {
         const historicalTrades = Array.isArray(data)
-          ? data.map((t: any) => ({
-              price: t.price || t.lotPrice,
-              amount: t.amount || t.count,
-              side: (t.side?.toLowerCase() === "buy" ? "buy" : "sell") as
-                | "buy"
-                | "sell",
-              time: new Date(
-                t.timestamp || t.time || t.createdAt
-              ).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              }),
-            }))
+          ? data.map((t: any, index: number) => {
+              // Генерируем время с небольшим смещением для каждой сделки
+              const now = new Date();
+              const timeOffset = (data.length - index - 1) * 1000; // 1 секунда между сделками
+              const tradeTime = new Date(now.getTime() - timeOffset);
+
+              return {
+                price: t.price || t.lotPrice,
+                amount: t.amount || t.count,
+                side: (t.side?.toLowerCase() === "buy" ? "buy" : "sell") as
+                  | "buy"
+                  | "sell",
+                time: tradeTime.toLocaleTimeString("ru-RU", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                }),
+              };
+            })
           : [];
         setTrades(historicalTrades);
         setLoading(false);
@@ -112,7 +117,7 @@ export function useMarketDeals(instrumentId: number | null) {
               price: deal.lotPrice,
               amount: deal.count,
               side: "buy", // По умолчанию, так как в данных нет стороны
-              time: new Date(deal.createdAt).toLocaleTimeString("ru-RU", {
+              time: new Date().toLocaleTimeString("ru-RU", {
                 hour: "2-digit",
                 minute: "2-digit",
                 second: "2-digit",
@@ -123,7 +128,7 @@ export function useMarketDeals(instrumentId: number | null) {
               // Добавляем новую сделку в начало списка
               const updated = [newTrade, ...prev];
               // Ограничиваем количество сделок
-              return updated.slice(0, 50);
+              return updated.slice(0, 21);
             });
           } catch (e) {
             console.error("[useMarketDeals] Parse error:", e, message.body);

@@ -12,7 +12,7 @@ interface Trade {
 }
 
 const ROW_HEIGHT = 20;
-const VISIBLE_ROWS = 15; // Увеличиваем количество видимых строк
+const VISIBLE_ROWS = 21;
 
 const TABS = [
   { key: "market", label: "Рынок" },
@@ -43,6 +43,17 @@ const TradesList: React.FC<TradesListProps> = ({
     loading: loadingMarket,
     error: errorMarket,
   } = useMarketDeals(instrumentId);
+
+  // Обновляем время каждую секунду для более динамичного отображения
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Загрузка завершённых ордеров пользователя
   useEffect(() => {
@@ -95,7 +106,7 @@ const TradesList: React.FC<TradesListProps> = ({
   // Выбор данных для текущей вкладки
   const data =
     tab === "market"
-      ? marketTrades.slice(0, VISIBLE_ROWS)
+      ? marketTrades.slice(0, 21)
       : userTrades.slice(0, VISIBLE_ROWS);
 
   // Функция для определения цвета цены на основе изменения
@@ -159,22 +170,27 @@ const TradesList: React.FC<TradesListProps> = ({
         <span className="flex-1" />
         {/* Индикатор WebSocket подключения для рыночных сделок */}
         {tab === "market" && (
-          <div className="flex items-center gap-1">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                loadingMarket
-                  ? "bg-yellow-500 animate-pulse"
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  loadingMarket
+                    ? "bg-yellow-500 animate-pulse"
+                    : errorMarket
+                    ? "bg-red-500"
+                    : "bg-green-500"
+                }`}
+              />
+              <span className="text-xs text-light-fg-secondary dark:text-dark-brown">
+                {loadingMarket
+                  ? "Подключение..."
                   : errorMarket
-                  ? "bg-red-500"
-                  : "bg-green-500"
-              }`}
-            />
+                  ? "Ошибка"
+                  : "Live"}
+              </span>
+            </div>
             <span className="text-xs text-light-fg-secondary dark:text-dark-brown">
-              {loadingMarket
-                ? "Подключение..."
-                : errorMarket
-                ? "Ошибка"
-                : "Live"}
+              {data.length} сделок
             </span>
           </div>
         )}
@@ -186,7 +202,7 @@ const TradesList: React.FC<TradesListProps> = ({
         <span className="text-right">Время</span>
       </div>
       {/* Список сделок */}
-      <div className="divide-y divide-light-border/20 dark:divide-dark-border/20 flex-1 overflow-y-auto">
+      <div className="divide-y divide-light-border/20 dark:divide-dark-border/20 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-light-accent dark:scrollbar-thumb-dark-accent scrollbar-track-transparent">
         {tab === "market" && loadingMarket ? (
           <div className="flex items-center justify-center h-full text-xs text-light-fg-secondary dark:text-dark-brown">
             Загрузка...
@@ -234,7 +250,13 @@ const TradesList: React.FC<TradesListProps> = ({
                 {t.amount}
               </span>
               <span className="text-right text-light-fg-secondary dark:text-dark-brown font-mono">
-                {t.time}
+                {i === 0 && tab === "market"
+                  ? currentTime.toLocaleTimeString("ru-RU", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })
+                  : t.time}
               </span>
             </div>
           ))
