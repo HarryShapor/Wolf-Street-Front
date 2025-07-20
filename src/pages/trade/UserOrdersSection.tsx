@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { API_HOST } from "../../services/Api";
 import Modal from "../../components/ui/Modal";
 import { usePortfolioId } from "../../hooks/usePortfolioId";
+import { useInstruments } from "../../hooks/useInstruments"; // Добавляем импорт
 
 interface Order {
   id: string | number;
@@ -18,7 +19,6 @@ const columns = [
   { key: "date", label: "Дата" },
   { key: "pair", label: "Пара" },
   { key: "type", label: "Тип" },
-  { key: "side", label: "Сторона" },
   { key: "price", label: "Цена" },
   { key: "amount", label: "Количество" },
   { key: "cancel", label: "" },
@@ -36,6 +36,7 @@ export default function UserOrdersSection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const portfolioId = usePortfolioId();
+  const { instruments } = useInstruments(); // Добавляем хук для получения инструментов
 
   // Автоматическое закрытие модалки через 2 секунды
   useEffect(() => {
@@ -195,6 +196,14 @@ export default function UserOrdersSection() {
     return 0;
   });
 
+  // Функция для получения названия инструмента по ID
+  const getInstrumentName = (instrumentId: string | number) => {
+    const instrument = instruments.find(
+      (inst) => inst.instrumentId === Number(instrumentId)
+    );
+    return instrument ? instrument.ticker : instrumentId;
+  };
+
   return (
     <div className="w-full h-full bg-white/30 dark:bg-dark-card/40 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40 rounded-2xl shadow-2xl animate-fadein flex flex-col p-0">
       <div className="flex items-center justify-between pl-4 pt-3 pb-2 border-b border-light-border/30 dark:border-dark-border/30 bg-light-bg dark:bg-dark-bg rounded-t-2xl">
@@ -302,20 +311,17 @@ export default function UserOrdersSection() {
                         );
                       })()}
                     </td>
-                    <td className="px-2 py-1 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center">
-                      {order.pair}
-                    </td>
-                    <td className="px-2 py-1 font-bold uppercase tracking-tight text-light-fg/90 dark:text-dark-fg/90 text-center">
-                      {order.type}
+                    <td className="px-2 py-1 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center text-sm font-semibold">
+                      {getInstrumentName(order.pair)}
                     </td>
                     <td
                       className={`px-2 py-1 font-bold uppercase tracking-tight text-center ${
-                        order.side === "BUY"
+                        order.type === "BUY"
                           ? "text-green-600 dark:text-green-400"
                           : "text-red-500 dark:text-red-400"
                       }`}
                     >
-                      {order.side}
+                      {order.type}
                     </td>
                     <td className="px-2 py-1 text-light-fg dark:text-dark-fg font-mono text-center">
                       {order.price}

@@ -391,8 +391,23 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
                 type="button"
                 className="flex-1 rounded-lg py-1 text-xs font-semibold border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-colors text-light-fg dark:text-dark-fg"
                 onClick={() => {
-                  const priceVal = priceRub;
-                  setAmount(((10000 * percent) / priceVal).toFixed(6));
+                  if (tab === "buy") {
+                    // Для покупки: количество = (баланс * процент) / цена
+                    if (priceRub > 0) {
+                      const calculatedAmount = (balance * percent) / priceRub;
+                      setAmount(calculatedAmount.toFixed(6));
+                    } else {
+                      setToast({
+                        open: true,
+                        message: "Укажите цену для расчета количества",
+                        type: "error",
+                      });
+                    }
+                  } else {
+                    // Для продажи: [Количество инструментов] = [Количество инструментов у пользователя] * [Выбранный процент]
+                    const calculatedAmount = availableToSell * percent;
+                    setAmount(calculatedAmount.toFixed(6));
+                  }
                 }}
               >
                 {Math.round(percent * 100)}%
@@ -457,13 +472,13 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
         `}
         </style>
       </div>
-      {/* <ToastModal
+      <ToastModal
         open={toast.open}
-        onClose={() => setToast(t => ({ ...t, open: false }))}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
         message={toast.message}
         type={toast.type}
         duration={2500}
-      /> */}
+      />
     </>
   );
 };
