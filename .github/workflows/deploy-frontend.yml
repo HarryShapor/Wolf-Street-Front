@@ -40,13 +40,15 @@ jobs:
             set -e
             cd ~/wolfstreet/frontend
 
+            # Подставляем хеш коммита в YAML
+            sed -i "s/\${{ github.sha }}/${{ github.sha }}/g" k8s-deployment.yaml
+
+            # Загружаем образ в Minikube
             eval $(minikube docker-env)
             docker load -i frontend.tar.gz
-            minikube image load frontend:${{ github.sha }}
 
-            rm frontend.tar.gz
-
+            # Применяем конфигурацию
             kubectl apply -f k8s-deployment.yaml
-            kubectl set image deployment/frontend frontend=frontend:${{ github.sha }}
             kubectl rollout status deployment/frontend --timeout=300s
             kubectl get pods
+
