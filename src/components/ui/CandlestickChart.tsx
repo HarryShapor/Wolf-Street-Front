@@ -7,6 +7,7 @@ import type {
   Time,
 } from "lightweight-charts";
 import { useTheme } from "../../context/ThemeContext";
+import { FaPlus, FaMinus, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 export type Candle = {
   time: UTCTimestamp | Time;
@@ -277,13 +278,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
   return (
     <div style={{ width: "100%", position: "relative", height: "100%" }} className="group">
       {/* Всплывающие кнопки управления графиком */}
-      <div className="absolute left-4 top-4 z-30 flex gap-2 bg-white/80 dark:bg-dark-card/80 rounded-xl shadow p-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-auto">
-        <button onClick={() => chartRef.current?.timeScale().fitContent()} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-105 transition">Сброс</button>
-        <button onClick={handleGoToLatest} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-105 transition">К последней</button>
-        <button onClick={handleZoomIn} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">+</button>
-        <button onClick={handleZoomOut} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">-</button>
-        <button onClick={handleScrollLeft} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">←</button>
-        <button onClick={handleScrollRight} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">→</button>
+      <div className="absolute left-4 top-4 z-30 flex gap-3 rounded-xl shadow-lg p-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-auto border border-light-border/40 dark:border-dark-border/40 bg-white/20 dark:bg-dark-card/10 backdrop-blur-lg">
+        <button onClick={() => chartRef.current?.timeScale().fitContent()} className="px-3 py-1.5 rounded-lg bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/60 dark:border-dark-border/60 text-light-accent dark:text-dark-accent text-sm font-bold shadow-md hover:brightness-110 hover:shadow-[0_0_8px_2px_theme('colors.light-accent')] dark:hover:shadow-[0_0_8px_2px_theme('colors.dark-accent')] transition-all duration-150 flex items-center justify-center">Сброс</button>
+        <button onClick={handleGoToLatest} className="px-3 py-1.5 rounded-lg bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/60 dark:border-dark-border/60 text-light-accent dark:text-dark-accent text-sm font-bold shadow-md hover:brightness-110 hover:shadow-[0_0_8px_2px_theme('colors.light-accent')] dark:hover:shadow-[0_0_8px_2px_theme('colors.dark-accent')] transition-all duration-150 flex items-center justify-center">К последней</button>
+        <button onClick={handleZoomIn} className="px-3 py-1.5 rounded-lg bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/60 dark:border-dark-border/60 text-light-accent dark:text-dark-accent text-lg font-bold shadow-md hover:brightness-110 hover:shadow-[0_0_8px_2px_theme('colors.light-accent')] dark:hover:shadow-[0_0_8px_2px_theme('colors.dark-accent')] transition-all duration-150 flex items-center justify-center"><FaPlus /></button>
+        <button onClick={handleZoomOut} className="px-3 py-1.5 rounded-lg bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/60 dark:border-dark-border/60 text-light-accent dark:text-dark-accent text-lg font-bold shadow-md hover:brightness-110 hover:shadow-[0_0_8px_2px_theme('colors.light-accent')] dark:hover:shadow-[0_0_8px_2px_theme('colors.dark-accent')] transition-all duration-150 flex items-center justify-center"><FaMinus /></button>
+        <button onClick={handleScrollLeft} className="px-3 py-1.5 rounded-lg bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/60 dark:border-dark-border/60 text-light-accent dark:text-dark-accent text-lg font-bold shadow-md hover:brightness-110 hover:shadow-[0_0_8px_2px_theme('colors.light-accent')] dark:hover:shadow-[0_0_8px_2px_theme('colors.dark-accent')] transition-all duration-150 flex items-center justify-center"><FaArrowLeft /></button>
+        <button onClick={handleScrollRight} className="px-3 py-1.5 rounded-lg bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/60 dark:border-dark-border/60 text-light-accent dark:text-dark-accent text-lg font-bold shadow-md hover:brightness-110 hover:shadow-[0_0_8px_2px_theme('colors.light-accent')] dark:hover:shadow-[0_0_8px_2px_theme('colors.dark-accent')] transition-all duration-150 flex items-center justify-center"><FaArrowRight /></button>
       </div>
       <div
         ref={chartContainerRef}

@@ -10,9 +10,11 @@ interface InstrumentCardProps {
   index: number;
   fullHeight?: boolean;
   loadingIcon?: boolean;
+  profitability?: number | null;
+  loadingProfit?: boolean;
 }
 
-export default function InstrumentCard({ title, ticker, icon, price, visible, index, fullHeight, loadingIcon }: InstrumentCardProps) {
+export default function InstrumentCard({ title, ticker, icon, price, visible, index, fullHeight, loadingIcon, profitability, loadingProfit }: InstrumentCardProps) {
   const isLeft = index % 2 === 0;
   return (
     <div
@@ -34,6 +36,18 @@ export default function InstrumentCard({ title, ticker, icon, price, visible, in
         <div className="flex items-center gap-2 mt-2">
           <span className="text-xs font-medium opacity-60">Текущая цена:</span>
           <span className="text-base font-bold">{price !== undefined && price !== null ? price : '—'}</span>
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs font-medium opacity-60">Доходность (1д):</span>
+          {loadingProfit ? (
+            <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
+          ) : profitability !== null && profitability !== undefined ? (
+            <span className={`font-semibold text-xs ${profitability > 0 ? 'text-green-600 dark:text-green-400' : profitability < 0 ? 'text-red-500 dark:text-red-400' : 'text-light-fg/60 dark:text-dark-brown/70'}`}>
+              {(profitability * 100 > 0 ? '+' : '') + (profitability * 100).toFixed(2)}%
+            </span>
+          ) : (
+            <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">—</span>
+          )}
         </div>
       </Card>
     </div>

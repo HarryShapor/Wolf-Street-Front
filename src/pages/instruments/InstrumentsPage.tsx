@@ -12,6 +12,7 @@ import tonIcon from "../../image/crypto/ton.svg";
 import { useInstrumentImages } from "../../hooks/useInstrumentImages";
 import { useInstrumentMarketData } from "../../hooks/useInstrumentMarketData";
 import { useNavigate } from "react-router-dom";
+import { useInstrumentsProfitability } from '../../hooks/useInstrumentProfitability';
 
 const TYPE_FILTERS = [
   { label: "Все", value: "all" },
@@ -24,6 +25,8 @@ const SORT_OPTIONS = [
   { label: "По алфавиту (Z-A)", value: "alpha-desc" },
   { label: "По цене (сначала дешёвые)", value: "price-asc" },
   { label: "По цене (сначала дорогие)", value: "price-desc" },
+  { label: "По доходности (сначала прибыльные)", value: "profit-desc" },
+  { label: "По доходности (сначала убыточные)", value: "profit-asc" },
 ];
 
 interface FloatingCurrenciesBackgroundProps {
@@ -159,6 +162,7 @@ export default function InstrumentsPage() {
   );
   const { images, loading: loadingImages } = useInstrumentImages(ids);
   const { prices, loading: loadingPrices } = useInstrumentMarketData(ids);
+  const { data: profitability, loading: loadingProfit } = useInstrumentsProfitability(ids, '1d');
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("alpha-asc");
@@ -188,10 +192,14 @@ export default function InstrumentsPage() {
     result = result.slice().sort((a, b) => {
       if (sort === "alpha-asc") return a.title.localeCompare(b.title);
       if (sort === "alpha-desc") return b.title.localeCompare(a.title);
+      if (sort === "price-asc") return (prices[a.instrumentId] ?? 0) - (prices[b.instrumentId] ?? 0);
+      if (sort === "price-desc") return (prices[b.instrumentId] ?? 0) - (prices[a.instrumentId] ?? 0);
+      if (sort === "profit-asc") return (profitability?.[a.instrumentId] ?? 0) - (profitability?.[b.instrumentId] ?? 0);
+      if (sort === "profit-desc") return (profitability?.[b.instrumentId] ?? 0) - (profitability?.[a.instrumentId] ?? 0);
       return 0;
     });
     return result;
-  }, [instruments, search, sort]);
+  }, [instruments, search, sort, prices, profitability]);
 
   // Анимация карточек только при изменении фильтра/сортировки/поиска/инструментов
   useEffect(() => {

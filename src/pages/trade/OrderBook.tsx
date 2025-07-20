@@ -43,7 +43,8 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
             : []
         );
         setLoading(false);
-        console.log('[REST] instrumentId', instrumentId, 'asks', data.asks, 'bids', data.bids);
+        // Удаляю старый лог
+        // console.log('[REST] instrumentId', instrumentId, 'asks', data.asks, 'bids', data.bids);
       })
       .catch(e => {
         setError(e.message || "Ошибка загрузки стакана");
@@ -74,17 +75,18 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
           const data = JSON.parse(message.body);
           // Проверяем instrumentId в сообщении, если есть
           if (data.instrumentId && data.instrumentId !== instrumentId) {
-            console.log('[WS] Пропущено: instrumentId не совпадает', data.instrumentId, instrumentId);
+            // console.log('[WS] Пропущено: instrumentId не совпадает', data.instrumentId, instrumentId);
             return;
           }
           // Атомарно обновляем обе стороны стакана
           if (Array.isArray(data.bids) && Array.isArray(data.asks)) {
             setOrderBookBuy(data.bids.map((o: any) => ({ price: o.lotPrice, amount: o.totalCount })));
             setOrderBookSell(data.asks.map((o: any) => ({ price: o.lotPrice, amount: o.totalCount })));
-            console.log('[WS] instrumentId', instrumentId, 'asks', data.asks, 'bids', data.bids);
+            // Удаляю старый лог
+            // console.log('[WS] instrumentId', instrumentId, 'asks', data.asks, 'bids', data.bids);
           }
         } catch (e) {
-          console.log('[WS] Ошибка парсинга', e);
+          // console.log('[WS] Ошибка парсинга', e);
         }
       });
     };
@@ -100,7 +102,7 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
   // Для визуализации: ищем максимальный объём среди всех заявок
   const asks = [...orderBookSell]
     .filter(a => a && typeof a.price === 'number' && typeof a.amount === 'number')
-    .reverse()
+    // .reverse() // убираю reverse, чтобы asks шли от большего к меньшему сверху вниз
     .slice(0, visibleRows);
   const bids = orderBookBuy
     .filter(b => b && typeof b.price === 'number' && typeof b.amount === 'number')
@@ -155,26 +157,39 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
   // Для spread
   const bestAsk = orderBookSell.length > 0 ? orderBookSell[0].price : null;
   const bestBid = orderBookBuy.length > 0 ? orderBookBuy[0].price : null;
-  const spread = bestAsk && bestBid ? (bestAsk - bestBid) : null;
-  const midPrice = bestAsk && bestBid ? ((bestAsk + bestBid) / 2) : null;
+  const spread = (bestAsk !== null && bestBid !== null) ? (bestAsk - bestBid) : null;
+  const midPrice = (bestAsk !== null && bestBid !== null) ? ((bestAsk + bestBid) / 2) : null;
 
   // Для анимации/цвета spread
   const [prevSpread, setPrevSpread] = useState<number | null>(null);
   const [spreadColor, setSpreadColor] = useState<string>(
     "text-light-fg dark:text-dark-fg"
   );
+  const [spreadArrow, setSpreadArrow] = useState<null | 'up' | 'down'>(null);
   useEffect(() => {
     if (typeof spread === "number" && !isNaN(spread)) {
-      if (prevSpread !== null) {
-        if (spread > prevSpread)
+      if (prevSpread !== null && typeof prevSpread === "number" && !isNaN(prevSpread)) {
+        if (spread > prevSpread) {
           setSpreadColor("text-green-600 dark:text-green-400");
-        else if (spread < prevSpread)
+          setSpreadArrow('up');
+        } else if (spread < prevSpread) {
           setSpreadColor("text-red-500 dark:text-red-400");
-        else setSpreadColor("text-light-fg dark:text-dark-fg");
+          setSpreadArrow('down');
+        } else {
+          setSpreadColor("text-light-fg dark:text-dark-fg");
+          setSpreadArrow(null);
+        }
       }
       setPrevSpread(spread);
     }
   }, [spread]);
+
+  // Логирование spread
+  useEffect(() => {
+    if (instrumentId && bestAsk !== null && bestBid !== null && spread !== null && midPrice !== null) {
+      console.log(`[SPREAD] instrumentId=${instrumentId} bestAsk=${bestAsk} bestBid=${bestBid} spread=${spread} midPrice=${midPrice}`);
+    }
+  }, [instrumentId, bestAsk, bestBid, spread, midPrice]);
 
   // Форматирование
   const format = (n: number | null) => n !== null ? n.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "—";
@@ -249,7 +264,7 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
             </div>
             {/* SPREAD (mid price) — по центру */}
             <div className="grid grid-cols-3 gap-0 px-2 py-1 min-h-[28px] bg-light-bg/80 dark:bg-dark-bg/80 rounded font-extrabold text-[16px] border-y border-light-border/30 dark:border-dark-border/30 my-1">
-              <span className={`text-right font-bold transition-colors duration-300 flex items-center justify-end gap-1 text-light-fg dark:text-white ${spreadColor}`}>
+              <span className={`text-right font-bold transition-colors duration-300 flex items-center justify-end gap-1 ${spreadColor}`}>
                 {typeof midPrice === "number" && !isNaN(midPrice)
                   ? <>
                       {format(midPrice)}
@@ -262,9 +277,13 @@ export default function OrderBook({ instrumentId }: OrderBookProps) {
                     </>
                   : "—"}
               </span>
-              <span className={`text-center text-xs font-bold ${spreadColor}`}>
+              <span className="text-center text-xs font-bold text-light-fg dark:text-dark-fg flex items-center justify-center gap-1">
                 {typeof spread === "number" && !isNaN(spread)
-                  ? format(spread)
+                  ? <>
+                      {format(spread)}
+                      {spreadArrow === 'up' && typeof spread === 'number' && typeof prevSpread === 'number' && spread > prevSpread && <span className="ml-1">▲</span>}
+                      {spreadArrow === 'down' && typeof spread === 'number' && typeof prevSpread === 'number' && spread < prevSpread && <span className="ml-1">▼</span>}
+                    </>
                   : ""}
               </span>
               <span className="text-right text-xs text-light-fg dark:text-white"></span>

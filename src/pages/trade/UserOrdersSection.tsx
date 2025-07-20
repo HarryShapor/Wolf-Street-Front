@@ -3,7 +3,6 @@ import { API_HOST } from "../../services/Api";
 import Modal from "../../components/ui/Modal";
 import { usePortfolioId } from "../../hooks/usePortfolioId";
 import { useInstruments } from "../../hooks/useInstruments"; // Добавляем импорт
-import { useInstruments } from "../../hooks/useInstruments";
 
 interface Order {
   id: string | number;
@@ -38,7 +37,7 @@ export default function UserOrdersSection() {
   const [modalMessage, setModalMessage] = useState("");
   const portfolioId = usePortfolioId();
   const { instruments } = useInstruments(); // Добавляем хук для получения инструментов
-  const { instruments } = useInstruments();
+
 
   // Автоматическое закрытие модалки через 2 секунды
   useEffect(() => {
@@ -222,7 +221,7 @@ export default function UserOrdersSection() {
           {error}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-light-accent dark:scrollbar-thumb-dark-accent scrollbar-track-transparent px-2 pb-3">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-transparent min-h-[200px] max-h-[420px] px-2 pb-3 rounded-b-2xl custom-scrollbar">
           <table className="w-full min-w-0 text-xs">
             <thead className="sticky top-0 z-10 bg-light-card dark:bg-dark-card">
               <tr>
@@ -315,13 +314,6 @@ export default function UserOrdersSection() {
                     </td>
                     <td className="px-2 py-1 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center text-sm font-semibold">
                       {getInstrumentName(order.pair)}
-                    <td className="px-2 py-1 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center">
-                      {(() => {
-                        const instrument = instruments.find(inst => inst.instrumentId === Number(order.pair));
-                        return instrument ? (
-                          <span className="font-bold text-light-accent dark:text-dark-accent">{instrument.ticker}</span>
-                        ) : order.pair;
-                      })()}
                     </td>
                     <td className="px-2 py-1 font-bold uppercase tracking-tight text-light-fg/90 dark:text-dark-fg/90 text-center">
                       {order.type}
@@ -365,6 +357,30 @@ export default function UserOrdersSection() {
           {modalMessage}
         </div>
       </Modal>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 14px;
+          border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(120deg, #6c63ff 0%, #e0e6ed 100%);
+          border-radius: 8px;
+          min-height: 40px;
+          transition: background 0.3s, filter 0.3s;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          filter: brightness(1.15);
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(120deg, #81c784 0%, #23243a 100%);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          filter: brightness(1.2);
+        }
+      `}</style>
     </div>
   );
 }

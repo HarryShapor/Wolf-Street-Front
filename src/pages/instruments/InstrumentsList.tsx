@@ -2,6 +2,7 @@ import React from "react";
 import InstrumentCard from "./InstrumentCard";
 import { useInstrumentImages } from '../../hooks/useInstrumentImages';
 import { useInstrumentMarketData } from '../../hooks/useInstrumentMarketData';
+import { useInstrumentsProfitability } from '../../hooks/useInstrumentProfitability';
 import type { Instrument } from '../../hooks/useInstruments';
 
 interface InstrumentsListProps {
@@ -13,6 +14,10 @@ interface InstrumentsListProps {
 }
 
 export default function InstrumentsList({ instruments, cardsVisible, images, loadingImages, prices }: InstrumentsListProps) {
+  // Получаем доходность для всех инструментов (1d)
+  const instrumentIds = instruments.map(inst => inst.instrumentId);
+  const { data: profitability, loading: loadingProfit } = useInstrumentsProfitability(instrumentIds, '1d');
+
   if (instruments.length === 0) {
     return <div className="col-span-2 text-center text-lg opacity-60 py-12">Ничего не найдено</div>;
   }
@@ -29,6 +34,8 @@ export default function InstrumentsList({ instruments, cardsVisible, images, loa
             index={i}
             fullHeight
             loadingIcon={loadingImages}
+            profitability={profitability && profitability[item.instrumentId] !== undefined ? Number(profitability[item.instrumentId]) : null}
+            loadingProfit={loadingProfit}
           />
         </div>
       ))}
