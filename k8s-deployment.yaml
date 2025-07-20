@@ -1,4 +1,3 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,11 +14,10 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: frontend:${{ github.sha }}
-          imagePullPolicy: Never
+          image: frontend:latest  # SHA будет подставлен через kubectl set image
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
-
 ---
 apiVersion: v1
 kind: Service

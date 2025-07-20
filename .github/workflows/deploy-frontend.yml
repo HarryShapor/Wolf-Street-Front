@@ -1,9 +1,7 @@
 name: Deploy Frontend
-
 on:
   push:
     branches: [main]
-
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -26,7 +24,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          source: 'frontend.tar.gz,k8s-deployment.yaml,.dockerignore'
+          source: 'frontend.tar.gz,k8s-deployment.yaml'
           target: '~/wolfstreet/frontend/'
 
       - name: Deploy frontend on server
@@ -40,15 +38,18 @@ jobs:
             set -e
             cd ~/wolfstreet/frontend
 
-            # Подставляем хеш коммита в YAML
-            sed -i "s/\${{ github.sha }}/${{ github.sha }}/g" k8s-deployment.yaml
+            # Load Docker image
+            minikube image load frontend.tar.gz
 
-            # Загружаем образ в Minikube
-            eval $(minikube docker-env)
-            docker load -i frontend.tar.gz
+            # Delete archive
+            rm frontend.tar.gz
 
-            # Применяем конфигурацию
+            # Apply deployment
             kubectl apply -f k8s-deployment.yaml
+
+            # Update image
+            kubectl set image deployment/frontend frontend=frontend:${{ github.sha }}
+
+            # Check rollout status
             kubectl rollout status deployment/frontend --timeout=300s
             kubectl get pods
-
