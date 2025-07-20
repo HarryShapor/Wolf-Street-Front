@@ -40,14 +40,12 @@ jobs:
             set -e
             cd ~/wolfstreet/frontend
 
-            minikube image load frontend.tar.gz
+            docker load -i frontend.tar.gz
+            minikube image load frontend:${{ github.sha }}
 
             rm frontend.tar.gz
 
             kubectl apply -f k8s-deployment.yaml
-
             kubectl set image deployment/frontend frontend=frontend:${{ github.sha }}
-
             kubectl rollout status deployment/frontend --timeout=300s
-
-            kubectl get pods 
+            kubectl get pods

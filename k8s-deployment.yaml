@@ -27,7 +27,7 @@ metadata:
   name: frontend-service
 spec:
   selector:
-    app: frontend-service
+    app: frontend
   ports:
     - protocol: TCP
       port: 80
