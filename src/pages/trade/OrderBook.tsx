@@ -1,67 +1,110 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
 import Card from "../../components/ui/Card";
-import { useOrderbookSpread } from "../../hooks/useOrderbookSpread";
 
 interface OrderBookProps {
-  price: number;
-  orderBookSell: { price: number; amount: number }[];
-  orderBookBuy: { price: number; amount: number }[];
-  loadingOrderBook: boolean;
-  errorOrderBook: string | null;
   instrumentId: number;
 }
 
-// 1. Увеличиваем высоту стакана (например, до 600px)
-// (Это делается в родительском компоненте, но можно подсказать, что высота должна быть больше)
-// Для наглядности, увеличим ROW_HEIGHT и visibleRows
-const ROW_HEIGHT = 28; // px, подбери под свой дизайн
+const ROW_HEIGHT = 28;
+const LEVELS = 10;
 
-export default function OrderBook({
-  price,
-  orderBookSell,
-  orderBookBuy,
-  loadingOrderBook,
-  errorOrderBook,
-  instrumentId,
-}: OrderBookProps) {
-  if (!instrumentId || isNaN(Number(instrumentId)) || instrumentId === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-light-fg-secondary dark:text-dark-brown text-sm">
-        Выберите инструмент для отображения стакана
-      </div>
-    );
-  }
-  // Безопасная деструктуризация spread-данных
-  const spreadData = useOrderbookSpread(instrumentId) || {};
-  const {
-    midPrice = null,
-    bestBid = null,
-    bestAsk = null,
-    spread = null,
-    loading: spreadLoading,
-    error: spreadError,
-  } = spreadData;
-  // Лог только spread-данных
-  console.log("[OrderBook] spreadData:", spreadData);
+export default function OrderBook({ instrumentId }: OrderBookProps) {
+  const [orderBookSell, setOrderBookSell] = useState<{ price: number; amount: number }[]>([]);
+  const [orderBookBuy, setOrderBookBuy] = useState<{ price: number; amount: number }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const wsClientRef = useRef<Client | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleRows, setVisibleRows] = useState(10);
+  const [visibleRows, setVisibleRows] = useState(LEVELS);
 
+  // REST-запрос для инициализации стакана
   useEffect(() => {
-    function updateRows() {
-      if (!containerRef.current) return;
-      const height = containerRef.current.offsetHeight;
-      setVisibleRows(Math.max(2, Math.floor(height / ROW_HEIGHT)));
-    }
-    updateRows();
-    window.addEventListener("resize", updateRows);
-    return () => window.removeEventListener("resize", updateRows);
-  }, []);
+    setOrderBookSell([]);
+    setOrderBookBuy([]);
+    if (!instrumentId) return;
+    setLoading(true);
+    setError(null);
+    fetch(`http://wolf-street.ru/market-data-service/api/v1/orderbook/${instrumentId}/aggregated?limitLevels=${LEVELS}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Ошибка загрузки стакана");
+        return res.json();
+      })
+      .then(data => {
+        setOrderBookBuy(
+          Array.isArray(data.bids)
+            ? data.bids.map((o: any) => ({ price: o.lotPrice, amount: o.totalCount }))
+            : []
+        );
+        setOrderBookSell(
+          Array.isArray(data.asks)
+            ? data.asks.map((o: any) => ({ price: o.lotPrice, amount: o.totalCount }))
+            : []
+        );
+        setLoading(false);
+        console.log('[REST] instrumentId', instrumentId, 'asks', data.asks, 'bids', data.bids);
+      })
+      .catch(e => {
+        setError(e.message || "Ошибка загрузки стакана");
+        setOrderBookBuy([]);
+        setOrderBookSell([]);
+        setLoading(false);
+      });
+  }, [instrumentId]);
 
-  // Показываем стакан: сверху flex-1 asks, по центру spread, снизу flex-1 bids
-  const asks = [...orderBookSell].reverse();
-  const bids = orderBookBuy;
+  // WebSocket для обновления стакана
+  useEffect(() => {
+    if (!instrumentId) return;
+    if (wsClientRef.current) {
+      wsClientRef.current.deactivate();
+      wsClientRef.current = null;
+    }
+    const socket = new SockJS("http://wolf-street.ru/market-data-service/ws-market-data");
+    const client = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 0,
+      heartbeatIncoming: 0,
+      heartbeatOutgoing: 0,
+    });
+    wsClientRef.current = client;
+    client.onConnect = () => {
+      client.subscribe(`/topic/aggregated/${instrumentId}`, (message) => {
+        try {
+          const data = JSON.parse(message.body);
+          // Проверяем instrumentId в сообщении, если есть
+          if (data.instrumentId && data.instrumentId !== instrumentId) {
+            console.log('[WS] Пропущено: instrumentId не совпадает', data.instrumentId, instrumentId);
+            return;
+          }
+          // Атомарно обновляем обе стороны стакана
+          if (Array.isArray(data.bids) && Array.isArray(data.asks)) {
+            setOrderBookBuy(data.bids.map((o: any) => ({ price: o.lotPrice, amount: o.totalCount })));
+            setOrderBookSell(data.asks.map((o: any) => ({ price: o.lotPrice, amount: o.totalCount })));
+            console.log('[WS] instrumentId', instrumentId, 'asks', data.asks, 'bids', data.bids);
+          }
+        } catch (e) {
+          console.log('[WS] Ошибка парсинга', e);
+        }
+      });
+    };
+    client.activate();
+    return () => {
+      if (wsClientRef.current) {
+        wsClientRef.current.deactivate();
+        wsClientRef.current = null;
+      }
+    };
+  }, [instrumentId]);
 
   // Для визуализации: ищем максимальный объём среди всех заявок
+  const asks = [...orderBookSell]
+    .filter(a => a && typeof a.price === 'number' && typeof a.amount === 'number')
+    .reverse()
+    .slice(0, visibleRows);
+  const bids = orderBookBuy
+    .filter(b => b && typeof b.price === 'number' && typeof b.amount === 'number')
+    .slice(0, visibleRows);
   const maxAskVolume = Math.max(...asks.map((o) => o.price * o.amount), 1);
   const maxBidVolume = Math.max(...bids.map((o) => o.price * o.amount), 1);
 
@@ -71,7 +114,6 @@ export default function OrderBook({
   const prevAsksRef = useRef<typeof orderBookSell>([]);
   const prevBidsRef = useRef<typeof orderBookBuy>([]);
 
-  // Используем useMemo для оптимизации сравнения
   const asksChanges = useMemo(() => {
     const changed: number[] = [];
     orderBookSell.forEach((o, i) => {
@@ -96,7 +138,6 @@ export default function OrderBook({
     return changed;
   }, [orderBookBuy]);
 
-  // Используем useEffect только для установки изменений с debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setChangedAsks(asksChanges);
@@ -110,6 +151,12 @@ export default function OrderBook({
     }, 50);
     return () => clearTimeout(timeoutId);
   }, [bidsChanges]);
+
+  // Для spread
+  const bestAsk = orderBookSell.length > 0 ? orderBookSell[0].price : null;
+  const bestBid = orderBookBuy.length > 0 ? orderBookBuy[0].price : null;
+  const spread = bestAsk && bestBid ? (bestAsk - bestBid) : null;
+  const midPrice = bestAsk && bestBid ? ((bestAsk + bestBid) / 2) : null;
 
   // Для анимации/цвета spread
   const [prevSpread, setPrevSpread] = useState<number | null>(null);
@@ -129,6 +176,15 @@ export default function OrderBook({
     }
   }, [spread]);
 
+  // Форматирование
+  const format = (n: number | null) => n !== null ? n.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) : "—";
+
+  if (!instrumentId) {
+    return <div>Выберите инструмент для отображения стакана</div>;
+  }
+  if (loading) return <div>Загрузка стакана...</div>;
+  if (error) return <div>Ошибка: {error}</div>;
+
   return (
     <div
       ref={containerRef}
@@ -140,23 +196,22 @@ export default function OrderBook({
       >
         <div className="relative z-10">
           <div className="flex flex-col gap-0 mb-0">
-            <h3 className="font-extrabold text-light-fg dark:text-dark-fg text-base tracking-wide text-center flex-1 mb-0 mt-0 leading-tight">
+            <h3 className="font-extrabold text-light-fg dark:text-white text-base tracking-wide text-center flex-1 mb-0 mt-0 leading-tight">
               Биржевой стакан
             </h3>
             <div className="grid grid-cols-3 gap-0 px-2 pb-0 pt-0 select-none mt-0">
-              <span className="text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
+              <span className="text-right font-medium text-light-fg dark:text-white text-[10px]">
                 Цена
               </span>
-              <span className="text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
+              <span className="text-right font-medium text-light-fg dark:text-white text-[10px] pr-4">
                 Кол-во
               </span>
-              <span className="text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
+              <span className="text-right font-medium text-light-fg dark:text-white text-[10px] min-w-[60px]">
                 Сумма
               </span>
             </div>
           </div>
           <div className="flex flex-col h-72 w-full text-xs font-mono">
-            {/* Заголовки */}
             {/* ASK (sell) — сверху */}
             <div className="flex-1 flex flex-col-reverse gap-0.5 relative">
               {asks.map((o, i) => (
@@ -181,57 +236,38 @@ export default function OrderBook({
                     }}
                   />
                   <span className="text-right font-bold text-light-error dark:text-error z-10 relative">
-                    {o.price}
+                    {format(o.price)}
                   </span>
-                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
-                    {Number(o.amount).toLocaleString("ru-RU", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                  <span className="text-right text-light-fg dark:text-white z-10 relative pr-4">
+                    {format(o.amount)}
                   </span>
-                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
-                    {Number(o.price * o.amount).toLocaleString("ru-RU", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                  <span className="text-right text-light-fg dark:text-white z-10 relative min-w-[60px]">
+                    {format(o.price * o.amount)}
                   </span>
                 </div>
               ))}
             </div>
             {/* SPREAD (mid price) — по центру */}
             <div className="grid grid-cols-3 gap-0 px-2 py-1 min-h-[28px] bg-light-bg/80 dark:bg-dark-bg/80 rounded font-extrabold text-[16px] border-y border-light-border/30 dark:border-dark-border/30 my-1">
-              <span
-                className={`text-right font-bold transition-colors duration-300 ${spreadColor}`}
-              >
+              <span className={`text-right font-bold transition-colors duration-300 flex items-center justify-end gap-1 text-light-fg dark:text-white ${spreadColor}`}>
                 {typeof midPrice === "number" && !isNaN(midPrice)
-                  ? midPrice.toLocaleString("ru-RU", {
-                      maximumFractionDigits: 2,
-                    })
+                  ? <>
+                      {format(midPrice)}
+                      {prevSpread !== null && spread > prevSpread && (
+                        <span className="ml-1 text-green-500">▲</span>
+                      )}
+                      {prevSpread !== null && spread < prevSpread && (
+                        <span className="ml-1 text-red-500">▼</span>
+                      )}
+                    </>
                   : "—"}
               </span>
-              <span className="text-center text-xs font-bold text-light-fg/70 dark:text-dark-fg/70">
+              <span className={`text-center text-xs font-bold ${spreadColor}`}>
                 {typeof spread === "number" && !isNaN(spread)
-                  ? spread.toLocaleString("ru-RU", { maximumFractionDigits: 2 })
+                  ? format(spread)
                   : ""}
               </span>
-              <span className="text-right text-xs text-light-fg/70 dark:text-dark-fg/70">
-                {typeof bestBid === "number" && !isNaN(bestBid) && (
-                  <span className="text-green-600 dark:text-green-400 font-semibold block">
-                    bid:{" "}
-                    {bestBid.toLocaleString("ru-RU", {
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                )}
-                {typeof bestAsk === "number" && !isNaN(bestAsk) && (
-                  <span className="text-red-500 dark:text-red-400 font-semibold block">
-                    ask:{" "}
-                    {bestAsk.toLocaleString("ru-RU", {
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                )}
-              </span>
+              <span className="text-right text-xs text-light-fg dark:text-white"></span>
             </div>
             {/* BID (buy) — снизу */}
             <div className="flex-1 flex flex-col gap-0.5 relative">
@@ -257,19 +293,13 @@ export default function OrderBook({
                     }}
                   />
                   <span className="text-right font-bold text-light-success dark:text-dark-accent z-10 relative">
-                    {o.price}
+                    {format(o.price)}
                   </span>
-                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
-                    {Number(o.amount).toLocaleString("ru-RU", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                  <span className="text-right text-light-fg dark:text-white z-10 relative pr-4">
+                    {format(o.amount)}
                   </span>
-                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
-                    {Number(o.price * o.amount).toLocaleString("ru-RU", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                  <span className="text-right text-light-fg dark:text-white z-10 relative min-w-[60px]">
+                    {format(o.price * o.amount)}
                   </span>
                 </div>
               ))}

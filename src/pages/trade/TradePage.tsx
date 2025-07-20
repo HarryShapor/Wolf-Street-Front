@@ -263,10 +263,8 @@ function TradePage() {
   useEffect(() => {
     if (!instrumentId || !timeframe) return;
     setCandles([]); // сбрасываем при смене инструмента/таймфрейма
-    const to = new Date();
-    const from = new Date(to.getTime() - 12 * 60 * 60 * 1000); // 12 часов
-    const fromISO = from.toISOString();
-    const toISO = to.toISOString();
+    const fromISO = "1970-01-01T00:00:00.000Z";
+    const toISO = new Date().toISOString();
     fetch(
       `${API_HOST}/market-data-service/api/v1/ohlc/${instrumentId}?interval=${timeframe}&from=${fromISO}&to=${toISO}`
     )

@@ -289,20 +289,20 @@ export default function HistorySection() {
                       <div
                         className={
                           item.status === 'Успешно'
-                            ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-success to-green-500 dark:from-green-600 dark:to-green-700 text-white text-sm font-medium shadow-sm'
+                            ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-success/80 to-light-success/60 dark:from-dark-accent/80 dark:to-dark-accent/60 text-white text-sm font-medium shadow-sm'
                             : item.status === 'В обработке'
-                            ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-accent to-purple-500 dark:from-purple-600 dark:to-purple-700 text-white text-sm font-medium shadow-sm'
-                            : 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-error to-red-500 dark:from-red-400 dark:to-red-500 text-white text-sm font-medium shadow-sm'
+                            ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-accent/80 to-light-accent/60 dark:from-yellow-500/80 dark:to-yellow-700/60 text-white text-sm font-medium shadow-sm'
+                            : 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-error/80 to-error/70 dark:from-dark-error-bg/80 dark:to-error/70 text-white text-sm font-medium shadow-sm'
                         }
                       >
                         {item.status === 'Успешно' && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <div className="w-2 h-2 bg-light-success/80 dark:bg-dark-accent/80 rounded-full"></div>
                         )}
                         {item.status === 'В обработке' && (
-                          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-light-accent/80 dark:bg-yellow-700 rounded-full animate-pulse"></div>
                         )}
                         {item.status === 'Ошибка' && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <div className="w-2 h-2 bg-error/80 dark:bg-error/70 rounded-full"></div>
                         )}
                         <span className="text-xs font-semibold">{item.status}</span>
                       </div>
