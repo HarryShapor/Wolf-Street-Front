@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: wolfstreet/frontend:latest
+          image: frontend:latest
           ports:
             - containerPort: 80
 ---
