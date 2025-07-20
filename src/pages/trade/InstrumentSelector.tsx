@@ -14,10 +14,10 @@ const InstrumentSelector: React.FC<InstrumentSelectorProps> = ({
 }) => {
   return (
     <div
-      className="w-full py-3 rounded-xl border border-light-border dark:border-dark-border shadow-md bg-white/30 dark:bg-dark-card/40 backdrop-blur-md mb-4 focus:border-neutral-400 dark:focus:border-neutral-700 focus:ring-0 animate-fadein overflow-visible"
+      className="w-full py-3 px-4 rounded-xl border border-light-border dark:border-dark-border shadow-md bg-white/30 dark:bg-dark-card/40 backdrop-blur-md mb-2 focus:border-neutral-400 dark:focus:border-neutral-700 focus:ring-0 animate-fadein overflow-visible"
       style={{ borderWidth: 1 }}
     >
-      <div className="text-sm font-semibold text-light-fg dark:text-dark-fg mb-2">
+      <div className="text-sm font-semibold text-light-fg dark:text-dark-fg mb-2 text-center">
         Изменение инструмента
       </div>
       <CustomSelect

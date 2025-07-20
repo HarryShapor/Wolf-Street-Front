@@ -259,7 +259,7 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
 
   return (
     <>
-      <div className="w-full min-w-[220px] max-w-[280px] h-full flex flex-col justify-between bg-light-card dark:bg-dark-card border border-light-border/40 dark:border-dark-border/40 rounded-2xl self-start">
+      <div className="w-full min-w-[260px] max-w-[360px] h-[500px] flex flex-col justify-between bg-light-card dark:bg-dark-card border border-light-border/40 dark:border-dark-border/40 rounded-2xl self-start">
         {/* Вкладки Buy/Sell */}
         <div className="flex border-b border-light-border/40 dark:border-dark-border/40">
           <button

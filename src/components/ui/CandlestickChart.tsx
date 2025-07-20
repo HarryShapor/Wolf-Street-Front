@@ -87,6 +87,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
+      autoSize: true,
       layout: {
         background: { color: chartBg },
         textColor: textColor,
@@ -100,12 +101,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
         timeVisible: true,
         secondsVisible: true,
         borderColor: gridColor,
-        rightOffset: 2,
+        rightOffset: 0,
         barSpacing: 14,
+        leftOffset: 0,
       },
       rightPriceScale: {
         borderColor: gridColor,
-        scaleMargins: { top: 0.12, bottom: 0.18 },
+        scaleMargins: { top: 0.05, bottom: 0.05 },
       },
       crosshair: {
         mode: 0,
@@ -192,11 +194,28 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     };
 
     chart.subscribeCrosshairMove(handleCrosshairMoveLabels);
+    const handleResize = () => {
+      if (chartRef.current && chartContainerRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
+
     return () => {
       clearTimeout(crosshairTimeout);
       chart.remove();
       chartRef.current = null;
       chart.unsubscribeCrosshairMove(handleCrosshairMoveLabels);
+      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
     };
   }, [theme, chartColors.up, chartColors.down]);
 
@@ -218,7 +237,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
           width: "100%",
           height: "100%",
           borderRadius: 24,
-          background: theme === "dark" ? "#000" : "#fff",
+          background: "transparent",
           position: "relative",
           overflow: "visible",
         }}

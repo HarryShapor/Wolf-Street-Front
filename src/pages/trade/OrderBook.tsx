@@ -42,7 +42,7 @@ export default function OrderBook({
     error: spreadError,
   } = spreadData;
   // Лог только spread-данных
-  console.log('[OrderBook] spreadData:', spreadData);
+  console.log("[OrderBook] spreadData:", spreadData);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleRows, setVisibleRows] = useState(10);
 
@@ -113,13 +113,17 @@ export default function OrderBook({
 
   // Для анимации/цвета spread
   const [prevSpread, setPrevSpread] = useState<number | null>(null);
-  const [spreadColor, setSpreadColor] = useState<string>('text-light-fg dark:text-dark-fg');
+  const [spreadColor, setSpreadColor] = useState<string>(
+    "text-light-fg dark:text-dark-fg"
+  );
   useEffect(() => {
-    if (typeof spread === 'number' && !isNaN(spread)) {
+    if (typeof spread === "number" && !isNaN(spread)) {
       if (prevSpread !== null) {
-        if (spread > prevSpread) setSpreadColor('text-green-600 dark:text-green-400');
-        else if (spread < prevSpread) setSpreadColor('text-red-500 dark:text-red-400');
-        else setSpreadColor('text-light-fg dark:text-dark-fg');
+        if (spread > prevSpread)
+          setSpreadColor("text-green-600 dark:text-green-400");
+        else if (spread < prevSpread)
+          setSpreadColor("text-red-500 dark:text-red-400");
+        else setSpreadColor("text-light-fg dark:text-dark-fg");
       }
       setPrevSpread(spread);
     }
@@ -128,7 +132,7 @@ export default function OrderBook({
   return (
     <div
       ref={containerRef}
-      className="flex-1 h-full max-w-[220px] w-full overflow-hidden rounded-2xl group border border-light-border/40 dark:border-dark-border/40 shadow-2xl bg-white/30 dark:bg-dark-card/40 backdrop-blur-md animate-fadein mt-2"
+      className="flex-1 h-full max-w-[280px] w-full overflow-hidden rounded-2xl group border border-light-border/10 dark:border-dark-border/10 shadow-2xl bg-white/30 dark:bg-dark-card/40 backdrop-blur-md animate-fadein mt-1"
     >
       <Card
         className="p-4 flex flex-col bg-transparent rounded-2xl h-full"
@@ -139,26 +143,26 @@ export default function OrderBook({
             <h3 className="font-extrabold text-light-fg dark:text-dark-fg text-base tracking-wide text-center flex-1 mb-0 mt-0 leading-tight">
               Биржевой стакан
             </h3>
-            <div className="flex flex-row items-center px-2 pb-0 pt-0 select-none mt-0">
-              <span className="w-20 text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
+            <div className="grid grid-cols-3 gap-0 px-2 pb-0 pt-0 select-none mt-0">
+              <span className="text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
                 Цена
               </span>
-              <span className="w-20 text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
+              <span className="text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
                 Кол-во
               </span>
-              <span className="w-24 text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
+              <span className="text-right font-medium text-light-fg/80 dark:text-dark-fg/80 text-[10px]">
                 Сумма
               </span>
             </div>
           </div>
-          <div className="flex flex-col h-80 w-full text-xs font-mono">
+          <div className="flex flex-col h-72 w-full text-xs font-mono">
             {/* Заголовки */}
             {/* ASK (sell) — сверху */}
             <div className="flex-1 flex flex-col-reverse gap-0.5 relative">
               {asks.map((o, i) => (
                 <div
                   key={i}
-                  className={`relative flex items-center group min-h-[20px] rounded-lg overflow-hidden transition-colors duration-300 ${
+                  className={`relative grid grid-cols-3 gap-0 items-center group min-h-[20px] rounded-lg overflow-hidden transition-colors duration-300 px-2 ${
                     changedAsks.includes(i)
                       ? "bg-pink-100 dark:bg-pink-900/30"
                       : ""
@@ -176,16 +180,16 @@ export default function OrderBook({
                         "linear-gradient(90deg, rgba(255,92,138,0.18) 0%, rgba(255,92,138,0.32) 100%)",
                     }}
                   />
-                  <span className="w-16 text-right font-bold text-light-error dark:text-error pr-1 z-10 relative">
+                  <span className="text-right font-bold text-light-error dark:text-error z-10 relative">
                     {o.price}
                   </span>
-                  <span className="w-16 text-right text-light-fg dark:text-dark-fg pr-1 z-10 relative">
+                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
                     {Number(o.amount).toLocaleString("ru-RU", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </span>
-                  <span className="w-20 text-right text-light-fg dark:text-dark-fg pr-1 z-10 relative">
+                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
                     {Number(o.price * o.amount).toLocaleString("ru-RU", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -195,23 +199,37 @@ export default function OrderBook({
               ))}
             </div>
             {/* SPREAD (mid price) — по центру */}
-            <div className="flex flex-row items-center justify-between px-2 py-1 min-h-[28px] bg-light-bg/80 dark:bg-dark-bg/80 rounded font-extrabold text-[16px] border-y border-light-border/30 dark:border-dark-border/30 my-1">
-              <span className={`w-20 text-right font-bold transition-colors duration-300 ${spreadColor}`}>
-                {typeof midPrice === 'number' && !isNaN(midPrice)
-                  ? midPrice.toLocaleString("ru-RU", { maximumFractionDigits: 2 })
+            <div className="grid grid-cols-3 gap-0 px-2 py-1 min-h-[28px] bg-light-bg/80 dark:bg-dark-bg/80 rounded font-extrabold text-[16px] border-y border-light-border/30 dark:border-dark-border/30 my-1">
+              <span
+                className={`text-right font-bold transition-colors duration-300 ${spreadColor}`}
+              >
+                {typeof midPrice === "number" && !isNaN(midPrice)
+                  ? midPrice.toLocaleString("ru-RU", {
+                      maximumFractionDigits: 2,
+                    })
                   : "—"}
               </span>
-              <span className="w-20 text-center text-xs font-bold text-light-fg/70 dark:text-dark-fg/70">
-                {typeof spread === 'number' && !isNaN(spread)
+              <span className="text-center text-xs font-bold text-light-fg/70 dark:text-dark-fg/70">
+                {typeof spread === "number" && !isNaN(spread)
                   ? spread.toLocaleString("ru-RU", { maximumFractionDigits: 2 })
-                  : ''}
+                  : ""}
               </span>
-              <span className="w-24 text-right text-xs text-light-fg/70 dark:text-dark-fg/70 flex flex-col items-end">
-                {typeof bestBid === 'number' && !isNaN(bestBid) && (
-                  <span className="text-green-600 dark:text-green-400 font-semibold">bid: {bestBid.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}</span>
+              <span className="text-right text-xs text-light-fg/70 dark:text-dark-fg/70">
+                {typeof bestBid === "number" && !isNaN(bestBid) && (
+                  <span className="text-green-600 dark:text-green-400 font-semibold block">
+                    bid:{" "}
+                    {bestBid.toLocaleString("ru-RU", {
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
                 )}
-                {typeof bestAsk === 'number' && !isNaN(bestAsk) && (
-                  <span className="text-red-500 dark:text-red-400 font-semibold">ask: {bestAsk.toLocaleString("ru-RU", { maximumFractionDigits: 2 })}</span>
+                {typeof bestAsk === "number" && !isNaN(bestAsk) && (
+                  <span className="text-red-500 dark:text-red-400 font-semibold block">
+                    ask:{" "}
+                    {bestAsk.toLocaleString("ru-RU", {
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
                 )}
               </span>
             </div>
@@ -220,7 +238,7 @@ export default function OrderBook({
               {bids.map((o, i) => (
                 <div
                   key={i}
-                  className={`relative flex items-center group min-h-[20px] rounded-lg overflow-hidden transition-colors duration-300 ${
+                  className={`relative grid grid-cols-3 gap-0 items-center group min-h-[20px] rounded-lg overflow-hidden transition-colors duration-300 px-2 ${
                     changedBids.includes(i)
                       ? "bg-green-100 dark:bg-green-900/30"
                       : ""
@@ -238,16 +256,16 @@ export default function OrderBook({
                         "linear-gradient(90deg, rgba(62,207,142,0.18) 0%, rgba(62,207,142,0.32) 100%)",
                     }}
                   />
-                  <span className="w-16 text-right font-bold text-light-success dark:text-dark-accent pr-1 z-10 relative">
+                  <span className="text-right font-bold text-light-success dark:text-dark-accent z-10 relative">
                     {o.price}
                   </span>
-                  <span className="w-16 text-right text-light-fg dark:text-dark-fg pr-1 z-10 relative">
+                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
                     {Number(o.amount).toLocaleString("ru-RU", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </span>
-                  <span className="w-20 text-right text-light-fg dark:text-dark-fg pr-1 z-10 relative">
+                  <span className="text-right text-light-fg dark:text-dark-fg z-10 relative">
                     {Number(o.price * o.amount).toLocaleString("ru-RU", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,

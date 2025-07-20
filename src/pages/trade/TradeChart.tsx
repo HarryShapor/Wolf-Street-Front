@@ -61,19 +61,15 @@ const TradeChart: React.FC<TradeChartProps> = ({
   setTimeframe,
 }) => (
   <Card
-    className="p-4 flex flex-col bg-light-card dark:bg-dark-card rounded-2xl h-full"
+    className="p-0 flex flex-col bg-transparent rounded-2xl h-full"
     disableHover={true}
   >
     <div
-      className="flex-1 w-full mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-white/60 via-light-accent/10 to-light-bg/40 dark:from-dark-card/60 dark:via-dark-accent/10 dark:to-dark-bg/40 backdrop-blur-md shadow-2xl animate-fadein"
+      className="flex-1 w-full h-full overflow-hidden"
       style={{
         width: "100%",
-        maxWidth: "100%",
-        height: "60vh",
-        minHeight: 400,
-        minWidth: 320,
-        margin: "0 auto",
-        background: "none",
+        height: "100%",
+        margin: 0,
         padding: 0,
         display: "flex",
         alignItems: "center",
