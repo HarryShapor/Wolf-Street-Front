@@ -1,0 +1,53 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build frontend Docker image
+        run: |
+          docker build -t frontend:${{ github.sha }} -f Dockerfile .
+
+      - name: Archive Docker image
+        run: |
+          docker save frontend:${{ github.sha }} | gzip > frontend.tar.gz
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: 'frontend.tar.gz,k8s-deployment.yaml,.dockerignore'
+          target: '~/wolfstreet/frontend/'
+
+      - name: Deploy frontend on server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd ~/wolfstreet/frontend
+
+            minikube image load frontend.tar.gz
+
+            rm frontend.tar.gz
+
+            kubectl apply -f k8s-deployment.yaml
+
+            kubectl set image deployment/frontend frontend=frontend:${{ github.sha }}
+
+            kubectl rollout status deployment/frontend --timeout=300s
+
+            kubectl get pods 
