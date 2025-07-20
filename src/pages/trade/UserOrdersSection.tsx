@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { API_HOST } from "../../services/Api";
 import Modal from "../../components/ui/Modal";
 import { usePortfolioId } from "../../hooks/usePortfolioId";
+import { useInstruments } from "../../hooks/useInstruments";
 
 interface Order {
   id: string | number;
@@ -36,6 +37,7 @@ export default function UserOrdersSection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const portfolioId = usePortfolioId();
+  const { instruments } = useInstruments();
 
   // Автоматическое закрытие модалки через 2 секунды
   useEffect(() => {
@@ -303,7 +305,12 @@ export default function UserOrdersSection() {
                       })()}
                     </td>
                     <td className="px-2 py-1 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center">
-                      {order.pair}
+                      {(() => {
+                        const instrument = instruments.find(inst => inst.instrumentId === Number(order.pair));
+                        return instrument ? (
+                          <span className="font-bold text-light-accent dark:text-dark-accent">{instrument.ticker}</span>
+                        ) : order.pair;
+                      })()}
                     </td>
                     <td className="px-2 py-1 font-bold uppercase tracking-tight text-light-fg/90 dark:text-dark-fg/90 text-center">
                       {order.type}

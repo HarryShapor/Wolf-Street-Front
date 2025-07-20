@@ -50,6 +50,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     price: number | null;
     time: string | null;
   } | null>(null);
+  const [barSpacing, setBarSpacing] = useState(14);
 
   useEffect(() => {
     function onStorage(e: StorageEvent) {
@@ -229,8 +230,61 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({ data = [] }) => {
     }
   }, [data]);
 
+  // Применять barSpacing к графику при изменении
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().applyOptions({ barSpacing });
+    }
+  }, [barSpacing]);
+
+  // --- Функции управления графиком ---
+  const handleZoomIn = () => {
+    setBarSpacing((prev) => Math.min(prev * 1.3, 100));
+  };
+  const handleZoomOut = () => {
+    setBarSpacing((prev) => Math.max(prev / 1.3, 2));
+  };
+  const handleGoToLatest = () => {
+    setBarSpacing(40); // или другое подходящее значение
+    setTimeout(() => {
+      chartRef.current?.timeScale().scrollToRealTime();
+    }, 50);
+  };
+
+  const handleScrollLeft = () => {
+    if (!chartRef.current) return;
+    const ts = chartRef.current.timeScale();
+    const range = ts.getVisibleLogicalRange();
+    if (range) {
+      ts.setVisibleLogicalRange({
+        from: range.from - 10,
+        to: range.to - 10,
+      });
+    }
+  };
+  const handleScrollRight = () => {
+    if (!chartRef.current) return;
+    const ts = chartRef.current.timeScale();
+    const range = ts.getVisibleLogicalRange();
+    if (range) {
+      ts.setVisibleLogicalRange({
+        from: range.from + 10,
+        to: range.to + 10,
+      });
+    }
+  };
+
   return (
-    <div style={{ width: "100%", position: "relative", height: "100%" }}>
+    <div style={{ width: "100%", position: "relative", height: "100%" }} className="group">
+      {/* Всплывающие кнопки управления графиком */}
+      <div className="absolute left-4 top-4 z-30 flex gap-2 bg-white/80 dark:bg-dark-card/80 rounded-xl shadow p-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-auto">
+        <button onClick={() => chartRef.current?.timeScale().fitContent()} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-105 transition">Сброс</button>
+        <button onClick={handleGoToLatest} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-105 transition">К последней</button>
+        <button onClick={handleZoomIn} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">+</button>
+        <button onClick={handleZoomOut} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">-</button>
+        <button onClick={handleScrollLeft} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">←</button>
+        <button onClick={handleScrollRight} className="px-2 py-1 rounded bg-light-accent/80 dark:bg-dark-accent/80 text-white text-xs font-bold hover:scale-110 transition">→</button>
+      </div>
       <div
         ref={chartContainerRef}
         style={{
