@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaShoppingCart, FaExchangeAlt } from 'react-icons/fa';
+
 import { Listbox } from '@headlessui/react';
 import { API_HOST } from '../../services/Api';
 import { useInstruments } from '../../hooks/useInstruments';
@@ -48,10 +48,26 @@ type OperationType = typeof typeOptions[number];
 
 // Иконки для типов операций
 const typeIcons: Record<string, React.ReactElement> = {
-  'Пополнение': <FaArrowDown className="text-blue-500 dark:text-blue-400" title="Пополнение" />,
-  'Вывод': <FaArrowUp className="text-orange-500 dark:text-orange-400" title="Вывод" />,
-  'Покупка': <FaShoppingCart className="text-green-700 dark:text-emerald-300" title="Покупка" />,
-  'Продажа': <FaExchangeAlt className="text-purple-500 dark:text-purple-400" title="Продажа" />,
+  'Пополнение': (
+    <svg className="w-4 h-4 text-light-success dark:text-dark-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+    </svg>
+  ),
+  'Вывод': (
+    <svg className="w-4 h-4 text-light-error dark:text-light-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+    </svg>
+  ),
+  'Покупка': (
+    <svg className="w-4 h-4 text-light-accent dark:text-dark-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+    </svg>
+  ),
+  'Продажа': (
+    <svg className="w-4 h-4 text-light-accent dark:text-dark-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+    </svg>
+  ),
 };
 
 export default function HistorySection() {
@@ -145,7 +161,10 @@ export default function HistorySection() {
     <div className="bg-gradient-to-br from-light-card/95 to-light-bg/80 dark:from-dark-card/95 dark:to-[#181926]/90 rounded-2xl shadow-2xl card-glow backdrop-blur-xl border border-light-border/40 dark:border-dark-border/40 p-8 min-h-[400px] flex flex-col transition-all duration-300">
       {/* Заголовок секции */}
       <div className="mb-6 text-[22px] font-bold text-light-accent dark:text-dark-accent flex items-center gap-2">
-        <FaExchangeAlt className="text-light-accent dark:text-dark-accent text-2xl" /> История операций
+        <svg className="w-6 h-6 text-light-accent dark:text-dark-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        История операций
       </div>
       {/* Поиск и фильтры */}
       <div className="mb-8 w-full">
@@ -267,20 +286,26 @@ export default function HistorySection() {
                     </td>
                     <td className="py-2 px-4 font-semibold group-hover:text-light-accent dark:group-hover:text-dark-accent transition">{item.amount?.toLocaleString('ru-RU') ?? 0} ₽</td>
                     <td className="py-2 px-4">
-                      <span
+                      <div
                         className={
                           item.status === 'Успешно'
-                            ? 'inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-sm font-semibold'
+                            ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-success to-green-500 dark:from-green-600 dark:to-green-700 text-white text-sm font-medium shadow-sm'
                             : item.status === 'В обработке'
-                            ? 'inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-sm font-semibold'
-                            : 'inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-sm font-semibold'
+                            ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-accent to-purple-500 dark:from-purple-600 dark:to-purple-700 text-white text-sm font-medium shadow-sm'
+                            : 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-light-error to-red-500 dark:from-red-400 dark:to-red-500 text-white text-sm font-medium shadow-sm'
                         }
                       >
-                        {item.status === 'Успешно' && <span>✔</span>}
-                        {item.status === 'В обработке' && <span>⏳</span>}
-                        {item.status === 'Ошибка' && <span>✖</span>}
-                        {item.status}
-                      </span>
+                        {item.status === 'Успешно' && (
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                        {item.status === 'В обработке' && (
+                          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                        )}
+                        {item.status === 'Ошибка' && (
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        )}
+                        <span className="text-xs font-semibold">{item.status}</span>
+                      </div>
                     </td>
                   </tr>
                 ))

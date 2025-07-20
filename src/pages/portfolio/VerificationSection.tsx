@@ -37,8 +37,8 @@ function UserInstrumentsBlock() {
   }, []);
 
   return (
-    <div className="mt-10 p-6 rounded-2xl bg-light-card/80 dark:bg-dark-card/80 border border-light-border/30 dark:border-dark-border/30 shadow">
-      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-2">Ваши инструменты</div>
+    <div className="mt-10 p-3 rounded-2xl bg-light-card/80 dark:bg-dark-card/80 border border-light-border/30 dark:border-dark-border/30 shadow">
+      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-2 pl-4">Ваши инструменты</div>
       {loading ? (
         <div className="text-light-fg/70 dark:text-dark-fg/70">Загрузка...</div>
       ) : error ? (

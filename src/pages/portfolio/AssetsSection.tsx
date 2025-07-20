@@ -273,41 +273,44 @@ function AssetCard({ a, loadingImages, getFallbackIcon }: { a: Instrument, loadi
               </span>
             ) : <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">—</span>}
           </span>
-          <div className="flex flex-row gap-1 mt-1">
-            {['1d', '1w', '1m'].map((p) => (
-              <button
-                key={p}
-                className={`px-1.5 py-0.5 rounded text-xs font-bold border transition-colors duration-150 ${profitPeriod === p ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent' : 'bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border'}`}
-                onClick={() => setProfitPeriod(p as '1d' | '1w' | '1m')}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
-      <div className="flex gap-3 mt-2">
-        <Button
-          title="Пополнить"
-          variant="gradient"
-          size="sm"
-          iconLeft={<FaPlus />}
-          className="rounded-xl px-4 py-2"
-        />
-        <Button
-          title="Вывести"
-          variant="gradient"
-          size="sm"
-          iconLeft={<FaArrowRight />}
-          className="rounded-xl px-4 py-2"
-        />
-        <Button
-          title="Трансфер"
-          variant="gradient"
-          size="sm"
-          iconLeft={<FaExchangeAlt />}
-          className="rounded-xl px-4 py-2"
-        />
+      <div className="flex flex-row items-center gap-4 mt-2">
+        <div className="flex gap-3">
+          <Button
+            title="Пополнить"
+            variant="gradient"
+            size="sm"
+            iconLeft={<FaPlus />}
+            className="rounded-xl px-4 py-2"
+          />
+          <Button
+            title="Вывести"
+            variant="gradient"
+            size="sm"
+            iconLeft={<FaArrowRight />}
+            className="rounded-xl px-4 py-2"
+          />
+          <Button
+            title="Трансфер"
+            variant="gradient"
+            size="sm"
+            iconLeft={<FaExchangeAlt />}
+            className="rounded-xl px-4 py-2"
+          />
+        </div>
+        {/* Кнопки периода доходности */}
+        <div className="flex flex-row gap-1 ml-auto">
+          {['1d', '1w', '1m'].map((p) => (
+            <button
+              key={p}
+              className={`px-1.5 py-0.5 rounded text-xs font-bold border transition-colors duration-150 ${profitPeriod === p ? 'bg-light-accent text-white dark:bg-dark-accent dark:text-dark-bg border-light-accent dark:border-dark-accent' : 'bg-transparent text-light-fg dark:text-dark-fg border-light-border dark:border-dark-border'}`}
+              onClick={() => setProfitPeriod(p as '1d' | '1w' | '1m')}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -575,6 +578,8 @@ export default function AssetsSection() {
     return () => clearTimeout(timer);
   }, [modalOpen]);
 
+
+
   // Удаляю все дублирующие объявления midPrices и setMidPrice выше по коду (оставляю только одно объявление перед рендером)
   const [midPrices, setMidPrices] = React.useState<{ [id: number]: number }>({});
   const setMidPrice = React.useCallback((id: number, price: number) => {
@@ -677,7 +682,7 @@ export default function AssetsSection() {
                     className="pl-10 pr-4 py-2 rounded-xl border border-light-border/40 dark:border-dark-border/40 bg-white/80 dark:bg-[#23243a]/90 text-[16px] focus:outline-none focus:ring-2 focus:ring-light-accent/30 dark:focus:ring-dark-accent/30 w-full shadow-inner dark:shadow-inner placeholder:text-light-fg/60 dark:placeholder:text-[#888c94]"
                   />
                 </div>
-                {/* Выровнять кнопки и сумму по одной линии: flex-row, items-center, gap-4, без mb-6/md:mb-0 */}
+                {/* Основные кнопки действий */}
                 <div className="flex flex-row items-center gap-4 w-full md:max-w-[600px]">
                   <Button
                     variant="gradient"
@@ -944,6 +949,8 @@ export default function AssetsSection() {
           </div>
         </SetMidPriceContext.Provider>
       </MidPriceContext.Provider>
+
+
     </>
   );
 }

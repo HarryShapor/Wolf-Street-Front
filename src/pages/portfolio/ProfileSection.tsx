@@ -279,6 +279,8 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
     phone: '',
   });
 
+
+
   // --- КУРСЫ ВАЛЮТ ---
   const [rates, setRates] = useState<{ [code: string]: number }>({});
   const [ratesLoading, setRatesLoading] = useState(true);
@@ -382,6 +384,8 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
     setEditing(false);
   };
 
+
+
   // --- Состояние инструментов для всего портфеля ---
   const [instruments, setInstruments] = useState<InstrumentBase[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
@@ -465,11 +469,18 @@ export default function ProfileSection({ onGoToDeposit }: { onGoToDeposit: () =>
         <div className="flex-1 min-w-0 flex items-stretch min-h-[220px] max-h-[360px] h-full">
           <div className="w-full h-full overflow-y-auto">
             <div className="h-full">
-              <PortfolioInstrumentsList instruments={enrichedInstruments as InstrumentBase[]} loading={instrumentsLoading} error={instrumentsError} noMargin />
+              <PortfolioInstrumentsList 
+                instruments={enrichedInstruments as InstrumentBase[]} 
+                loading={instrumentsLoading} 
+                error={instrumentsError} 
+                noMargin 
+              />
             </div>
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }
@@ -812,7 +823,17 @@ export function PortfolioMiniAnalytics({ instruments, loading, error }: { instru
 }
 
 // Простой компонент для отображения списка инструментов
-export function PortfolioInstrumentsList({ instruments, loading, error, noMargin }: { instruments: InstrumentBase[], loading: boolean, error: string, noMargin?: boolean }) {
+export function PortfolioInstrumentsList({ 
+  instruments, 
+  loading, 
+  error, 
+  noMargin 
+}: { 
+  instruments: InstrumentBase[], 
+  loading: boolean, 
+  error: string, 
+  noMargin?: boolean
+}) {
   function getTicker(a: InstrumentBase) {
     return a.ticker || a.symbol || String(a.instrumentId);
   }
@@ -846,27 +867,27 @@ export function PortfolioInstrumentsList({ instruments, loading, error, noMargin
   if (!instruments || instruments.length === 0) return <div className="text-light-fg/70 dark:text-dark-fg/70">Нет инструментов</div>;
   return (
     <div className={`bg-white/90 dark:bg-[#18191c] border border-light-border/30 dark:border-[#23243a] shadow-inner dark:shadow-[inset_0_2px_16px_0_rgba(0,0,0,0.25)] rounded-2xl h-full ${noMargin ? '' : 'mt-2'} p-0`}>
-      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-4">Ваши инструменты</div>
-      <div className="overflow-x-auto flex-1">
+      <div className="text-[18px] font-bold text-light-accent dark:text-dark-accent mb-2 px-3 pt-3 pl-4">Ваши инструменты</div>
+      <div className="overflow-x-auto flex-1 px-3 pb-3">
         <table className="min-w-full text-left text-[15px]">
-          <thead>
-            <tr className="text-light-fg/80 dark:text-dark-brown font-semibold">
-              <th className="py-2 px-3">Символ</th>
-              <th className="py-2 px-3">Цена на рынке</th>
-              <th className="py-2 px-3">Количество</th>
-              <th className="py-2 px-3">Доходность</th>
-            </tr>
-          </thead>
-          <tbody>
-            {instruments.map(inst => {
-              const price = midPrices[inst.instrumentId] || 0;
-              const profit = profitability?.[inst.instrumentId];
-              return (
-                <tr key={inst.instrumentId} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all">
-                  <td className="py-2 px-3 font-mono font-bold text-light-accent dark:text-dark-accent">{getTicker(inst)}</td>
-                  <td className="py-2 px-3 font-mono">{price > 0 ? `₽ ${price.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
-                  <td className="py-2 px-3 font-mono">{inst.totalAmount}</td>
-                  <td className="py-2 px-3 font-mono">
+                      <thead>
+              <tr className="text-light-fg/80 dark:text-dark-brown font-semibold">
+                <th className="py-1 px-2">Символ</th>
+                <th className="py-1 px-2">Цена на рынке</th>
+                <th className="py-1 px-2">Количество</th>
+                <th className="py-1 px-2">Доходность</th>
+              </tr>
+            </thead>
+            <tbody>
+              {instruments.map(inst => {
+                const price = midPrices[inst.instrumentId] || 0;
+                const profit = profitability?.[inst.instrumentId];
+                return (
+                  <tr key={inst.instrumentId} className="hover:bg-light-accent/10 dark:hover:bg-dark-accent/10 transition-all">
+                    <td className="py-1 px-2 font-mono font-bold text-light-accent dark:text-dark-accent">{getTicker(inst)}</td>
+                    <td className="py-1 px-2 font-mono">{price > 0 ? `₽ ${price.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
+                    <td className="py-1 px-2 font-mono">{inst.totalAmount}</td>
+                    <td className="py-1 px-2 font-mono">
                     {loadingProfit
                       ? <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
                       : errorProfit
@@ -875,6 +896,7 @@ export function PortfolioInstrumentsList({ instruments, loading, error, noMargin
                           ? <span className="text-xs text-light-accent dark:text-dark-accent font-semibold">{(Number(profit) * 100).toFixed(2)}%</span>
                           : <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Нет аналитики</span>}
                   </td>
+
                 </tr>
               );
             })}

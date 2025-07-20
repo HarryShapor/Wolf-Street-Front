@@ -39,35 +39,101 @@ export default function TradeSection({ instruments, balance }: { instruments: an
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    
     if (!instrument || !amount || isNaN(Number(amount)) || Number(amount) <= 0 || !price || isNaN(Number(price)) || Number(price) <= 0) {
       setFormError('Пожалуйста, выберите инструмент, введите корректное количество и цену.');
       return;
     }
+    
     if (total > balance) {
       setFormError('Недостаточно средств для покупки такого количества инструмента.');
       return;
     }
+    
     if (!portfolioId) {
       setFormError('Не удалось определить портфель пользователя.');
       return;
     }
-    // TODO: здесь должен быть реальный POST-запрос с portfolioId
-    // Пример:
-    // await fetch(`/api/v1/some-endpoint`, { method: 'POST', body: JSON.stringify({ portfolioId, ... }) })
+
     setSubmitting(true);
-    setTimeout(() => {
+    setFormError('');
+
+    try {
+      const orderData = {
+        portfolioId: portfolioId,
+        instrumentId: selectedInstrument?.instrumentId,
+        orderType: 'BUY', // или 'SELL' в зависимости от типа заявки
+        quantity: Number(amount),
+        price: Number(price),
+        totalAmount: total
+      };
+
+      const accessToken = localStorage.getItem('accessToken');
+      
+      console.log('Отправляем заявку:', orderData);
+      console.log('Токен авторизации:', accessToken ? `${accessToken.substring(0, 20)}...` : 'не найден');
+      if (!accessToken) {
+        throw new Error('Токен авторизации не найден. Пожалуйста, войдите в систему.');
+      }
+
+      const response = await fetch('http://wolf-street.ru/order-service/api/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        console.error('HTTP Error:', response.status, response.statusText);
+        console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        let errorMessage = `Ошибка ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          console.error('Error response:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
+        
+        if (response.status === 403) {
+          errorMessage = 'Доступ запрещен. Возможно, истек токен авторизации. Пожалуйста, войдите в систему заново.';
+        } else if (response.status === 401) {
+          errorMessage = 'Не авторизован. Пожалуйста, войдите в систему.';
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log('Заявка успешно создана:', result);
+      
       setSubmitting(false);
       setSubmitted(true);
-    }, 1000);
+    } catch (error) {
+      console.error('Ошибка при создании заявки:', error);
+      setFormError(error instanceof Error ? error.message : 'Произошла ошибка при отправке заявки');
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
     return (
       <div className="bg-light-card dark:bg-dark-card rounded-2xl p-7 min-h-[180px] flex flex-col items-center justify-center shadow-lg">
-        <div className="text-[48px] text-light-accent dark:text-dark-accent mb-3">✅</div>
-        <div className="font-bold text-[22px] text-light-accent dark:text-dark-accent mb-2">Заявка отправлена!</div>
-        <div className="text-light-fg/80 dark:text-dark-brown text-[16px] text-center max-w-[400px]">
-          Мы получили вашу заявку и свяжемся с вами для совершения сделки.
+        <div className="w-16 h-16 bg-gradient-to-r from-light-success to-light-accent dark:from-dark-accent dark:to-dark-accent rounded-full flex items-center justify-center mb-4 shadow-lg">
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="font-bold text-[22px] text-light-accent dark:text-dark-accent mb-3">Заявка принята!</div>
+        <div className="text-light-fg/80 dark:text-dark-brown text-[16px] text-center max-w-[400px] leading-relaxed">
+          Ваша заявка обрабатывается. Ожидайте уведомления о статусе сделки. 
+          <br />
+          <span className="text-light-accent dark:text-dark-accent font-medium">История операций</span> обновится автоматически.
         </div>
       </div>
     );
