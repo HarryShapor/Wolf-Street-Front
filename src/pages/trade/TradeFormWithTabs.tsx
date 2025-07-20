@@ -352,17 +352,17 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
           <div className="flex items-center gap-1">
             <input
               type="number"
-              min="0"
+              min="1"
               max="1000000"
-              step="any"
+              step="1"
               value={amount}
               onChange={(e) => {
                 let val = e.target.value.replace(/^0+(?=\d)/, "");
-                // Запретить отрицательные, пустые, 0 и нечисловые значения
+                // Только целые положительные числа
                 if (!val || isNaN(Number(val)) || Number(val) <= 0) {
                   setAmount("");
                 } else {
-                  setAmount(val);
+                  setAmount(String(Math.floor(Number(val))));
                 }
               }}
               placeholder="Введите количество"
@@ -375,12 +375,12 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
           {/* Подсказка по лимиту */}
           {tab === "sell" && (
             <div className="text-xs text-light-fg-secondary dark:text-dark-brown mb-1">
-              Максимум для продажи: {availableToSell}
+              Максимум для продажи: {Math.floor(availableToSell)}
             </div>
           )}
           {tab === "buy" && (
             <div className="text-xs text-light-fg-secondary dark:text-dark-brown mb-1">
-              Максимум для покупки: {maxBuy.toFixed(6)} ({balance} RUB)
+              Максимум для покупки: {Math.floor(maxBuy)} ({balance} RUB)
             </div>
           )}
           {/* Быстрые кнопки для выбора количества */}
@@ -394,8 +394,8 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
                   if (tab === "buy") {
                     // Для покупки: количество = (баланс * процент) / цена
                     if (priceRub > 0) {
-                      const calculatedAmount = (balance * percent) / priceRub;
-                      setAmount(calculatedAmount.toFixed(6));
+                      const calculatedAmount = Math.floor((balance * percent) / priceRub);
+                      setAmount(calculatedAmount > 0 ? String(calculatedAmount) : "");
                     } else {
                       setToast({
                         open: true,
@@ -405,8 +405,8 @@ const TradeFormWithTabs: React.FC<TradeFormWithTabsProps> = ({
                     }
                   } else {
                     // Для продажи: [Количество инструментов] = [Количество инструментов у пользователя] * [Выбранный процент]
-                    const calculatedAmount = availableToSell * percent;
-                    setAmount(calculatedAmount.toFixed(6));
+                    const calculatedAmount = Math.floor(availableToSell * percent);
+                    setAmount(calculatedAmount > 0 ? String(calculatedAmount) : "");
                   }
                 }}
               >

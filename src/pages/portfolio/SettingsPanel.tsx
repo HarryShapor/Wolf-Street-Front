@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
 import ModalEditProfile from './components/ModalEditProfile';
 import ModalColorSettings from './components/ModalColorSettings';
 import ModalTimezonePicker from './components/ModalTimezonePicker';
@@ -23,6 +23,9 @@ const API_BASE = `${API_HOST}/user-service/api/v1`;
 const PASSWORD_COOKIE_KEY = "password";
 const PASSWORD_ENCRYPT_KEY = "demo-key";
 
+// Контекст для хранения часового пояса (только смещение, например 'UTC+3')
+export const TimezoneContext = createContext<{ timezone: string, setTimezone: (tz: string) => void }>({ timezone: 'UTC+3', setTimezone: () => {} });
+
 export default function SettingsPanel() {
   const [editProfileModal, setEditProfileModal] = useState(false);
   const [colorModal, setColorModal] = useState(false);
@@ -34,7 +37,12 @@ export default function SettingsPanel() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('********');
   const [colorScheme, setColorScheme] = useState<'green-red'|'red-green'>('green-red');
-  const [timezone, setTimezone] = useState('UTC+3');
+  const [timezone, setTimezoneState] = useState(() => localStorage.getItem('timezone') || 'UTC+3');
+  // Обёртка для обновления и localStorage
+  const setTimezone = (tz: string) => {
+    setTimezoneState(tz);
+    localStorage.setItem('timezone', tz);
+  };
   const [chartColors, setChartColors] = useState({ up: '#22d3a8', down: '#f43f5e' });
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif, setSmsNotif] = useState(false);
@@ -363,7 +371,8 @@ export default function SettingsPanel() {
   // Логирование для диагностики
   console.log('render editingField', editingField, 'showPassword', showPassword);
   return (
-    <div className="w-full max-w-screen-lg mx-auto mt-8 px-2 sm:px-4">
+    <TimezoneContext.Provider value={{ timezone, setTimezone }}>
+      <div className="w-full max-w-screen-lg mx-auto mt-8 px-2 sm:px-4">
       {/* Модалки */}
       <ModalEditProfile
         open={editProfileModal}
@@ -609,15 +618,6 @@ export default function SettingsPanel() {
               onClick={() => setTimezoneModal(true)}
             >Изменить</button>
           </div>
-          {/* Горячие клавиши */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="text-[16px] font-semibold text-light-fg dark:text-dark-fg">Горячие клавиши</div>
-            </div>
-            <button
-              className="bg-gradient-to-r from-light-accent/90 to-light-accent/70 dark:from-dark-accent/90 dark:to-dark-accent/70 text-white font-semibold rounded-xl px-7 py-2.5 shadow-xl border border-light-accent/30 dark:border-dark-accent/30 backdrop-blur-sm transition-all duration-200 w-[130px] text-center hover:scale-[1.04] hover:shadow-2xl hover:ring-2 hover:ring-light-accent/30 dark:hover:ring-dark-accent/30 focus:outline-none focus:ring-2 focus:ring-light-accent/40 dark:focus:ring-dark-accent/40"
-            >Изменить</button>
-          </div>
           {/* Тема */}
           <div className="flex items-center gap-4">
             <div className="flex-1">
@@ -657,6 +657,7 @@ export default function SettingsPanel() {
         onSave={handlePasswordSave}
       />
     </div>
+    </TimezoneContext.Provider>
   );
 }
 

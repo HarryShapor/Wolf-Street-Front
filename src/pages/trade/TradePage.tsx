@@ -640,7 +640,7 @@ function TradePage() {
           {/* Верхняя часть: три колонки */}
           <div className="flex flex-row gap-4 items-stretch w-full mb-2">
             {/* Левая колонка: стакан и выбор инструмента */}
-            <div className="flex flex-col gap-1 w-[280px] min-w-[220px] max-w-[320px] h-[700px] justify-start">
+            <div className="flex flex-col gap-1 w-[280px] min-w-[220px] max-w-[320px] h-[700px] justify-start animate-portfolio-fade" style={{animationDelay: '0.2s', animationDuration: '1.1s'}}>
               <InstrumentSelector
                 value={selected?.ticker || ""}
                 onChange={(ticker) => {
@@ -662,7 +662,7 @@ function TradePage() {
               </div>
             </div>
             {/* Центральная колонка: график */}
-            <div className="flex-1 min-w-[700px] max-w-[1400px]">
+            <div className="flex-1 min-w-[700px] max-w-[1400px] animate-portfolio-fade" style={{animationDelay: '0.4s', animationDuration: '1.1s'}}>
               <div className="rounded-2xl shadow-2xl bg-transparent border border-light-border/40 dark:border-dark-border/40 p-2 h-[700px] flex flex-col">
                 {/* --- Верхняя панель: название, доходность, периоды --- */}
                 <div className="flex flex-wrap items-center gap-4 mb-2 justify-between flex-shrink-0">
@@ -786,7 +786,7 @@ function TradePage() {
               </div>
             </div>
             {/* Правая колонка: форма и история сделок */}
-            <div className="flex flex-col gap-2 w-[320px] min-w-[280px] max-w-[420px]">
+            <div className="flex flex-col gap-2 w-[320px] min-w-[280px] max-w-[420px] animate-portfolio-fade" style={{animationDelay: '0.6s', animationDuration: '1.1s'}}>
               <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40">
                 <TradeFormWithTabs />
               </div>
@@ -801,8 +801,8 @@ function TradePage() {
           </div>
           {/* Нижняя часть: заявки пользователя */}
           <div
-            className="w-[1464px] min-w-[280px] max-w-[1800px] relative"
-            style={{ marginTop: "-300px" }}
+            className="w-[1464px] min-w-[280px] max-w-[1800px] relative animate-portfolio-fade"
+            style={{ marginTop: "-300px", animationDelay: '0.8s', animationDuration: '1.1s' }}
           >
             <div className="rounded-2xl shadow-2xl bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border border-light-border/40 dark:border-dark-border/40">
               <div className="h-[290px]">

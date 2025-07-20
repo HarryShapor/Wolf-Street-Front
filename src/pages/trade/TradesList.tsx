@@ -55,40 +55,44 @@ const TradesList: React.FC<TradesListProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Загрузка завершённых ордеров пользователя
+  const USER_HISTORY_URL = "http://wolf-street.ru/portfolio-service/api/v1/portfolio/history";
+
+  // Загрузка истории сделок пользователя через новую ручку с polling
   useEffect(() => {
-    if (tab !== "user" || !portfolioId) return;
-    setLoadingUser(true);
-    setErrorUser(null);
-    fetch(
-      `${API_HOST}/order-service/api/v1/order/closed?portfolioId=${portfolioId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      }
-    )
-      .then(async (res) => {
+    let interval: number | null = null;
+    let stopped = false;
+    async function fetchUserHistory() {
+      setLoadingUser(true);
+      setErrorUser(null);
+      try {
+        // Диапазон: последние 7 дней
+        const now = Date.now();
+        const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+        const url = `${USER_HISTORY_URL}?from=${weekAgo}&to=${now}`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
         if (res.status === 401) throw new Error("Пользователь не авторизован!");
-        if (res.status === 404) return [];
-        if (!res.ok) throw new Error("Ошибка загрузки завершённых ордеров");
-        return res.json();
-      })
-      .then((data) => {
-        // Преобразуем в Trade[]
+        if (res.status === 404) {
+          setUserTrades([]);
+          setLoadingUser(false);
+          return;
+        }
+        if (!res.ok) throw new Error("Ошибка загрузки истории сделок");
+        const data = await res.json();
+        // Оставляем только торговые сделки (есть instrumentId и тип BUY/SALE)
         const trades = Array.isArray(data)
           ? data
+              .filter((item: any) => item.instrumentId && ["BUY", "SALE"].includes(item.dealType))
               .slice(-VISIBLE_ROWS)
               .reverse()
-              .map((o: any) => ({
-                price: o.lotPrice,
-                amount: o.count,
-                side: (o.side?.toLowerCase() === "buy" ? "buy" : "sell") as
-                  | "buy"
-                  | "sell",
-                time: new Date(
-                  o.closedAt || o.updatedAt || o.createdAt
-                ).toLocaleTimeString("ru-RU", {
+              .map((item: any) => ({
+                price: item.lotPrice,
+                amount: item.count,
+                side: (item.dealType === "BUY" ? "buy" : "sell") as "buy" | "sell",
+                time: new Date(item.completedAt).toLocaleTimeString("ru-RU", {
                   hour: "2-digit",
                   minute: "2-digit",
                   second: "2-digit",
@@ -96,12 +100,24 @@ const TradesList: React.FC<TradesListProps> = ({
               }))
           : [];
         setUserTrades(trades);
-      })
-      .catch((e) =>
-        setErrorUser(e.message || "Ошибка загрузки завершённых ордеров")
-      )
-      .finally(() => setLoadingUser(false));
-  }, [tab, portfolioId]);
+      } catch (e: any) {
+        setErrorUser(e.message || "Ошибка загрузки истории сделок");
+        setUserTrades([]);
+      } finally {
+        setLoadingUser(false);
+      }
+    }
+    if (tab === "user") {
+      fetchUserHistory();
+      interval = window.setInterval(() => {
+        if (!stopped) fetchUserHistory();
+      }, 5000);
+    }
+    return () => {
+      stopped = true;
+      if (interval) clearInterval(interval);
+    };
+  }, [tab]);
 
   // Выбор данных для текущей вкладки
   const data =

@@ -243,28 +243,28 @@ function AssetCard({ a, loadingImages, getFallbackIcon }: { a: Instrument, loadi
             {a.name}
           </span>
         </div>
-        <span className="text-[18px] font-bold text-light-accent dark:text-dark-accent ml-4 whitespace-nowrap">
+        <span className="text-[18px] font-bold text-light-accent dark:text-dark-accent ml-4 whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis text-right font-mono">
           {midPrice && midPrice > 0
             ? `₽ ${formatNumber(a.totalAmount * midPrice, 2)}`
             : '—'}
         </span>
       </div>
       <div className="flex flex-row gap-8 mt-2">
-        <div className="flex flex-col">
+        <div className="flex flex-col max-w-[80px]">
           <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Доступно</span>
-          <span className="font-mono text-[16px] font-bold text-light-fg dark:text-dark-fg">{formatNumber(a.availableAmount)}</span>
+          <span className="font-mono text-[16px] font-bold text-light-fg dark:text-dark-fg max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-right">{formatNumber(a.availableAmount)}</span>
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col max-w-[80px]">
           <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">В ордерах</span>
-          <span className="font-mono text-[16px] text-light-fg/70 dark:text-gray-500">{a.blockedAmount ? formatNumber(a.blockedAmount) : '—'}</span>
+          <span className="font-mono text-[16px] text-light-fg/70 dark:text-gray-500 max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-right">{a.blockedAmount ? formatNumber(a.blockedAmount) : '—'}</span>
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col max-w-[80px]">
           <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Всего</span>
-          <span className="font-mono text-[16px] text-light-fg dark:text-dark-fg">{formatNumber(a.totalAmount)}</span>
+          <span className="font-mono text-[16px] text-light-fg dark:text-dark-fg max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-right">{formatNumber(a.totalAmount)}</span>
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col max-w-[90px]">
           <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">Доходность</span>
-          <span className="font-mono text-[16px] text-light-fg dark:text-dark-fg">
+          <span className="font-mono text-[16px] text-light-fg dark:text-dark-fg max-w-[90px] overflow-hidden text-ellipsis whitespace-nowrap text-right">
             {loadingProfit ? (
               <span className="text-xs text-light-fg/60 dark:text-dark-brown/70">...</span>
             ) : profitability && profitability[a.instrumentId] !== undefined ? (
