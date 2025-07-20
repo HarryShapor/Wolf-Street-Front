@@ -20,7 +20,7 @@ export default function Footer() {
             <span className="text-[32px] relative inline-block w-12 h-12">
               {/* Светлый логотип */}
               <img
-                src="/src/image/wolf_logo.svg"
+                src="/image/wolf_logo.svg"
                 alt="Wolf Street"
                 className={`w-12 h-12 absolute top-0 left-0 z-10 object-contain object-center transition-opacity duration-300 ease-in-out ${
                   theme === "light" ? "opacity-100" : "opacity-0"
@@ -28,7 +28,7 @@ export default function Footer() {
               />
               {/* Темный логотип */}
               <img
-                src="/src/image/wolf_logo_for_black.png"
+                src="/image/wolf_logo_for_black.png"
                 alt="Wolf Street"
                 className={`w-12 h-12 absolute top-0 left-0 z-10 object-contain object-center transition-opacity duration-300 ease-in-out ${
                   theme === "dark" ? "opacity-100" : "opacity-0"

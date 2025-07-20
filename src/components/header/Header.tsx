@@ -34,8 +34,8 @@ export default function Header({
   useEffect(() => {
     const lightLogo = new Image();
     const darkLogo = new Image();
-    lightLogo.src = "/src/image/wolf_logo.svg";
-    darkLogo.src = "/src/image/wolf_logo_for_black.png";
+    lightLogo.src = "/image/wolf_logo.svg";
+    darkLogo.src = "/image/wolf_logo_for_black.png";
   }, []);
 
   const handleNavClick = (id: string) => {
@@ -131,7 +131,7 @@ export default function Header({
           <span className="text-[32px] relative inline-block w-12 h-12">
             {/* Светлый логотип */}
             <img
-              src="/src/image/wolf_logo.svg"
+              src="/image/wolf_logo.svg"
               alt="logo"
               className={`w-12 h-12 absolute top-0 left-0 z-10 object-contain object-center transition-opacity duration-300 ease-in-out ${
                 theme === "light" ? "opacity-100" : "opacity-0"
@@ -139,7 +139,7 @@ export default function Header({
             />
             {/* Темный логотип */}
             <img
-              src="/src/image/wolf_logo_for_black.png"
+              src="/image/wolf_logo_for_black.png"
               alt="logo"
               className={`w-12 h-12 absolute top-0 left-0 z-10 object-contain object-center transition-opacity duration-300 ease-in-out ${
                 theme === "dark" ? "opacity-100" : "opacity-0"

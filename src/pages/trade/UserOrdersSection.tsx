@@ -17,7 +17,7 @@ interface Order {
 
 const columns = [
   { key: "date", label: "Дата" },
-  { key: "pair", label: "Пара" },
+  { key: "pair", label: "Инструмент" },
   { key: "type", label: "Тип" },
   { key: "price", label: "Цена" },
   { key: "amount", label: "Количество" },
@@ -221,8 +221,9 @@ export default function UserOrdersSection() {
           {error}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-transparent min-h-[200px] max-h-[420px] px-2 pb-3 rounded-b-2xl custom-scrollbar">
-          <table className="w-full min-w-0 text-xs">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-transparent min-h-[200px] max-h-[520px] px-4 pb-4 rounded-b-2xl custom-scrollbar">
+          <table className="w-full min-w-full text-base table-fixed">
+            {/* colgroup убран для авто-растяжения */}
             <thead className="sticky top-0 z-10 bg-light-card dark:bg-dark-card">
               <tr>
                 {columns.map((col) => {
@@ -235,7 +236,7 @@ export default function UserOrdersSection() {
                       onClick={() =>
                         col.key !== "cancel" && handleSort(col.key)
                       }
-                      className={`px-2 py-2 cursor-pointer select-none text-center font-bold uppercase tracking-wide bg-transparent relative
+                      className={`px-4 py-2 cursor-pointer select-none text-center font-bold uppercase tracking-wide bg-transparent relative text-base
                         ${
                           isSorted
                             ? "text-light-accent dark:text-dark-accent"
@@ -251,7 +252,7 @@ export default function UserOrdersSection() {
                             } ${dir === "desc" ? "rotate-180" : ""}`}
                             style={{ display: "inline-block" }}
                           >
-                            {/* SVG стрелка */}
+                            {/* SVG стрелка, цвет через currentColor */}
                             <svg
                               width="12"
                               height="12"
@@ -261,7 +262,7 @@ export default function UserOrdersSection() {
                             >
                               <path
                                 d="M3 7L6 4L9 7"
-                                stroke={isSorted ? "#50FFB4" : "currentColor"}
+                                stroke="currentColor"
                                 strokeWidth="1.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -293,7 +294,7 @@ export default function UserOrdersSection() {
               ) : (
                 sortedOrders.map((order) => (
                   <tr key={order.id} className="rounded-xl">
-                    <td className="px-2 py-1 text-light-fg dark:text-dark-fg font-mono whitespace-nowrap text-center">
+                    <td className="px-4 py-2 text-light-fg dark:text-dark-fg font-mono whitespace-nowrap text-center text-base">
                       {(() => {
                         const d = new Date(order.date);
                         const dateStr = d.toLocaleDateString("ru-RU");
@@ -312,14 +313,14 @@ export default function UserOrdersSection() {
                         );
                       })()}
                     </td>
-                    <td className="px-2 py-1 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center text-sm font-semibold">
+                    <td className="px-4 py-2 text-light-fg/90 dark:text-dark-fg/90 font-mono text-center text-base font-semibold">
                       {getInstrumentName(order.pair)}
                     </td>
-                    <td className="px-2 py-1 font-bold uppercase tracking-tight text-light-fg/90 dark:text-dark-fg/90 text-center">
+                    {/* <td className="px-6 py-3 font-bold uppercase tracking-tight text-light-fg/90 dark:text-dark-fg/90 text-center text-lg">
                       {order.type}
-                    </td>
+                    </td> */}
                     <td
-                      className={`px-2 py-1 font-bold uppercase tracking-tight text-center ${
+                      className={`px-4 py-2 font-bold uppercase tracking-tight text-center text-base ${
                         order.type === "BUY"
                           ? "text-green-600 dark:text-green-400"
                           : "text-red-500 dark:text-red-400"
@@ -327,13 +328,13 @@ export default function UserOrdersSection() {
                     >
                       {order.type}
                     </td>
-                    <td className="px-2 py-1 text-light-fg dark:text-dark-fg font-mono text-center">
+                    <td className="px-4 py-2 text-light-fg dark:text-dark-fg font-mono text-center text-base">
                       {order.price}
                     </td>
-                    <td className="px-2 py-1 text-light-fg dark:text-dark-fg font-mono text-center">
+                    <td className="px-4 py-2 text-light-fg dark:text-dark-fg font-mono text-center text-base">
                       {order.amount}
                     </td>
-                    <td className="px-2 py-1 text-center">
+                    <td className="px-4 py-2 text-center text-base">
                       <button
                         className="bg-transparent border-none outline-none shadow-none px-0 py-0 text-light-fg dark:text-dark-fg font-semibold text-xs cursor-pointer disabled:opacity-60"
                         title="Отменить"

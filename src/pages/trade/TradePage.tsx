@@ -277,7 +277,7 @@ function TradePage() {
 
   return (
     <>
-      <div className="h-screen bg-light-bg dark:bg-dark-bg overflow-hidden">
+      <div className="h-screen bg-light-bg dark:bg-dark-bg overflow-y-auto overflow-x-hidden hide-scrollbar">
         <Header {...headerProps} />
 
         {/* Добавляем SearchModal если нужен */}
@@ -482,6 +482,15 @@ function TradePage() {
           <div className="h-8"></div>
         </div>
       </div>
+      <style>{`
+        .hide-scrollbar {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE 10+ */
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none; /* Chrome/Safari/Webkit */
+        }
+      `}</style>
     </>
   );
 }
