@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { API_HOST } from "../../services/Api";
 import { usePortfolioId } from "../../hooks/usePortfolioId";
 import { useInstruments } from "../../hooks/useInstruments";
+import { useMarketDeals } from "../../hooks/useMarketDeals";
 
 interface Trade {
   price: number;
@@ -54,19 +55,30 @@ const TABS = [
   { key: "user", label: "Мои" },
 ];
 
-const TradesList: React.FC = () => {
+interface TradesListProps {
+  instrumentId?: number;
+}
+
+const TradesList: React.FC<TradesListProps> = ({
+  instrumentId: propInstrumentId,
+}) => {
   const [tab, setTab] = useState<"market" | "user">("market");
-  const [marketTrades, setMarketTrades] = useState<Trade[]>(mockTrades);
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [loadingUser, setLoadingUser] = useState(false);
   const [errorUser, setErrorUser] = useState<string | null>(null);
-  const [loadingMarket, setLoadingMarket] = useState(false);
-  const [errorMarket, setErrorMarket] = useState<string | null>(null);
   const portfolioId = usePortfolioId();
   const { instruments } = useInstruments();
-  // Выбираем первый доступный инструмент (или можно сделать через props)
+  // Используем переданный instrumentId или первый доступный инструмент
   const instrumentId =
-    instruments.length > 0 ? instruments[0].instrumentId : null;
+    propInstrumentId ||
+    (instruments.length > 0 ? instruments[0].instrumentId : null);
+
+  // Используем новый хук для рыночных сделок
+  const {
+    trades: marketTrades,
+    loading: loadingMarket,
+    error: errorMarket,
+  } = useMarketDeals(instrumentId);
 
   // График (оставляем как есть)
   const [graph, setGraph] = useState<number[]>(() =>
@@ -81,44 +93,6 @@ const TradesList: React.FC = () => {
     }, 1500);
     return () => clearInterval(interval);
   }, []);
-
-  // Загрузка реальных рыночных сделок через REST
-  useEffect(() => {
-    if (tab !== "market" || !instrumentId) return;
-    setLoadingMarket(true);
-    setErrorMarket(null);
-    fetch(
-      `${API_HOST}/market-data-service/api/v1/trades/${instrumentId}?limit=${VISIBLE_ROWS}`
-    )
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Ошибка загрузки рыночных сделок");
-        return res.json();
-      })
-      .then((data) => {
-        // Преобразуем в Trade[]
-        const trades = Array.isArray(data)
-          ? data.map((t: any) => ({
-              price: t.price,
-              amount: t.amount,
-              side: (t.side?.toLowerCase() === "buy" ? "buy" : "sell") as
-                | "buy"
-                | "sell",
-              time: new Date(
-                t.timestamp || t.time || t.createdAt
-              ).toLocaleTimeString("ru-RU", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              }),
-            }))
-          : [];
-        setMarketTrades(trades);
-      })
-      .catch((e) =>
-        setErrorMarket(e.message || "Ошибка загрузки рыночных сделок")
-      )
-      .finally(() => setLoadingMarket(false));
-  }, [tab, instrumentId]);
 
   // Загрузка завершённых ордеров пользователя
   useEffect(() => {
@@ -206,11 +180,32 @@ const TradesList: React.FC = () => {
           </button>
         ))}
         <span className="flex-1" />
+        {/* Индикатор WebSocket подключения для рыночных сделок */}
+        {tab === "market" && (
+          <div className="flex items-center gap-1">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                loadingMarket
+                  ? "bg-yellow-500 animate-pulse"
+                  : errorMarket
+                  ? "bg-red-500"
+                  : "bg-green-500"
+              }`}
+            />
+            <span className="text-xs text-light-fg-secondary dark:text-dark-brown">
+              {loadingMarket
+                ? "Подключение..."
+                : errorMarket
+                ? "Ошибка"
+                : "Live"}
+            </span>
+          </div>
+        )}
       </div>
       {/* Заголовки */}
       <div className="grid grid-cols-3 gap-0 px-4 py-1 text-xs font-semibold text-light-fg-secondary dark:text-dark-brown border-b border-light-border/30 dark:border-dark-border/30 select-none tracking-tight bg-light-bg/60 dark:bg-dark-bg/60">
-        <span className="text-left">Цена (USDT)</span>
-        <span className="text-center">Кол-во (BTC)</span>
+        <span className="text-left">Цена (RUB)</span>
+        <span className="text-center">Кол-во</span>
         <span className="text-right">Время</span>
       </div>
       {/* Список сделок */}
@@ -244,9 +239,13 @@ const TradesList: React.FC = () => {
         ) : (
           data.map((t, i) => (
             <div
-              key={i}
+              key={`${t.time}-${t.price}-${t.amount}-${i}`}
               style={{ height: `${ROW_HEIGHT}px` }}
-              className="grid grid-cols-3 gap-0 px-4 py-0 text-xs leading-[1.1] items-center cursor-pointer tracking-tight"
+              className={`grid grid-cols-3 gap-0 px-4 py-0 text-xs leading-[1.1] items-center cursor-pointer tracking-tight transition-all duration-300 ${
+                i === 0 && tab === "market"
+                  ? "bg-green-50 dark:bg-green-900/20"
+                  : ""
+              }`}
             >
               <span
                 className={`text-left font-bold ${
