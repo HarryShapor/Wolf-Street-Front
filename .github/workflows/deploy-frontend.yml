@@ -40,8 +40,7 @@ jobs:
             set -e
             cd ~/wolfstreet/frontend
 
-            docker load -i frontend.tar.gz
-            minikube image load frontend:${{ github.sha }}
+            minikube image load frontend.tar.gz
 
             rm frontend.tar.gz
 
