@@ -737,7 +737,7 @@ function TradePage() {
                 <div className="h-[500px]">
                   {" "}
                   {/* Увеличиваем высоту блока рыночных сделок */}
-                  <TradesList />
+                  <TradesList instrumentId={instrumentId} />
                 </div>
               </div>
             </div>

@@ -1,10 +1,21 @@
-import { USE_WS_MOCK } from './Api';
+import { USE_WS_MOCK } from "./Api";
 
 // Типы данных для разных каналов
 export type OrderBookEntry = { price: number; amount: number };
 export type OrderBookData = { asks: OrderBookEntry[]; bids: OrderBookEntry[] };
-export type SpreadData = { midPrice: number; bestBid: number; bestAsk: number; spread: number };
-export type Candle = { time: number; open: number; high: number; low: number; close: number };
+export type SpreadData = {
+  midPrice: number;
+  bestBid: number;
+  bestAsk: number;
+  spread: number;
+};
+export type Candle = {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
 
 // --- MOCK GENERATORS ---
 function randomOrderBook(): OrderBookData {
@@ -34,8 +45,23 @@ function randomCandles(count = 30): Candle[] {
     const high = Math.max(open, close) + Math.round(Math.random() * 5);
     const low = Math.min(open, close) - Math.round(Math.random() * 5);
     last = close;
-    return { time: Date.now() / 1000 - (count - i) * 60, open, high, low, close };
+    return {
+      time: Date.now() / 1000 - (count - i) * 60,
+      open,
+      high,
+      low,
+      close,
+    };
   });
+}
+
+function randomDeal(): any {
+  return {
+    instrumentId: 1,
+    count: +(Math.random() * 0.1 + 0.01).toFixed(4),
+    lotPrice: +(65000 + Math.random() * 1000).toFixed(2),
+    createdAt: new Date().toISOString(),
+  };
 }
 
 // --- MOCK WebSocket ---
@@ -47,24 +73,28 @@ class MockWebSocket {
   constructor(type: string, instrumentId: string | number) {
     this.type = type;
     this.instrumentId = instrumentId;
-    setTimeout(() => this.emit('open'), 100);
+    setTimeout(() => this.emit("open"), 100);
     this.startMock();
   }
   startMock() {
-    if (this.type === 'orderbook') {
+    if (this.type === "orderbook") {
       this.interval = setInterval(() => {
-        this.emit('message', { data: JSON.stringify(randomOrderBook()) });
+        this.emit("message", { data: JSON.stringify(randomOrderBook()) });
       }, 1000);
-    } else if (this.type === 'spread') {
+    } else if (this.type === "spread") {
       this.interval = setInterval(() => {
-        this.emit('message', { data: JSON.stringify(randomSpread()) });
+        this.emit("message", { data: JSON.stringify(randomSpread()) });
       }, 1500);
-    } else if (this.type === 'ohlc') {
+    } else if (this.type === "ohlc") {
       this.interval = setInterval(() => {
-        this.emit('message', { data: JSON.stringify(randomCandles(30)) });
+        this.emit("message", { data: JSON.stringify(randomCandles(30)) });
       }, 2000);
-    } else if (this.type === 'aggregated') {
+    } else if (this.type === "aggregated") {
       // TODO: реализовать mock aggregated
+    } else if (this.type === "deals") {
+      this.interval = setInterval(() => {
+        this.emit("message", { data: JSON.stringify(randomDeal()) });
+      }, 3000);
     }
   }
   on(event: string, cb: Function) {
@@ -72,11 +102,11 @@ class MockWebSocket {
     this.listeners[event].push(cb);
   }
   emit(event: string, ...args: any[]) {
-    (this.listeners[event] || []).forEach(cb => cb(...args));
+    (this.listeners[event] || []).forEach((cb) => cb(...args));
   }
   close() {
     clearInterval(this.interval);
-    this.emit('close');
+    this.emit("close");
   }
 }
 
@@ -89,6 +119,6 @@ export function createWS(channel: string, instrumentId: string | number) {
     // Реальный WebSocket
     // const ws = new WebSocket(`wss://yourserver/${channel}/${instrumentId}`);
     // return ws;
-    throw new Error('Реальный WebSocket не реализован');
+    throw new Error("Реальный WebSocket не реализован");
   }
-} 
+}
