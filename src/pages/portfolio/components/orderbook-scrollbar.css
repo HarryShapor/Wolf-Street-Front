@@ -1,0 +1,31 @@
+/* Кастомный скроллбар для стакана */
+.orderbook-col ::-webkit-scrollbar {
+  width: 10px;
+  background: #232323;
+  border-radius: 8px;
+}
+.orderbook-col ::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 8px;
+  border: 2px solid #232323;
+  transition: background 0.2s;
+}
+.orderbook-col ::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+.orderbook-col ::-webkit-scrollbar-track {
+  background: #232323;
+  border-radius: 8px;
+}
+
+/* Для Firefox */
+.orderbook-col {
+  scrollbar-width: thin;
+  scrollbar-color: #444 #232323;
+}
+
+.orderbook-col ::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+  background: transparent;
+} 
